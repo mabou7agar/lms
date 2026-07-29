@@ -36,7 +36,7 @@ return [
     IdentityServiceProvider::class,
     CatalogServiceProvider::class,
     AuthoringServiceProvider::class,
-    // After Authoring: the assessment.manage gate delegates to authoring.manage-curriculum.
+    // After Authoring: the assessment.manage-assessment gate delegates to authoring.manage-curriculum.
     AssessmentServiceProvider::class,
     LearningServiceProvider::class,
     CommerceServiceProvider::class,

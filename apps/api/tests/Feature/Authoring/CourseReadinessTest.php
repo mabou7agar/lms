@@ -56,6 +56,7 @@ function readinessInput(Course $course): CourseReadinessInput
         description: $course->getAttribute('description'),
         thumbnailPath: $course->getAttribute('thumbnail_path'),
         hasInstructor: $course->trainerLinks()->exists(),
+        visibility: $course->getAttribute('visibility')?->value,
     );
 }
 
@@ -278,4 +279,83 @@ it('refuses the real publish when readiness reports a blocker', function () {
         ->assertStatus(422);
 
     expect($course->refresh()->status)->toBe(CourseStatus::Draft);
+});
+
+// ---------------------------------------------------------------- visibility
+
+it('passes visibility when the course is public', function () {
+    [$course] = readyCourse();
+
+    expect(reportFor($course)->passedChecks)->toContain('course.not_publicly_visible');
+});
+
+it('warns without blocking when a course is not publicly visible', function (string $visibility) {
+    [$course] = readyCourse();
+    $course->forceFill(['visibility' => $visibility])->save();
+
+    $report = reportFor($course->refresh());
+
+    // Private and unlisted courses are a legitimate way to ship — internal or cohort-gated content
+    // is published on purpose. Blocking would break that workflow and would retroactively stop
+    // every already-published non-public course from re-publishing.
+    expect($report->isPublishable())->toBeTrue()
+        ->and(array_column($report->warnings(), 'code'))->toContain('course.not_publicly_visible')
+        ->and(array_column($report->blockers(), 'code'))->not->toContain('course.not_publicly_visible');
+})->with(['private', 'unlisted', 'hidden']);
+
+it('names the offending visibility so the author can act on it', function () {
+    [$course] = readyCourse();
+    $course->forceFill(['visibility' => 'private'])->save();
+
+    $issue = collect(reportFor($course->refresh())->warnings())
+        ->firstWhere('code', 'course.not_publicly_visible');
+
+    expect($issue->title)->toContain('private')
+        ->and($issue->recommendedAction)->not->toBeEmpty()
+        ->and($issue->entityType)->toBe('course')
+        ->and($issue->entityPublicId)->toBe($course->public_id);
+});
+
+it('reports an unrecognised visibility separately rather than ignoring it', function (?string $visibility) {
+    [$course] = readyCourse();
+
+    // Exercised at the DTO, not through Eloquent, and deliberately so: Course casts `visibility` to
+    // the Visibility enum, so an unknown value cannot survive a save — the model layer already
+    // makes that state unreachable. What IS reachable is a CALLER handing the evaluator a value the
+    // enum does not know, including the null default on the input DTO. That is the case this rule
+    // exists for, and this is where it can actually be reached.
+    $report = app(CoursePublishGuard::class)->report(new CourseReadinessInput(
+        courseId: (int) $course->getKey(),
+        coursePublicId: (string) $course->getAttribute('public_id'),
+        description: $course->getAttribute('description'),
+        thumbnailPath: $course->getAttribute('thumbnail_path'),
+        hasInstructor: true,
+        visibility: $visibility,
+    ));
+
+    expect(array_column($report->warnings(), 'code'))->toContain('course.invalid_visibility')
+        ->and($report->isPublishable())->toBeTrue();
+})->with(['sideways', '', null]);
+
+it('still allows the real publish for a private course', function () {
+    [$course, $instructor] = readyCourse();
+    $course->forceFill(['visibility' => 'private'])->save();
+
+    $this->actingAs($instructor, 'sanctum')
+        ->postJson("/api/v1/teach/courses/{$course->public_id}/publish")
+        ->assertOk();
+
+    expect($course->refresh()->status)->toBe(CourseStatus::Published);
+});
+
+it('surfaces the visibility warning through the readiness endpoint', function () {
+    [$course, $instructor] = readyCourse();
+    $course->forceFill(['visibility' => 'private'])->save();
+
+    $body = $this->actingAs($instructor, 'sanctum')
+        ->getJson("/api/v1/teach/courses/{$course->public_id}/readiness")
+        ->assertOk()
+        ->json('data');
+
+    expect(json_encode($body))->toContain('course.not_publicly_visible');
 });

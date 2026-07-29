@@ -1,4 +1,0 @@
-<?php
-// roundtrip test line 1
-return ['a' => 1, 'b' => 2, 'c' => 'hello world this is a longer line to exceed any tiny cap'];
-// end marker RTOK

@@ -65,5 +65,13 @@ class CommerceServiceProvider extends BaseDomainServiceProvider
         // Checkout keyed by user (falls back to IP): bounds gateway calls + order creation.
         RateLimiter::for('commerce-checkout', fn (Request $r) => Limit::perMinute(10)
             ->by('checkout|'.($r->user()?->getAuthIdentifier() ?? $r->ip())));
+
+        // Payment webhook is public and unauthenticated, so it can only be keyed by source IP.
+        // The signature check is the real control; this is defence in depth against brute-force and
+        // request floods. 60/min is generous — a payment provider sends events individually and
+        // retries with backoff, so legitimate traffic stays well under it, while an attacker is
+        // capped at 60 (unforgeable) signature attempts per minute per source.
+        RateLimiter::for('commerce-webhook', fn (Request $r) => Limit::perMinute(60)
+            ->by('payment-webhook|'.$r->ip()));
     }
 }

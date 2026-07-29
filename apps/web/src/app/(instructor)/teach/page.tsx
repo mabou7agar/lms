@@ -1,23 +1,38 @@
 "use client";
 
+import { BookPlus, Presentation, Users } from "lucide-react";
 import Link from "next/link";
-import { BookOpen, GraduationCap, CheckCircle2, Presentation, Users } from "lucide-react";
-import { useI18n } from "@/lib/i18n/i18n-context";
-import { useTeachDashboard } from "@/lib/teach/hooks";
+import { useState } from "react";
 import { PageHeader } from "@/components/student/page-header";
-import { QueryState } from "@/components/student/query-state";
-import { StatCard } from "@/components/student/stat-card";
-import { EmptyState } from "@/components/states/empty-state";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ActivitySection } from "@/components/teach/activity-section";
+import { AlertsSection } from "@/components/teach/alerts-section";
+import { ChangeSummaryDialog } from "@/components/teach/change-summary-dialog";
+import { CoursePerformanceSection } from "@/components/teach/course-performance-section";
+import { DashboardSection } from "@/components/teach/dashboard-section";
+import { OverviewSection } from "@/components/teach/overview-section";
+import { ReadinessDialog } from "@/components/teach/readiness-dialog";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/i18n-context";
 
+/**
+ * Instructor Dashboard 2.0.
+ *
+ * Each section owns its own query and its own loading, empty and error state. That is deliberate:
+ * the page fans out to four independent endpoints, and one of them failing must not blank the
+ * three that succeeded. An instructor whose alerts endpoint is down should still see their
+ * overview and course table.
+ *
+ * The readiness and change-summary dialogs are hoisted to the page rather than living inside each
+ * table row: exactly one can be open at a time, so one instance each is correct, and it lets the
+ * alerts panel open the same readiness dialog the performance table does.
+ */
 export default function TeachDashboardPage() {
   const { t } = useI18n();
-  const query = useTeachDashboard();
+  const [readinessCourseId, setReadinessCourseId] = useState<string | null>(null);
+  const [changesCourseId, setChangesCourseId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         eyebrow="INSTRUCTOR"
         icon="LayoutDashboard"
@@ -25,77 +40,56 @@ export default function TeachDashboardPage() {
         subtitle={t("teach.dashboard.subtitle")}
         action={
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/teach/courses">{t("nav.teachCourses")}</Link>
+            <Button asChild size="sm">
+              <Link href="/teach/courses">
+                <BookPlus className="size-4" aria-hidden /> {t("teach.quick.newCourse")}
+              </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link href="/teach/students">{t("nav.teachStudents")}</Link>
+              <Link href="/teach/courses">
+                <Presentation className="size-4" aria-hidden /> {t("nav.teachCourses")}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/teach/students">
+                <Users className="size-4" aria-hidden /> {t("nav.teachStudents")}
+              </Link>
             </Button>
           </div>
         }
       />
 
-      <QueryState query={query} isEmpty={(d) => d.courses.total === 0} empty={<EmptyState title={t("teach.dashboard.empty")} />}>
-        {(d) => (
-          <div className="space-y-6">
-            <div className="stagger-in grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <StatCard label={t("teach.dashboard.courses")} value={d.courses.total} icon={BookOpen} />
-              <StatCard label={t("teach.dashboard.students")} value={d.students} icon={Users} />
-              <StatCard label={t("teach.dashboard.completions")} value={d.completions} icon={CheckCircle2} />
-            </div>
+      <DashboardSection id="overview" title={t("teach.section.overview")}>
+        <OverviewSection />
+      </DashboardSection>
 
-            <div className="flex flex-wrap gap-2" aria-label={t("teach.dashboard.courses")}>
-              <Badge variant="success">{t("teach.dashboard.published")}: {d.courses.published}</Badge>
-              <Badge variant="secondary">{t("teach.dashboard.drafts")}: {d.courses.draft}</Badge>
-              <Badge variant="outline">{t("teach.dashboard.archived")}: {d.courses.archived}</Badge>
-            </div>
+      <DashboardSection id="performance" title={t("teach.section.performance")}>
+        <CoursePerformanceSection
+          onReviewReadiness={setReadinessCourseId}
+          onViewChanges={setChangesCourseId}
+        />
+      </DashboardSection>
 
-            <Card>
-              <CardContent className="p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <GraduationCap className="size-5 text-primary" aria-hidden />
-                  <h2 className="font-serif text-lg font-semibold">{t("teach.dashboard.recent")}</h2>
-                </div>
-                {d.recent_enrollments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("teach.dashboard.recentEmpty")}</p>
-                ) : (
-                  <ul className="divide-y">
-                    {d.recent_enrollments.map((e, i) => (
-                      <li key={`${e.course.id}-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{e.student.name ?? "—"}</p>
-                          <Link href={`/teach/courses/${e.course.id}`} className="truncate text-sm text-primary hover:underline">
-                            {e.course.title}
-                          </Link>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge variant={e.status === "completed" ? "success" : "secondary"}>{e.status}</Badge>
-                          <span className="text-xs tabular-nums text-muted-foreground">
-                            {e.enrolled_at ? new Date(e.enrolled_at).toLocaleDateString() : ""}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+      {/* Side by side from lg up; stacked below, activity first — what you did reads before what
+          needs doing when the screen is too small to show both at once. */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <DashboardSection id="activity" title={t("teach.section.activity")}>
+          <ActivitySection />
+        </DashboardSection>
 
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant="outline">
-                <Link href="/teach/courses">
-                  <Presentation className="size-4" aria-hidden /> {t("nav.teachCourses")}
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/teach/students">
-                  <Users className="size-4" aria-hidden /> {t("nav.teachStudents")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-      </QueryState>
+        <DashboardSection id="alerts" title={t("teach.section.alerts")}>
+          <AlertsSection onReviewReadiness={setReadinessCourseId} />
+        </DashboardSection>
+      </div>
+
+      <ReadinessDialog
+        courseId={readinessCourseId}
+        onOpenChange={(open) => !open && setReadinessCourseId(null)}
+      />
+      <ChangeSummaryDialog
+        courseId={changesCourseId}
+        onOpenChange={(open) => !open && setChangesCourseId(null)}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ namespace App\Domains\Assessment\Providers;
 
 use App\Domains\Assessment\Analytics\AssessmentStatsAdapter;
 use App\Domains\Assessment\Enums\AssessmentPermission;
+use App\Domains\Assessment\Enums\AssignmentPermission;
 use App\Domains\Assessment\Grading\AnswerNormalizer;
 use App\Domains\Assessment\Grading\GraderRegistry;
 use App\Domains\Assessment\Grading\Graders\FillInBlankGrader;
@@ -12,12 +13,18 @@ use App\Domains\Assessment\Grading\Graders\ShortAnswerGrader;
 use App\Domains\Assessment\Grading\Graders\SingleChoiceGrader;
 use App\Domains\Assessment\Grading\Graders\TrueFalseGrader;
 use App\Domains\Assessment\Models\Assessment;
+use App\Domains\Assessment\Models\Assignment;
+use App\Domains\Assessment\Models\AssignmentSubmission;
 use App\Domains\Assessment\Policies\AssessmentPolicy;
+use App\Domains\Assessment\Policies\AssignmentPolicy;
+use App\Domains\Assessment\Policies\SubmissionPolicy;
+use App\Domains\Assessment\Support\AssignmentRequirementAdapter;
 use App\Domains\Assessment\Support\LessonAssessmentAdapter;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Identity\Contracts\CourseAccessPort;
 use App\Platform\Shared\Assessment\Contracts\AssessmentStatsPort;
 use App\Platform\Shared\Assessment\Contracts\LessonAssessmentPort;
+use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -27,11 +34,14 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
     protected array $routeFiles = [
         'routes/assessment_admin.php',
         'routes/assessment_learner.php',
+        'routes/assignments.php',
     ];
 
     /** @var array<class-string, class-string> */
     protected array $policies = [
         Assessment::class => AssessmentPolicy::class,
+        Assignment::class => AssignmentPolicy::class,
+        AssignmentSubmission::class => SubmissionPolicy::class,
     ];
 
     protected function domainPath(): string
@@ -49,6 +59,10 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
         // methods by an ArchitectureTest, and widening it would turn a narrow authoring surface
         // into a general repository.
         $this->app->bind(AssessmentStatsPort::class, AssessmentStatsAdapter::class);
+
+        // Assessment implements Learning's AssignmentRequirementPort so Learning can gate
+        // lesson/course completion on required assignments without importing an Assessment model.
+        $this->app->bind(AssignmentRequirementPort::class, AssignmentRequirementAdapter::class);
 
         // The grader registry is the single extension point for question types. Adding a type is:
         // add the enum case, write a grader, register it on the line below. Nothing else changes.
@@ -69,9 +83,10 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
     {
         // Single source of truth for "may this actor manage this assessment".
         //
-        //   1. super_admin / admin  — role bypass, matching the Authoring gate (role checks are
-        //                             guard-robust under Sanctum, permission checks are not).
-        //   2. assessment.manage    — explicit global grant for any other privileged principal.
+        //   1. super_admin          — genuine role bypass; the seeders grant it no permissions.
+        //   2. assessment.manage    — explicit global grant, held by admin and honoured for any
+        //                             other principal granted it. Checked with hasPermission()
+        //                             rather than can(), which is guard-sensitive under Sanctum.
         //   3. course ownership     — an instructor may manage the assessments of a course they
         //                             train, delegated to CourseAccessPort so this domain never
         //                             touches the Course model.
@@ -85,7 +100,7 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
         // avoids this the same way: gate `authoring.manage-curriculum`, permission
         // `authoring.curriculum.manage`.
         Gate::define('assessment.manage-assessment', function (Actor $user, Assessment $assessment): bool {
-            if ($user->hasRole(['super_admin', 'admin']) || $user->can(AssessmentPermission::Manage->value)) {
+            if ($user->hasRole('super_admin') || $user->hasPermission(AssessmentPermission::Manage->value)) {
                 return true;
             }
 
@@ -93,6 +108,16 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
 
             return $courseId !== null
                 && app(CourseAccessPort::class)->canManageContent($user, (int) $courseId);
+        });
+
+        // Mirror of assessment.manage-assessment for the assignment surface: super_admin, the global
+        // assignment.manage permission (admin), or course ownership via CourseAccessPort. The gate
+        // name deliberately differs from the `assignment.manage` permission to avoid the same
+        // self-re-entrancy fatal documented above. course_id is non-null on an Assignment.
+        Gate::define('assignment.manage-assignment', function (Actor $user, Assignment $assignment): bool {
+            return $user->hasRole('super_admin')
+                || $user->hasPermission(AssignmentPermission::Manage->value)
+                || app(CourseAccessPort::class)->canManageContent($user, (int) $assignment->course_id);
         });
     }
 }

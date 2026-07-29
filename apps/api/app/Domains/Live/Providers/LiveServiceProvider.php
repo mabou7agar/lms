@@ -3,6 +3,7 @@
 namespace App\Domains\Live\Providers;
 
 use App\Domains\Live\Calendar\CalendarProviderManager;
+use App\Domains\Live\Console\Commands\DispatchSessionRemindersCommand;
 use App\Domains\Live\Contracts\CalendarProvider;
 use App\Domains\Live\Contracts\MeetingProvider;
 use App\Domains\Live\Contracts\ReminderScheduler;
@@ -44,6 +45,10 @@ class LiveServiceProvider extends BaseDomainServiceProvider
         $this->app->bind(MeetingProvider::class, fn ($app) => $app->make(MeetingProviderManager::class)->resolve());
         $this->app->bind(CalendarProvider::class, fn ($app) => $app->make(CalendarProviderManager::class)->resolve());
         $this->app->bind(ReminderScheduler::class, fn ($app) => $app->make(ReminderSchedulerManager::class)->resolve());
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([DispatchSessionRemindersCommand::class]);
+        }
     }
 
     protected function bootDomain(): void

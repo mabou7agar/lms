@@ -2,6 +2,10 @@
 
 Consolidated from the hardening-phase audits (archived in `docs/reviews/_archive/hardening-2026-07/`). **None of these block production.** They are additive enhancements and low-priority polish, listed for transparency and future planning.
 
+## Deferred subsystems (RC1 decision)
+- **Automation engine — FORMALLY DEFERRED (not shipped in v1.0.0).** `WorkflowEngine`, `DigestService`, and the `ScheduledAutomation` model + `automation_rules` migration exist and are schema-complete, but have **no execution path** (no route, command, job, or scheduler entry invokes them; a repo-wide reference scan finds zero callers). Per the Sprint 11 go/defer gate, building the trigger/consumer wiring is deferred to a post-v1.0 sprint. The code is inert and harmless at runtime; it is retained (rather than deleted) so the future build starts from the existing schema. **No customer-facing automation/digest behaviour is advertised for v1.0.**
+- **Live-session reminders (H9) — DEFERRED.** `SessionReminder` rows are written with `status=Pending` but no consumer delivers them. The reminder feature is not functional in v1.0; either disable its UI affordance or ship the scheduled consumer before advertising reminders.
+
 ## Performance
 - Lighthouse **Performance 72** (mobile, 4× CPU + slow-4G, API-down shell). The deficit is **entirely LCP** (the app is a client-rendered shell, so the largest paint waits on JS hydration under throttling). TBT (100 ms), CLS (0), Speed Index (2.6 s) are near-perfect. A representative production run (API up / `--preset=desktop`) has not been captured. Improving LCP is structural work (reduce the client boundary), not a defect.
 - Tier-1 config optimizations (`optimizePackageImports`, `removeConsole`, browserslist) yielded a marginal ~1 kB/route; the shared JS baseline (102 kB) is unchanged. lucide-react is already optimized by Next's defaults.

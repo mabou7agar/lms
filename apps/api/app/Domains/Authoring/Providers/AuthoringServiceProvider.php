@@ -3,10 +3,17 @@
 namespace App\Domains\Authoring\Providers;
 
 use App\Domains\Authoring\Curriculum\CurriculumReadAdapter;
+use App\Domains\Authoring\Enums\AuthoringPermission;
 use App\Domains\Authoring\Media\LessonMediaAssetPort;
+use App\Domains\Authoring\Models\Block;
+use App\Domains\Authoring\Models\ContentVersion;
 use App\Domains\Authoring\Models\Lesson;
+use App\Domains\Authoring\Models\Module;
 use App\Domains\Authoring\Models\Section;
+use App\Domains\Authoring\Policies\BlockPolicy;
+use App\Domains\Authoring\Policies\ContentVersionPolicy;
 use App\Domains\Authoring\Policies\LessonPolicy;
+use App\Domains\Authoring\Policies\ModulePolicy;
 use App\Domains\Authoring\Policies\SectionPolicy;
 use App\Domains\Authoring\Services\CurriculumPublishGuard;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
@@ -24,12 +31,21 @@ use Illuminate\Support\Facades\Gate;
  */
 class AuthoringServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/authoring_admin.php'];
+    protected array $routeFiles = [
+        'routes/authoring_admin.php',
+        'routes/versioning_admin.php',
+    ];
 
     /** @var array<class-string, class-string> */
     protected array $policies = [
         Section::class => SectionPolicy::class,
         Lesson::class => LessonPolicy::class,
+        // P2/W02: block/module authorization resolves to the same authoring.manage-curriculum gate
+        // via the parent course, so any future block/module write path is guarded from day one.
+        Block::class => BlockPolicy::class,
+        Module::class => ModulePolicy::class,
+        // P2/W03: content-version authorization (course-scoped via CourseAccessPort).
+        ContentVersion::class => ContentVersionPolicy::class,
     ];
 
     protected function domainPath(): string
@@ -62,10 +78,15 @@ class AuthoringServiceProvider extends BaseDomainServiceProvider
         //   3. assigned trainer         — instructor scoped to courses they train, and only while
         //                                 the course is not archived (business rule).
         Gate::define('authoring.manage-curriculum', function (Actor $user, Course $course): bool {
-            // Privileged bypass mirrors InstructorController::ownedCourse — super_admin + admin are
-            // authorized by role (role checks are guard-robust under Sanctum). An explicit global
-            // authoring.curriculum.manage grant is also honoured for any other principal.
-            if ($user->hasRole(['super_admin', 'admin']) || $user->can('authoring.curriculum.manage')) {
+            // super_admin is a genuine bypass, not a workaround: the seeders grant it no
+            // permissions at all, by design, so it can only be recognised by role.
+            //
+            // `admin` is NO LONGER role-checked here. It was, because can() is guard-sensitive and
+            // answered false under Sanctum for a genuine holder; hasPermission() pins the `web`
+            // guard, so admin now flows through the permission it actually holds
+            // (AuthoringSeeder grants authoring.curriculum.manage to admin). Anyone else granted
+            // that permission gets the same access, which is what the grant is supposed to mean.
+            if ($user->hasRole('super_admin') || $user->hasPermission(AuthoringPermission::ManageCurriculum->value)) {
                 return true;
             }
 

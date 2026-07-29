@@ -56,9 +56,47 @@ class Enrollment extends Model
         return $query->where('status', EnrollmentStatus::Active->value);
     }
 
+    /**
+     * Enrollments that grant runtime course access: active OR completed. A learner who has finished
+     * the course keeps read/launch access to its lessons and curriculum; only cancelled (and
+     * soft-deleted) rows lose it. The stricter active() scope stays for roster/entitlement checks.
+     *
+     * @param  Builder<Enrollment>  $query
+     * @return Builder<Enrollment>
+     */
+    public function scopeGrantsAccess(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            EnrollmentStatus::Active->value,
+            EnrollmentStatus::Completed->value,
+        ]);
+    }
+
     public function isActive(): bool
     {
         return $this->status === EnrollmentStatus::Active;
+    }
+
+    public function courseId(): int
+    {
+        return (int) $this->getAttribute('course_id');
+    }
+
+    public function progressPercentage(): int
+    {
+        return (int) $this->getAttribute('progress_percentage');
+    }
+
+    public function publicId(): string
+    {
+        return (string) $this->getAttribute('public_id');
+    }
+
+    public function statusEnum(): EnrollmentStatus
+    {
+        $status = $this->getAttribute('status');
+
+        return $status instanceof EnrollmentStatus ? $status : EnrollmentStatus::from((string) $status);
     }
 
     protected static function newFactory(): EnrollmentFactory

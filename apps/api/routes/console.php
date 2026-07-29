@@ -3,13 +3,23 @@
 use App\Contexts\Commerce\Models\PaymentWebhookEvent;
 use Illuminate\Support\Facades\Schedule;
 
-// Horizon queue metrics snapshots (required for the Horizon dashboard graphs).
-Schedule::command('horizon:snapshot')->everyFiveMinutes();
+// Horizon queue metrics snapshots (required for the Horizon dashboard graphs). One server only —
+// duplicate snapshots across a multi-node deploy would corrupt the metric series.
+Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 
 // Prune expired Sanctum tokens, old failed jobs, and stale password-reset tokens.
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
-Schedule::command('queue:prune-failed --hours=168')->daily();
+// Dead-letter retention (Sprint 5): keep failed_jobs long enough to actually investigate an
+// incident. The prior 7-day window destroyed failure evidence before most post-mortems finished;
+// default is now 30 days (720h), operator-tunable via QUEUE_FAILED_PRUNE_HOURS.
+Schedule::command('queue:prune-failed --hours='.(int) config('queue.failed.prune_hours', 720))
+    ->daily()->onOneServer()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->daily();
+
+// H9 — deliver due session reminders. Enqueues delivery jobs for reminders whose time has come.
+// One server + no overlap so a due reminder is enqueued once per minute-tick; the job's own
+// pending-status guard + per-recipient dedup key make delivery idempotent regardless.
+Schedule::command('live:dispatch-reminders')->everyMinute()->onOneServer()->withoutOverlapping();
 
 // Processed payment webhook events are kept 30 days for reconciliation, then pruned.
 Schedule::call(function (): void {

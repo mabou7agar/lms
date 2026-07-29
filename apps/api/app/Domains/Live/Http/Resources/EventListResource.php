@@ -47,6 +47,15 @@ class EventListResource extends BaseResource
     /** @return array<int, array{name: string}> */
     private function speakers(): array
     {
+        // Prefer the page-batched value set by EventController::index (one UserLookupPort call for
+        // the whole list) — avoids the per-event refsByIds() N+1. Falls back to per-resource
+        // resolution for any caller that did not pre-batch; output is identical either way.
+        $prepared = $this->resource->getAttribute('speaker_names');
+        if (is_array($prepared)) {
+            /** @var array<int, array{name: string}> $prepared */
+            return $prepared;
+        }
+
         if (! $this->resource->relationLoaded('trainerLinks')) {
             return [];
         }

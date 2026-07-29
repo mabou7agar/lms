@@ -11,6 +11,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# CLI memory (+ timezone). The base php:8.3-cli has no loaded php.ini and defaults memory_limit to
+# 128M, which OOMs `artisan test` (Pest runs the whole suite in one process). Bake a 1G CLI budget
+# into conf.d so it applies to every php invocation in the container without a per-command override.
+COPY infra/php/cli.ini /usr/local/etc/php/conf.d/zz-cli.ini
+
 # Redis is used via the pure-PHP predis client, so no php-redis extension is needed.
 EXPOSE 8000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

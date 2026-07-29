@@ -37,3 +37,18 @@ afterEach(() => {
   // later test in the same file hang on a promise that never settles.
   vi.useRealTimers();
 });
+
+// jsdom leaves computed `transform` empty; vaul's drawer getTranslate() then dereferences
+// `undefined` on pointer-release. Give it a parseable default so drawer tests don't throw.
+const __gcsForVaul = window.getComputedStyle.bind(window);
+window.getComputedStyle = ((el: Element, pseudo?: string | null) => {
+  const st = __gcsForVaul(el, pseudo ?? undefined);
+  if (st && !st.transform) {
+    try {
+      Object.defineProperty(st, "transform", { value: "none", configurable: true });
+    } catch {
+      /* transform may be read-only in some environments; ignore */
+    }
+  }
+  return st;
+}) as typeof window.getComputedStyle;

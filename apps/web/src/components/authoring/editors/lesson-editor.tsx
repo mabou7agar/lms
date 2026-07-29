@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Sparkles } from "lucide-react";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,15 @@ import { useFieldAutosave } from "../field-autosave";
 import { StatusBadge } from "../status-badge";
 import { ExternalLinkEditor } from "./external-link-editor";
 import { MediaEditor } from "./media-editor";
-import { RichTextEditor } from "./rich-text-editor";
+
+// Lazy-load the rich-text editor. TipTap (ProseMirror + its extensions) is heavy and only used on
+// the course-builder edit surface, so splitting it into its own async chunk keeps it out of the
+// route's initial JS — shrinking First Load for /teach/courses/[public_id]/edit. ssr:false is safe
+// because the editor is a client-only 'use client' component.
+const RichTextEditor = dynamic(() => import("./rich-text-editor").then((m) => m.RichTextEditor), {
+  ssr: false,
+  loading: () => <div className="min-h-[12rem] animate-pulse rounded-md border bg-muted/40" />,
+});
 
 /**
  * Center-pane lesson authoring surface.

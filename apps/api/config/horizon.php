@@ -23,9 +23,22 @@ return [
 
     'silenced' => [],
     'metrics' => ['trim_snapshots' => ['job' => 24, 'queue' => 24]],
-    'fast_termination' => false,
-    'memory_limit' => 128,
+    // Worker-restart safety: on `horizon:terminate` (deploys) the terminating master returns
+    // immediately while its workers finish their in-flight job in the background, so a rolling
+    // deploy is not blocked by a long-running job. Safe because after_commit + the atomic
+    // idempotency already prevent partial/duplicate work.
+    'fast_termination' => (bool) env('HORIZON_FAST_TERMINATION', true),
+    'memory_limit' => (int) env('HORIZON_MEMORY_LIMIT', 128),
 
+    /*
+     | Supervisor `timeout` MUST stay below the connection `retry_after` (queue.php, 360s) so a
+     | still-running job is never re-released to a second worker. Current headroom: default 60s,
+     | notifications 30s, exports 300s — all < 360s.
+     |
+     | `maxTime` / `maxJobs` recycle each worker process periodically (time- and count-bounded) so a
+     | slow memory leak or a stale DB/Redis connection can never accumulate across a long-lived
+     | worker — the worker exits cleanly after finishing its current job and Horizon respawns it.
+     */
     'defaults' => [
         'supervisor-default' => [
             'connection' => 'redis',
@@ -38,6 +51,8 @@ return [
             'balanceCooldown' => 3,
             'tries' => (int) env('HORIZON_DEFAULT_TRIES', 3),
             'timeout' => 60,
+            'maxTime' => (int) env('HORIZON_DEFAULT_MAX_TIME', 3600),
+            'maxJobs' => (int) env('HORIZON_DEFAULT_MAX_JOBS', 1000),
             'nice' => 0,
         ],
         'supervisor-notifications' => [
@@ -48,6 +63,8 @@ return [
             'minProcesses' => 1,
             'tries' => (int) env('HORIZON_NOTIFICATIONS_TRIES', 3),
             'timeout' => 30,
+            'maxTime' => (int) env('HORIZON_NOTIFICATIONS_MAX_TIME', 3600),
+            'maxJobs' => (int) env('HORIZON_NOTIFICATIONS_MAX_JOBS', 2000),
         ],
         'supervisor-exports' => [
             'connection' => 'redis',
@@ -57,6 +74,8 @@ return [
             'minProcesses' => 1,
             'tries' => (int) env('HORIZON_EXPORTS_TRIES', 2),
             'timeout' => 300,
+            'maxTime' => (int) env('HORIZON_EXPORTS_MAX_TIME', 3600),
+            'maxJobs' => (int) env('HORIZON_EXPORTS_MAX_JOBS', 500),
         ],
     ],
 

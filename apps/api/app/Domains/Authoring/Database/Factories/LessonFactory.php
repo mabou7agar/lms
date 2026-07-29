@@ -20,7 +20,14 @@ class LessonFactory extends Factory
         return [
             'section_id' => Section::factory(),
             'title' => rtrim(fake()->sentence(3), '.'),
-            'type' => fake()->randomElement(LessonType::values()),
+
+            // Article, NOT a random type. `quiz` carries an obligation the factory cannot satisfy —
+            // a quiz lesson is expected to reference a published assessment — so a random default
+            // intermittently produced a lesson that is invalid by construction. That made every
+            // test which publishes a course flaky the moment publish-readiness began rejecting
+            // quiz lessons with no assessment: the same test passed or failed depending on the dice.
+            // Tests needing another type say so explicitly via ofType().
+            'type' => LessonType::Article->value,
             'content' => [],
             'position' => 0,
             'publish_state' => PublishState::Draft->value,

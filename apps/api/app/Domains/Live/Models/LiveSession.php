@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @property string $title
+ */
 class LiveSession extends Model
 {
     /** @use HasFactory<LiveSessionFactory> */
@@ -70,6 +73,7 @@ class LiveSession extends Model
         }
     }
 
+    /** @return HasMany<SessionRegistration, $this> */
     public function registrations(): HasMany
     {
         return $this->hasMany(SessionRegistration::class, 'session_id');

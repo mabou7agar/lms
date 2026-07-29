@@ -39,6 +39,12 @@ export function CmsPage({ page }: { page: StaticPage }) {
       {excerpt ? <p className="mt-4 text-muted-foreground sm:text-lg">{excerpt}</p> : null}
 
       {page.hero_image ? (
+        // Native <img> is intentional and next/image is genuinely inapplicable here: hero_image is an
+        // arbitrary, admin-supplied CMS URL with no known intrinsic dimensions and no enumerable host.
+        // next/image would require explicit width/height (or `fill` + a sized wrapper — changing the
+        // current intrinsic-ratio layout and CLS) plus an images.remotePatterns allow-list we cannot
+        // define for user-entered hosts. Scoped to this one element only.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={page.hero_image}
           alt=""
@@ -54,7 +60,6 @@ export function CmsPage({ page }: { page: StaticPage }) {
             : "prose mt-8 max-w-none dark:prose-invert"
         }
         // API HTML is sanitized server-side AND re-sanitized above before injection.
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: bodyHtml }}
       />
     </Reveal>

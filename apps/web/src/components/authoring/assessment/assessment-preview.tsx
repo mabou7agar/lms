@@ -48,28 +48,32 @@ export function AssessmentPreview({
   const timeLimit = assessment.settings.time_limit_seconds;
 
   // Reset whenever the dialog opens: a preview is a fresh sitting every time, and carrying state
-  // across openings would show stale answers against edited questions.
-  useEffect(() => {
-    if (!open) return;
-
+  // across openings would show stale answers against edited questions. Done during render (React's
+  // adjust-state-while-rendering pattern, tracked in state) so it runs exactly once per open —
+  // without a setState-in-effect and with no flash of the previous sitting.
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open && !wasOpen) {
+    setWasOpen(true);
     setIndex(0);
     setResponses(new Map());
     setFlagged(new Set());
     setSubmitted(false);
     setSecondsLeft(timeLimit ?? null);
-  }, [open, timeLimit]);
+  } else if (!open && wasOpen) {
+    setWasOpen(false);
+  }
 
-  // Simulated clock. Reaching zero submits, exactly as the real attempt expires server-side.
+  // Auto-submit exactly when the simulated clock reaches zero — during render, once (guarded by
+  // !submitted), mirroring the real attempt expiring server-side.
+  if (open && !submitted && secondsLeft !== null && secondsLeft <= 0) {
+    setSubmitted(true);
+  }
+
+  // Simulated clock: only the external timer lives in the effect (it sets no state synchronously in
+  // its body); the zero → submit transition is handled during render above.
   useEffect(() => {
-    if (!open || submitted || secondsLeft === null) return;
-    if (secondsLeft <= 0) {
-      setSubmitted(true);
-
-      return;
-    }
-
+    if (!open || submitted || secondsLeft === null || secondsLeft <= 0) return;
     const timer = setTimeout(() => setSecondsLeft((s) => (s === null ? null : s - 1)), 1000);
-
     return () => clearTimeout(timer);
   }, [open, submitted, secondsLeft]);
 

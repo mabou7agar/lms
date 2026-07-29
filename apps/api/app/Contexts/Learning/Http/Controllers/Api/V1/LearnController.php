@@ -35,17 +35,19 @@ class LearnController extends Controller
         $tree = $curriculum->curriculumTree($courseRef->id, publishedOnly: true);
 
         $completedIds = LessonProgress::where('enrollment_id', $enrollment->id)
-            ->where('status', 'completed')->pluck('lesson_id')->all();
+            ->where('status', 'completed')->pluck('lesson_id')
+            ->map(static fn ($id): int => (int) $id)->all();
 
-        // Accessible = preview OR all prerequisites completed.
-        $accessibleIds = [];
+        // Accessible = preview OR all prerequisites completed. Resolved for the whole curriculum in
+        // ONE prerequisite query using the enrollment and completed ids already in hand, instead of
+        // 2–3 queries per lesson via canAccessByUserId(). The access rule is unchanged.
+        $lessonRefs = [];
         foreach ($tree['sections'] as $node) {
             foreach ($node['lessons'] as $lessonRef) {
-                if ($access->canAccessByUserId($request->user()->id, $lessonRef->id)) {
-                    $accessibleIds[] = $lessonRef->id;
-                }
+                $lessonRefs[] = $lessonRef;
             }
         }
+        $accessibleIds = $access->accessibleLessonIds($lessonRefs, $completedIds);
 
         return ApiResponse::success(new LearnCourseResource([
             'course' => $courseRef,

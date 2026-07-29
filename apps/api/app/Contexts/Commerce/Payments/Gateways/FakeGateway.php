@@ -36,11 +36,20 @@ class FakeGateway implements PaymentGateway
         );
     }
 
+    /**
+     * Verify the fake provider's signature.
+     *
+     * A MISSING signature is a failure, exactly like a wrong one. Treating null as "nothing to
+     * check" turns the webhook into an unauthenticated write: this route is public and the payload
+     * flips an order to Paid and grants course access, so omitting the header was enough to obtain
+     * paid courses for free. Fail closed, matching StripeGateway::verifySignature().
+     */
     public function parseWebhook(string $payload, ?string $signature): WebhookEvent
     {
-        $expected = 'fake-signature='.hash_hmac('sha256', $payload, (string) config('commerce.payment.webhook_secret'));
+        $secret = (string) config('commerce.payment.webhook_secret');
+        $expected = 'fake-signature='.hash_hmac('sha256', $payload, $secret);
 
-        if ($signature !== null && ! hash_equals($expected, $signature)) {
+        if ($signature === null || $secret === '' || ! hash_equals($expected, $signature)) {
             throw new WebhookSignatureException;
         }
 

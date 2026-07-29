@@ -15,9 +15,6 @@ class KpiController extends Controller
 {
     use AuthorizesAnalytics;
 
-    /** Unit marking a metric as money; see config/analytics.php. */
-    private const MONEY_UNIT = 'currency_minor';
-
     public function index(KpiQueryRequest $request, KpiEngine $kpi, MetricsCatalog $catalog): JsonResponse
     {
         $this->assertCanViewAnalytics($request);

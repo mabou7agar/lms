@@ -34,5 +34,9 @@ monolith API + custom Next.js 15 frontend, PostgreSQL, Redis/Horizon, S3/CloudFr
 - Provider secrets read only by adapters; nothing committed.
 
 ### Notes
-- Filament admin panel (`/admin`) ships **unregistered** pending a Filament v3→v4 resource pass.
+- Filament v4 admin panel (`/admin`) is **registered** (`AdminPanelProvider`) with per-domain
+  resource + widget discovery; access is gated by `canAccessPanel()` (super_admin/admin) and,
+  when `ADMIN_REQUIRE_MFA`, by `EnforceAdminMfa`.
 - Firebase push uses FCM legacy HTTP; HTTP v1 planned.
+- The automation/digest engine is present but unwired and **deferred** for v1.0 (see
+  `KNOWN_LIMITATIONS.md`); live-session reminders are written but not yet delivered (H9, deferred).

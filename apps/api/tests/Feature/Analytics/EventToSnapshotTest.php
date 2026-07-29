@@ -1,5 +1,6 @@
 <?php
 
+use App\Contexts\Analytics\Database\Seeders\AnalyticsSeeder;
 use App\Contexts\Commerce\Events\OrderPaid;
 use App\Contexts\Commerce\Models\Order;
 use App\Platform\Identity\Database\Seeders\IdentitySeeder;
@@ -13,6 +14,9 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed(IdentitySeeder::class);
+    // AnalyticsSeeder too: analytics access is now gated on the `analytics.view` PERMISSION, so a
+    // caller needs the permission rows to exist, not merely the admin role.
+    $this->seed(AnalyticsSeeder::class);
 });
 
 it('turns producer events into read-model snapshots surfaced as KPIs', function () {

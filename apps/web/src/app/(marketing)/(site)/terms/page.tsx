@@ -4,6 +4,7 @@ import { LegalPage } from "@/components/marketing/legal-page";
 import { CmsPage } from "@/components/marketing/cms-page";
 import { getStaticPage, type StaticPage } from "@/lib/pages/api";
 import { buildPageMetadata, pageJsonLd } from "@/lib/pages/metadata";
+import { jsonLdScript } from "@/lib/seo/json-ld";
 
 const SLUG = "terms";
 
@@ -47,8 +48,7 @@ export default async function TermsPage() {
       {jsonLd ? (
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
       ) : null}
       <CmsPage page={page} />

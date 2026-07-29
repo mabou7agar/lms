@@ -7,6 +7,9 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $user_id
+ */
 class SessionRegistration extends Model
 {
     use HasPublicId;

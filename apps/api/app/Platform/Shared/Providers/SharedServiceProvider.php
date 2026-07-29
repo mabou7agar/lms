@@ -10,8 +10,11 @@ use App\Platform\Shared\Tenancy\TenancyBypassPolicy;
 use App\Platform\Shared\Tenancy\TenantContext;
 use App\Platform\Shared\Tenancy\TenantMetadata;
 use App\Platform\Shared\Tenancy\TenantResolver;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -61,6 +64,30 @@ class SharedServiceProvider extends ServiceProvider
     {
         $this->registerBlueprintMacros();
         $this->registerTenancyMiddlewareAlias();
+        $this->registerPublicRateLimiters();
+    }
+
+    /**
+     * M9 — throttling for the unauthenticated public read surface, which previously had none. These
+     * limiters live in Shared because they span several contexts (Catalog, Live, Branding,
+     * Navigation, Pages, SEO, Features); domain-specific limiters stay in their own providers.
+     *
+     * Both key by the authenticated user id when present, else the source IP — never a single
+     * global bucket — so one visitor/IP cannot exhaust another's allowance.
+     */
+    private function registerPublicRateLimiters(): void
+    {
+        $byUserOrIp = static fn (Request $r): string => (string) (optional($r->user())->getAuthIdentifier() ?? $r->ip());
+
+        // Public content reads (catalog, public live-session listings, published pages, public SEO
+        // payloads). 60/min ≈ 1 req/s per client: ample for human browsing, blunt against scraping
+        // and id/slug enumeration. Over the limit → 429 (Laravel's ThrottleRequests default).
+        RateLimiter::for('public-read', static fn (Request $r) => Limit::perMinute(60)->by($byUserOrIp($r)));
+
+        // Small, cacheable per-page-load config payloads (branding, navigation, feature flags).
+        // These fire on nearly every page and are heavily cached downstream, so a higher 120/min
+        // ceiling avoids throttling legitimate multi-tab / SPA navigation while still capping abuse.
+        RateLimiter::for('public-config', static fn (Request $r) => Limit::perMinute(120)->by($byUserOrIp($r)));
     }
 
     /**

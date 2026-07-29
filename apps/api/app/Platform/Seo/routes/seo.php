@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Route;
  */
 Route::prefix('v1')->group(function (): void {
     Route::get('seo', [SeoController::class, 'index'])->middleware('auth:sanctum');
-    Route::get('seo/sitemap', [SeoController::class, 'sitemap']);
+    // M9 — throttle the two public SEO reads (the admin list above keeps its auth:sanctum guard).
+    Route::get('seo/sitemap', [SeoController::class, 'sitemap'])->middleware('throttle:public-read');
     Route::get('seo/{entityType}/{key}', [SeoController::class, 'show'])
+        ->middleware('throttle:public-read')
         ->where('key', '[A-Za-z0-9\-_./]+');
 });

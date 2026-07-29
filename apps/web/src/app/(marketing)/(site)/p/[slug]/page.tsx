@@ -4,6 +4,7 @@ import { cache } from "react";
 import { getStaticPage, type StaticPage } from "@/lib/pages/api";
 import { buildPageMetadata, pageJsonLd } from "@/lib/pages/metadata";
 import { CmsPage } from "@/components/marketing/cms-page";
+import { jsonLdScript } from "@/lib/seo/json-ld";
 
 /** Deduped server-side fetch shared by generateMetadata and the page render. */
 const loadPage = cache(async (slug: string): Promise<StaticPage | null> => getStaticPage(slug));
@@ -34,8 +35,7 @@ export default async function CustomStaticPage({ params }: Params) {
       {jsonLd ? (
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
       ) : null}
       <CmsPage page={page} />

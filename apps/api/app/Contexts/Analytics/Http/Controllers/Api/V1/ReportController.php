@@ -19,8 +19,6 @@ class ReportController extends Controller
 {
     use AuthorizesAnalytics;
 
-    private const MONEY_UNIT = 'currency_minor';
-
     public function index(Request $request): JsonResponse
     {
         $this->assertCanViewAnalytics($request);

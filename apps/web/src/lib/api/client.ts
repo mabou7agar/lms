@@ -121,3 +121,24 @@ export const api = {
   data: async <T>(path: string, opts?: RequestOptions) =>
     (await apiFetch<ApiSuccess<T>>(path, { ...opts, method: opts?.method ?? "GET" })).data,
 };
+
+/**
+ * Axios-style client returning `{ data }`, where `data` is the UNWRAPPED success-envelope payload
+ * (the backend `{ data: ... }` already peeled). The media direct-upload transport and the grader
+ * file-access flow (uploadClient / SubmissionFileList) are written against a `{ data }`-returning
+ * client, so this adapts the shared `api` helpers to that shape.
+ */
+export const apiClient = {
+  get: async <T>(path: string, opts?: RequestOptions) => ({
+    data: await api.data<T>(path, { ...opts, method: "GET" }),
+  }),
+  post: async <T>(path: string, body?: unknown, opts?: RequestOptions) => ({
+    data: await api.data<T>(path, { ...opts, method: "POST", body }),
+  }),
+  put: async <T>(path: string, body?: unknown, opts?: RequestOptions) => ({
+    data: await api.data<T>(path, { ...opts, method: "PUT", body }),
+  }),
+  del: async <T>(path: string, opts?: RequestOptions) => ({
+    data: await api.data<T>(path, { ...opts, method: "DELETE" }),
+  }),
+};

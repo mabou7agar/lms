@@ -1,5 +1,6 @@
 <?php
 
+use App\Contexts\Analytics\Database\Seeders\AnalyticsSeeder;
 use App\Contexts\Analytics\Models\MetricSnapshot;
 use App\Contexts\Analytics\Models\ReportDefinition;
 use App\Platform\Identity\Database\Seeders\IdentitySeeder;
@@ -12,12 +13,15 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed(IdentitySeeder::class);
+    // AnalyticsSeeder creates the permission rows the gate now reads. Without it the admin role
+    // exists but holds nothing, and every request here answers 403.
+    $this->seed(AnalyticsSeeder::class);
 });
 
 /**
- * These endpoints used to be reachable by any authenticated user. They are now role-gated, so the
- * caller needs a role that may read analytics — see AnalyticsAuthorizationTest for the boundary
- * itself; this file is only asserting the report mechanics.
+ * These endpoints used to be reachable by any authenticated user. They are now gated on the
+ * `analytics.view` permission, which the admin role holds — see AnalyticsAuthorizationTest for the
+ * boundary itself; this file is only asserting the report mechanics.
  */
 function analyticsAdmin(): User
 {

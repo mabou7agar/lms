@@ -1,22 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 
 /** Counts from 0 → `to` once scrolled into view. Wraps with prefix/suffix. */
 export function CountUp({ to, prefix = "", suffix = "", duration = 1400 }: { to: number; prefix?: string; suffix?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const [value, setValue] = useState(0);
+  const reduce = usePrefersReducedMotion();
+  const hydrated = useHydrated();
 
   useEffect(() => {
+    if (reduce) return;
     const el = ref.current;
-    if (!el) return;
-    const reduce = typeof window !== "undefined" && typeof window.matchMedia === "function"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false;
-    if (reduce || typeof IntersectionObserver === "undefined") {
-      setValue(to);
-      return;
-    }
+    if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver((entries) => {
       if (!entries[0]?.isIntersecting) return;
       io.disconnect();
@@ -31,12 +29,17 @@ export function CountUp({ to, prefix = "", suffix = "", duration = 1400 }: { to:
     }, { threshold: 0.4 });
     io.observe(el);
     return () => io.disconnect();
-  }, [to, duration]);
+  }, [to, duration, reduce]);
+
+  // Reduced motion — or environments without IntersectionObserver (e.g. jsdom) — show the final
+  // value immediately, matching the previous synchronous fallback but without a setState-in-effect.
+  const noObserver = hydrated && typeof IntersectionObserver === "undefined";
+  const display = reduce || noObserver ? to : value;
 
   return (
     <span ref={ref}>
       {prefix}
-      {value}
+      {display}
       {suffix}
     </span>
   );

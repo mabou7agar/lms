@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,12 @@ class AssignCorrelationId
         // Make it visible to ApiResponse::correlationId() and downstream code.
         $request->headers->set(self::HEADER, $correlationId);
         Log::withContext(['correlation_id' => $correlationId]);
+
+        // M2 — propagate into queued work. Laravel's Context is serialized into each job's payload
+        // and rehydrated in the worker, so a job dispatched during this request keeps this
+        // correlation id in its log lines (CorrelationProcessor reads it back). This is the fix for
+        // correlation ids never reaching async delivery.
+        Context::add('correlation_id', $correlationId);
 
         /** @var Response $response */
         $response = $next($request);

@@ -85,3 +85,21 @@ it('selects the gateway by config (fake default, stripe when configured)', funct
     config()->set('services.stripe', ['base_url' => 'https://api.stripe.com', 'secret' => 'sk', 'webhook_secret' => 'wh', 'webhook_tolerance' => 300]);
     expect(app(GatewayManager::class)->resolve())->toBeInstanceOf(StripeGateway::class);
 });
+
+it('refuses to resolve the fake gateway in production', function () {
+    // The fake gateway approves every charge. Resolving it in production means real orders are
+    // fulfilled without a real payment, so a misconfigured (or unset) provider must fail loudly at
+    // boot rather than silently degrade into free checkout.
+    config()->set('app.env', 'production');
+    config()->set('commerce.payment.provider', 'fake');
+
+    app(GatewayManager::class)->resolve();
+})->throws(RuntimeException::class);
+
+it('still resolves stripe in production', function () {
+    config()->set('app.env', 'production');
+    config()->set('commerce.payment.provider', 'stripe');
+    config()->set('services.stripe', ['base_url' => 'https://api.stripe.com', 'secret' => 'sk', 'webhook_secret' => 'wh', 'webhook_tolerance' => 300]);
+
+    expect(app(GatewayManager::class)->resolve())->toBeInstanceOf(StripeGateway::class);
+});

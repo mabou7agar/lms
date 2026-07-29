@@ -10,5 +10,6 @@ use Illuminate\Support\Facades\Route;
  |    keys are emitted — never any flag internals.
  */
 Route::prefix('v1')->group(function (): void {
-    Route::get('feature-flags', [FeatureFlagController::class, 'index']);
+    // M9 — per-page-load config payload; throttled via the shared public-config limiter.
+    Route::get('feature-flags', [FeatureFlagController::class, 'index'])->middleware('throttle:public-config');
 });

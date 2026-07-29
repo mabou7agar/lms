@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, hasSession, sessionLogin, sessionLogout, type ApiRequestError } from "@/lib/api/client";
+import { useHydrated } from "@/hooks/use-hydrated";
 import type { AuthUser } from "@/types/api";
 
 type AuthState = {
@@ -44,13 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthState["status"]>("loading");
 
-  const refresh = useCallback(async () => {
-    if (!hasSession()) {
-      writeCachedUser(null);
-      setStatus("guest");
-      setUser(null);
-      return;
-    }
+  // Network revalidation (assumes a session exists). Every state update happens AFTER the await, so
+  // it is asynchronous external work — never a synchronous cascade inside an effect body.
+  const revalidate = useCallback(async () => {
     try {
       const me = await api.data<AuthUser>("profile");
       setUser(me);
@@ -70,17 +67,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    // Hydrate optimistically from cache (avoids the full-page loading flash), then revalidate.
+  const refresh = useCallback(async () => {
+    if (!hasSession()) {
+      writeCachedUser(null);
+      setStatus("guest");
+      setUser(null);
+      return;
+    }
+    await revalidate();
+  }, [revalidate]);
+
+  // Optimistically hydrate from the client-only cache once, after hydration (adjust-state-while-
+  // rendering, tracked in state — never a ref, which cannot be touched during render). Avoids the
+  // full-page loading flash without a setState-in-effect, and never runs during SSR.
+  const hydrated = useHydrated();
+  const [primedFromCache, setPrimedFromCache] = useState(false);
+  if (hydrated && !primedFromCache) {
+    setPrimedFromCache(true);
     if (hasSession()) {
       const cached = readCachedUser();
       if (cached) {
         setUser(cached);
         setStatus("authenticated");
       }
+    } else {
+      // No session: resolve straight to guest (was previously done by refresh's sync branch).
+      setStatus("guest");
     }
-    void refresh();
-  }, [refresh]);
+  }
+
+  useEffect(() => {
+    // Revalidate against the API on mount when a session exists. Inlined as an async IIFE so every
+    // state update provably happens AFTER the await — asynchronous external work, never a synchronous
+    // cascade in the effect body. `refresh()`/`revalidate()` remain for the consumer-triggered paths.
+    if (!hasSession()) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = await api.data<AuthUser>("profile");
+        if (cancelled) return;
+        setUser(me);
+        writeCachedUser(me);
+        setStatus("authenticated");
+      } catch {
+        if (cancelled) return;
+        if (typeof document !== "undefined") {
+          document.cookie = "helbaron_authed=; path=/; max-age=0; SameSite=Lax";
+        }
+        writeCachedUser(null);
+        setUser(null);
+        setStatus("guest");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = useCallback(async (email: string, password: string, mfaCode?: string) => {
     const { user: me } = await sessionLogin({

@@ -8,5 +8,6 @@ use Illuminate\Support\Facades\Route;
  |  - GET /branding   public, read-only, cacheable (the defaults-merged branding payload).
  */
 Route::prefix('v1')->group(function (): void {
-    Route::get('branding', [BrandingController::class, 'show']);
+    // M9 — per-page-load config payload; throttled via the shared public-config limiter.
+    Route::get('branding', [BrandingController::class, 'show'])->middleware('throttle:public-config');
 });

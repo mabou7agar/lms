@@ -1,11 +1,5 @@
 deptrac:
   skip_violations:
-    App\Platform\Homepage\Models\HomepageSectionVersion:
-      - App\Platform\Identity\Models\User
-    App\Platform\Homepage\Services\HomepageContentResolver:
-      - App\Domains\Catalog\Models\Category
-      - App\Domains\Catalog\Models\Course
-      - App\Domains\Live\Models\LiveSession
     App\Contexts\Analytics\Listeners\MetricEventSubscriber:
       - App\Contexts\Commerce\Events\OrderPaid
       - App\Contexts\Learning\Events\CourseCompleted
@@ -14,6 +8,28 @@ deptrac:
       - App\Domains\Crm\Events\ConsultingRequestCreated
       - App\Domains\Live\Events\SessionCompleted
       - App\Platform\Identity\Events\UserRegistered
+    App\Contexts\Analytics\Services\Reports\ReportingService:
+      - App\Contexts\Commerce\Enums\TransactionStatus
+      - App\Contexts\Commerce\Enums\TransactionType
+      - App\Contexts\Commerce\Models\CouponRedemption
+      - App\Contexts\Commerce\Models\Order
+      - App\Contexts\Commerce\Models\OrderItem
+      - App\Contexts\Commerce\Models\PaymentTransaction
+      - App\Contexts\Learning\Enums\EnrollmentStatus
+      - App\Contexts\Learning\Enums\LessonProgressStatus
+      - App\Contexts\Learning\Models\Enrollment
+      - App\Contexts\Learning\Models\LessonProgress
+      - App\Domains\Certification\Enums\CertificateStatus
+      - App\Domains\Certification\Models\Certificate
+      - App\Domains\Crm\Models\ConsultingRequest
+      - App\Domains\Crm\Models\CrmActivity
+      - App\Domains\Crm\Models\Lead
+      - App\Domains\Crm\Models\Opportunity
+      - App\Domains\Crm\Models\Organization
+      - App\Domains\Live\Enums\RegistrationStatus
+      - App\Domains\Live\Models\LiveSession
+      - App\Domains\Live\Models\SessionAttendance
+      - App\Domains\Live\Models\SessionRegistration
     App\Contexts\Commerce\Actions\Payment\FulfillOrderAction:
       - App\Contexts\Learning\Actions\Enrollment\GrantEnrollmentAction
       - App\Contexts\Learning\Enums\EnrollmentSource
@@ -52,6 +68,8 @@ deptrac:
     App\Domains\Authoring\Curriculum\CurriculumReadAdapter:
       - App\Domains\Catalog\Enums\CourseStatus
       - App\Domains\Catalog\Models\Course
+    App\Domains\Authoring\Database\Factories\ModuleFactory:
+      - App\Domains\Catalog\Models\Course
     App\Domains\Authoring\Database\Factories\SectionFactory:
       - App\Domains\Catalog\Models\Course
     App\Domains\Authoring\Database\Seeders\AuthoringSeeder:
@@ -61,6 +79,8 @@ deptrac:
     App\Domains\Authoring\Http\Controllers\Api\V1\Admin\CurriculumAdminController:
       - App\Domains\Catalog\Models\Course
     App\Domains\Authoring\Http\Controllers\Api\V1\Admin\SectionAdminController:
+      - App\Domains\Catalog\Models\Course
+    App\Domains\Authoring\Models\Module:
       - App\Domains\Catalog\Models\Course
     App\Domains\Authoring\Models\Section:
       - App\Domains\Catalog\Models\Course
@@ -113,6 +133,12 @@ deptrac:
       - App\Domains\Crm\Models\Lead
       - App\Domains\Live\Models\LiveSession
       - App\Platform\Notifications\Models\Notification
+    App\Platform\Homepage\Models\HomepageSectionVersion:
+      - App\Platform\Identity\Models\User
+    App\Platform\Homepage\Services\HomepageContentResolver:
+      - App\Domains\Catalog\Models\Category
+      - App\Domains\Catalog\Models\Course
+      - App\Domains\Live\Models\LiveSession
     App\Platform\Notifications\Database\Factories\NotificationFactory:
       - App\Platform\Identity\Models\User
     App\Platform\Notifications\Listeners\NotificationEventSubscriber:
@@ -121,29 +147,8 @@ deptrac:
       - App\Contexts\Learning\Events\UserEnrolled
       - App\Domains\Certification\Events\CertificateIssued
       - App\Domains\Crm\Events\ConsultingRequestCreated
+      - App\Domains\Live\Events\SessionReminderDue
       - App\Domains\Live\Events\SessionScheduled
       - App\Platform\Identity\Events\UserRegistered
     App\Providers\AdminPanelProvider:
       - App\Platform\Identity\Http\Middleware\EnforceAdminMfa
-    App\Contexts\Analytics\Services\Reports\ReportingService:
-      - App\Contexts\Commerce\Enums\TransactionStatus
-      - App\Contexts\Commerce\Enums\TransactionType
-      - App\Contexts\Commerce\Models\CouponRedemption
-      - App\Contexts\Commerce\Models\Order
-      - App\Contexts\Commerce\Models\OrderItem
-      - App\Contexts\Commerce\Models\PaymentTransaction
-      - App\Contexts\Learning\Enums\EnrollmentStatus
-      - App\Contexts\Learning\Enums\LessonProgressStatus
-      - App\Contexts\Learning\Models\Enrollment
-      - App\Contexts\Learning\Models\LessonProgress
-      - App\Domains\Certification\Enums\CertificateStatus
-      - App\Domains\Certification\Models\Certificate
-      - App\Domains\Crm\Models\ConsultingRequest
-      - App\Domains\Crm\Models\CrmActivity
-      - App\Domains\Crm\Models\Lead
-      - App\Domains\Crm\Models\Opportunity
-      - App\Domains\Crm\Models\Organization
-      - App\Domains\Live\Enums\RegistrationStatus
-      - App\Domains\Live\Models\LiveSession
-      - App\Domains\Live\Models\SessionAttendance
-      - App\Domains\Live\Models\SessionRegistration

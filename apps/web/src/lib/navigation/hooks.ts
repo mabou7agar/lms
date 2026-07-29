@@ -20,10 +20,7 @@ export function useNavigation(location?: MenuLocation): NavNode[] | null {
   const [raw, setRaw] = useState<NavNode[] | null>(null);
 
   useEffect(() => {
-    if (!location) {
-      setRaw(null);
-      return;
-    }
+    if (!location) return;
     let active = true;
     void getNavigation(location).then((res) => {
       if (active) setRaw(res);
@@ -33,7 +30,9 @@ export function useNavigation(location?: MenuLocation): NavNode[] | null {
     };
   }, [location]);
 
-  if (!raw) return null;
+  // No location (or not loaded yet) → return null so the caller renders its hardcoded fallback.
+  // Deriving this avoids a setState-in-effect purely to clear `raw`.
+  if (!location || !raw) return null;
 
   return resolveNav(raw, {
     locale,

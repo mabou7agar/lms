@@ -10,7 +10,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $user_id
+ * @property string $type
+ * @property array<string, mixed>|null $data
+ * @property string $locale
+ * @property string|null $dedup_key
+ * @property Carbon|null $created_at
+ */
 class Notification extends Model
 {
     /** @use HasFactory<NotificationFactory> */
@@ -18,7 +27,7 @@ class Notification extends Model
 
     use HasPublicId;
 
-    protected $fillable = ['user_id', 'category', 'type', 'title', 'body', 'data', 'locale', 'read_at', 'archived_at'];
+    protected $fillable = ['user_id', 'category', 'type', 'title', 'body', 'data', 'locale', 'dedup_key', 'read_at', 'archived_at'];
 
     protected function casts(): array
     {

@@ -12,6 +12,7 @@ use App\Domains\Catalog\Http\Resources\Instructor\InstructorCourseResource;
 use App\Domains\Catalog\Http\Resources\Instructor\ReadinessReportResource;
 use App\Domains\Catalog\Models\Course;
 use App\Domains\Catalog\Services\InstructorAnalyticsService;
+use App\Platform\Shared\Publishing\Data\ChangeSummary;
 use App\Platform\Shared\Publishing\Data\CourseReadinessInput;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,12 @@ class CourseController extends InstructorController
         }
 
         $courses = $query->latest('id')->get();
-        $courses->each(fn (Course $c) => $c->setAttribute('stats_payload', $analytics->courseStats($c)));
+
+        // H3: batch the per-course analytics (enrollment aggregates + quiz pass rates) into two
+        // queries for the whole list instead of ~3 per course. The payload each course receives is
+        // identical to the previous courseStats($c) call, so the response shape is unchanged.
+        $stats = $analytics->courseStatsForCourses($courses);
+        $courses->each(fn (Course $c) => $c->setAttribute('stats_payload', $stats[(int) $c->getKey()] ?? []));
 
         return ApiResponse::success(InstructorCourseResource::collection($courses));
     }
@@ -66,9 +72,25 @@ class CourseController extends InstructorController
             description: $course->getAttribute('description'),
             thumbnailPath: $course->getAttribute('thumbnail_path'),
             hasInstructor: $course->trainerLinks()->exists(),
+            visibility: $course->getAttribute('visibility')?->value,
         ));
 
         return ApiResponse::success(new ReadinessReportResource($report));
+    }
+
+    /**
+     * GET /teach/courses/{course}/changes — draft-vs-published change summary.
+     *
+     * Always reports unavailable today: no published snapshot is persisted, so there is nothing to
+     * compare against. See ChangeSummary for why fabricating one from timestamps would be worse
+     * than saying so. The endpoint exists now so the contract is fixed and the frontend needs no
+     * change when snapshots land.
+     */
+    public function changes(Request $request, Course $course): JsonResponse
+    {
+        $this->ownedCourse($request, $course);
+
+        return ApiResponse::success(ChangeSummary::noBaseline()->toArray());
     }
 
     public function publish(Request $request, Course $course, PublishCourseAction $action, InstructorAnalyticsService $analytics): JsonResponse

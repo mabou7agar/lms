@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\Route;
  | Live Learning endpoints. Base 'api' prefix + these => /api/v1/*.
  */
 Route::prefix('v1')->group(function (): void {
-    // Public listing/detail
-    Route::get('live-sessions', [LiveSessionController::class, 'index']);
-    Route::get('live-sessions/{session}', [LiveSessionController::class, 'show']);
+    // Public listing/detail (M9 — throttled; the rest of this file is auth:sanctum).
+    Route::middleware('throttle:public-read')->group(function (): void {
+        Route::get('live-sessions', [LiveSessionController::class, 'index']);
+        Route::get('live-sessions/{session}', [LiveSessionController::class, 'show']);
+    });
 
     // Authenticated participation
     Route::middleware('auth:sanctum')->group(function (): void {

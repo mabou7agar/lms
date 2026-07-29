@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { applyApiFieldErrors, errorMessage } from "@/lib/api/errors";
@@ -43,11 +43,10 @@ function InviteMemberForm({ orgId }: { orgId: string }) {
   });
 
   const {
+    control,
     register,
     handleSubmit,
     setError,
-    setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<InviteValues>({ resolver: zodResolver(schema), defaultValues: { email: "", role: "member" } });
@@ -74,18 +73,24 @@ function InviteMemberForm({ orgId }: { orgId: string }) {
         <Input id="invite-email" type="email" placeholder={t("org.invite.emailPlaceholder")} {...register("email")} />
       </Field>
       <Field id="invite-role" label={t("org.invite.role")} error={errors.role?.message}>
-        <Select value={watch("role")} onValueChange={(val) => setValue("role", val as MemberRole)}>
-          <SelectTrigger id="invite-role">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ROLES.map((r) => (
-              <SelectItem key={r} value={r}>
-                {t(`org.roles.${r}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={(val) => field.onChange(val as MemberRole)}>
+              <SelectTrigger id="invite-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {t(`org.roles.${r}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </Field>
       <Button type="submit" disabled={invite.isPending} className="w-full">
         <UserPlus className="size-4" aria-hidden />

@@ -32,8 +32,17 @@ function LessonInner() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const startedRef = useRef(false);
   const [noteText, setNoteText] = useState("");
+  const [seededFrom, setSeededFrom] = useState<unknown>(null);
 
   const data = query.data;
+
+  // Seed the note editor from the loaded note — during render (React's adjust-state-while-rendering
+  // pattern) instead of an effect. Tracking the seeded payload in STATE (not a ref, which cannot be
+  // touched during render) runs this once per distinct lesson payload, matching the prior [data] effect.
+  if (data && seededFrom !== data) {
+    setSeededFrom(data);
+    setNoteText(data.note ?? "");
+  }
 
   // Mark as started once, when a not-started lesson loads.
   useEffect(() => {
@@ -42,11 +51,6 @@ function LessonInner() {
       progress.mutate({ status: "in_progress" });
     }
   }, [data, progress]);
-
-  // Sync the note editor with the loaded note.
-  useEffect(() => {
-    if (data) setNoteText(data.note ?? "");
-  }, [data]);
 
   if (query.isPending) return <LoadingState />;
   if (query.isError) return <ErrorState message={errorMessage(query.error, t("common.error"))} onRetry={() => query.refetch()} />;

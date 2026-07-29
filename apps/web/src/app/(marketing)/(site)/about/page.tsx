@@ -4,6 +4,7 @@ import { ContentPage } from "@/components/marketing/content-page";
 import { CmsPage } from "@/components/marketing/cms-page";
 import { getStaticPage, type StaticPage } from "@/lib/pages/api";
 import { buildPageMetadata, pageJsonLd } from "@/lib/pages/metadata";
+import { jsonLdScript } from "@/lib/seo/json-ld";
 
 const SLUG = "about";
 
@@ -113,8 +114,7 @@ export default async function AboutPage() {
       {jsonLd ? (
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
       ) : null}
       <CmsPage page={page} />

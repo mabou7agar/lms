@@ -116,7 +116,15 @@ export default function LeadsPage() {
     const id = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(id);
   }, [q]);
-  useEffect(() => setPage(1), [debouncedQ, status]);
+
+  // Reset to page 1 when the search/filter changes — during render (React's "adjust state while
+  // rendering" pattern) rather than in an effect, avoiding the extra cascading render.
+  const filterKey = `${debouncedQ}|${status}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
 
   const query = useLeads({ q: debouncedQ || undefined, status: status || undefined, page, per_page: 15 });
 

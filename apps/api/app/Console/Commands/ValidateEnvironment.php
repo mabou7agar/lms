@@ -45,6 +45,22 @@ class ValidateEnvironment extends Command
             if (config('logging.default') !== 'json' && ! in_array('json', (array) config('logging.channels.stack.channels', []), true)) {
                 $warn[] = "LOG_CHANNEL is '".config('logging.default')."' (recommend 'json' in production)";
             }
+            // Cache + queue must be shared/async backends in production. `array` cache is per-process
+            // (breaks rate limiting, analytics caching and any multi-instance deploy); `sync` queue
+            // runs every job inline in the request (defeats notifications, exports, fan-out).
+            if (config('cache.default') === 'array') {
+                $errors[] = 'CACHE_STORE is "array" (per-process, not shared) — use redis in production';
+            }
+            if (config('queue.default') === 'sync') {
+                $errors[] = 'QUEUE_CONNECTION is "sync" (jobs run inline) — use redis in production';
+            }
+            // Trusted proxies: read the raw env because it is applied inline in bootstrap/app.php with
+            // no config key. A warn, not a fail — "*" is valid behind a locked-down ALB, but should be
+            // scoped to the balancer where the network allows it.
+            $proxies = trim((string) env('TRUSTED_PROXIES', '*'));
+            if ($proxies === '*' || $proxies === '') {
+                $warn[] = 'TRUSTED_PROXIES trusts all proxies ("*") — scope it to your load balancer where possible';
+            }
             // Provider secrets required only when the real provider is selected.
             if (config('commerce.payment.provider') === 'stripe' && blank(config('services.stripe.secret'))) {
                 $errors[] = 'Stripe selected but STRIPE_SECRET is empty';

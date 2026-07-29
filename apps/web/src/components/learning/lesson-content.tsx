@@ -54,7 +54,6 @@ export function LessonContent({
       <div className="space-y-2">
         <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
           {url ? (
-            // eslint-disable-next-line jsx-a11y/media-has-caption
             <video
               ref={videoRef}
               src={url}
@@ -77,7 +76,6 @@ export function LessonContent({
     return (
       <div className="space-y-3">
         {url ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
           <audio controls src={url} className="w-full" aria-label={lesson.title} />
         ) : (
           <EmptyState title={t("learn.lesson.noContent")} />

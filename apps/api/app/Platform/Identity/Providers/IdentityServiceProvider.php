@@ -70,14 +70,19 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
 
     private function registerRateLimiters(): void
     {
-        RateLimiter::for('identity-register', fn (Request $r) => Limit::perMinute(6)->by($r->ip()));
+        // M9 — key on email + IP, matching the login limiter. IP alone let a distributed source
+        // spray registrations/resets across many addresses; adding the credential means one email
+        // can't be targeted from across the network and one IP can't spray many accounts.
+        RateLimiter::for('identity-register', fn (Request $r) => Limit::perMinute(6)
+            ->by(strtolower((string) $r->input('email')).'|'.$r->ip()));
 
         // Login keyed by email + IP: one attacker can't lock every account, and one account
         // can't be brute-forced from across the network.
         RateLimiter::for('identity-login', fn (Request $r) => Limit::perMinute(10)
             ->by(strtolower((string) $r->input('email')).'|'.$r->ip()));
 
-        RateLimiter::for('identity-password', fn (Request $r) => Limit::perMinute(6)->by($r->ip()));
+        RateLimiter::for('identity-password', fn (Request $r) => Limit::perMinute(6)
+            ->by(strtolower((string) $r->input('email')).'|'.$r->ip()));
 
         RateLimiter::for('identity-otp-verify', fn (Request $r) => Limit::perMinute(10)
             ->by(optional($r->user())->getAuthIdentifier() ?? $r->ip()));

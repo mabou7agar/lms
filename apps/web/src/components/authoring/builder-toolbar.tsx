@@ -2,22 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Eye, PanelLeft, PanelRight, Redo2, Rocket, TriangleAlert, Undo2 } from "lucide-react";
+import { ArrowLeft, Eye, History, PanelLeft, PanelRight, Redo2, Rocket, TriangleAlert, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth/auth-context";
 import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
+import { useVersioningI18n } from "@/lib/authoring/versioning-i18n";
 import { useBuilder } from "@/lib/authoring/builder-store";
 import { errorCount } from "@/lib/authoring/validation";
 import { useTeachCourse } from "@/lib/teach/hooks";
 import { AutosaveIndicator } from "./autosave-indicator";
 import { PublishReadinessPanel } from "./publish-readiness-panel";
+import { VersionHistoryPanel } from "./versioning/version-history-panel";
 
 export function BuilderToolbar({ onOpenTree, onOpenInspector }: { onOpenTree: () => void; onOpenInspector: () => void }) {
   const { t } = useAuthoringI18n();
+  const { t: tv } = useVersioningI18n();
   const builder = useBuilder();
   const { data } = useTeachCourse(builder.courseId);
+  const { user } = useAuth();
   const errors = errorCount(builder.issues);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+
+  // Permission-aware actions. Restore/rollback replace the draft, so they are limited to the
+  // stronger roles; the backend enforces the same rule and any refusal is surfaced verbatim.
+  const roles = user?.roles ?? [];
+  const canRestore = roles.some((role) => role === "super_admin" || role === "admin");
+  const canManage = canRestore || roles.includes("instructor");
 
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-1.5 border-b border-border bg-background/95 px-2 backdrop-blur sm:px-3">
@@ -52,6 +64,10 @@ export function BuilderToolbar({ onOpenTree, onOpenInspector }: { onOpenTree: ()
         </Button>
       </div>
 
+      <Button variant="ghost" size="icon" onClick={() => setVersionsOpen(true)} aria-label={tv("versions.title")}>
+        <History className="size-4" aria-hidden />
+      </Button>
+
       <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
         <Link href={`/courses/${builder.courseId}`} target="_blank" rel="noopener noreferrer">
           <Eye className="size-4" aria-hidden />
@@ -69,6 +85,13 @@ export function BuilderToolbar({ onOpenTree, onOpenInspector }: { onOpenTree: ()
       </Button>
 
       <PublishReadinessPanel courseId={builder.courseId} open={publishOpen} onOpenChange={setPublishOpen} />
+      <VersionHistoryPanel
+        courseId={builder.courseId}
+        open={versionsOpen}
+        onOpenChange={setVersionsOpen}
+        canManage={canManage}
+        canRestore={canRestore}
+      />
     </header>
   );
 }

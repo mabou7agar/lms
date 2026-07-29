@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Route;
  | Both are unauthenticated; the frontend filters by role/auth/locale/flag client-side and keeps a
  | hardcoded fallback so navigation never disappears.
  */
-Route::prefix('v1')->group(function (): void {
+// M9 — per-page-load config payloads; throttled via the shared public-config limiter.
+Route::prefix('v1')->middleware('throttle:public-config')->group(function (): void {
     Route::get('navigation', [NavigationController::class, 'index']);
     Route::get('navigation/{location}', [NavigationController::class, 'show']);
 });

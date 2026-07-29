@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { defaultLocale, isLocale, isRtl, localeCookieName, type Locale } from "./config";
 import { dictionaries } from "./dictionaries";
 
@@ -41,20 +42,30 @@ export function I18nProvider({ children, initialLocale = defaultLocale }: { chil
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
+    // Persist so the server layout can render the right lang/dir on the next request. The <html>
+    // lang/dir attributes are reflected by the effect below whenever `locale` changes.
     if (typeof document !== "undefined") {
-      document.documentElement.lang = next;
-      document.documentElement.dir = isRtl(next) ? "rtl" : "ltr";
-      // Persist so the server layout can render the right lang/dir on the next request.
       document.cookie = `${localeCookieName}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
     }
   }, []);
 
-  // Initialize from the persisted cookie on mount (covers statically rendered pages).
-  useEffect(() => {
+  // Reconcile once from the persisted cookie after hydration (covers statically rendered pages) —
+  // during render, tracked in state, so there is no setState-in-effect and no SSR mismatch.
+  const hydrated = useHydrated();
+  const [reconciled, setReconciled] = useState(false);
+  if (hydrated && !reconciled) {
+    setReconciled(true);
     const persisted = readLocaleCookie();
-    if (persisted && persisted !== locale) setLocale(persisted);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
-  }, []);
+    if (persisted && persisted !== locale) setLocaleState(persisted);
+  }
+
+  // Reflect the active locale onto <html lang/dir> — a genuine external-system sync, so an effect is
+  // the correct tool here (it sets no React state).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = locale;
+    document.documentElement.dir = isRtl(locale) ? "rtl" : "ltr";
+  }, [locale]);
 
   const value = useMemo<I18nContextValue>(() => {
     const dict = dictionaries[locale] as unknown as Record<string, unknown>;

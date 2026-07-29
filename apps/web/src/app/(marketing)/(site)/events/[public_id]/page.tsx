@@ -6,6 +6,7 @@ import { getSeo } from "@/lib/seo/api";
 import { resolveLocale } from "@/lib/seo/locale";
 import { buildMetadata, seoJsonLd } from "@/lib/seo/metadata";
 import { EventDetailsClient } from "./event-details-client";
+import { jsonLdScript } from "@/lib/seo/json-ld";
 
 /** Deduped server-side fetch shared by generateMetadata and the page render. */
 const loadEvent = cache(async (publicId: string): Promise<EventDetail | null> => {
@@ -65,8 +66,7 @@ export default async function EventDetailsPage({ params }: Params) {
     <>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <EventDetailsClient event={event} />
     </>

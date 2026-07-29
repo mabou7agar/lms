@@ -99,6 +99,14 @@ class AdminPanelProvider extends PanelProvider
             $panel->discoverResources(in: app_path($path), for: $namespace);
         }
 
+        // Sprint 4 (H5): notification delivery health widget. Discovered by path/namespace string —
+        // NOT a class import — so the composition root gains no compile-time dependency on the
+        // Notifications context (keeps Deptrac boundaries intact).
+        $panel->discoverWidgets(
+            in: app_path('Platform/Notifications/Filament/Widgets'),
+            for: 'App\\Platform\\Notifications\\Filament\\Widgets',
+        );
+
         return $panel;
     }
 }

@@ -7,6 +7,7 @@ use App\Contexts\Learning\Events\CourseCompleted;
 use App\Contexts\Learning\Events\UserEnrolled;
 use App\Domains\Certification\Events\CertificateIssued;
 use App\Domains\Crm\Events\ConsultingRequestCreated;
+use App\Domains\Live\Events\SessionReminderDue;
 use App\Domains\Live\Events\SessionScheduled;
 use App\Platform\Identity\Events\UserRegistered;
 use App\Platform\Notifications\Enums\NotificationCategory;
@@ -49,18 +50,16 @@ class NotificationEventSubscriber
 
     public function onCertificateIssued(CertificateIssued $event): void
     {
-        if ($event->certificate->user_id !== null) {
-            $this->dispatcher->dispatchToUserId($event->certificate->user_id, NotificationCategory::Certification, 'certificate_ready', ['number' => $event->certificate->number]);
-        }
+        // certificates.user_id is a non-nullable FK, so the holder id is always present.
+        $this->dispatcher->dispatchToUserId($event->certificate->user_id, NotificationCategory::Certification, 'certificate_ready', ['number' => $event->certificate->number]);
     }
 
     public function onSessionScheduled(SessionScheduled $event): void
     {
         // Announce to registered participants.
         foreach ($event->session->registrations()->where('status', 'registered')->get() as $registration) {
-            if ($registration->user_id !== null) {
-                $this->dispatcher->dispatchToUserId($registration->user_id, NotificationCategory::Live, 'session_scheduled', ['title' => $event->session->title]);
-            }
+            // session_registrations.user_id is a non-nullable FK.
+            $this->dispatcher->dispatchToUserId($registration->user_id, NotificationCategory::Live, 'session_scheduled', ['title' => $event->session->title]);
         }
     }
 
@@ -68,6 +67,26 @@ class NotificationEventSubscriber
     {
         if ($event->request->requested_by !== null) {
             $this->dispatcher->dispatchToUserId($event->request->requested_by, NotificationCategory::Crm, 'consulting_ack', ['subject' => $event->request->subject]);
+        }
+    }
+
+    /**
+     * H9 — a due session reminder. Same participant fan-out as onSessionScheduled, but keyed on the
+     * reminder id so each (reminder, learner) is delivered exactly once (the explicit dedup key makes
+     * retries and concurrent runs safe, and keeps two reminders for the same session distinct).
+     */
+    public function onSessionReminderDue(SessionReminderDue $event): void
+    {
+        foreach ($event->session->registrations()->where('status', 'registered')->get() as $registration) {
+            // session_registrations.user_id is a non-nullable FK.
+            $this->dispatcher->dispatchToUserId(
+                $registration->user_id,
+                NotificationCategory::Live,
+                'session_reminder',
+                ['title' => $event->session->title],
+                null,
+                'session-reminder:'.$event->reminderId.':user:'.$registration->user_id,
+            );
         }
     }
 
@@ -80,6 +99,7 @@ class NotificationEventSubscriber
             OrderPaid::class => 'onOrderPaid',
             CertificateIssued::class => 'onCertificateIssued',
             SessionScheduled::class => 'onSessionScheduled',
+            SessionReminderDue::class => 'onSessionReminderDue',
             ConsultingRequestCreated::class => 'onConsultingRequestCreated',
         ];
     }

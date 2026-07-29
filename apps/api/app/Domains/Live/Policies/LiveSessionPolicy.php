@@ -19,7 +19,10 @@ class LiveSessionPolicy extends BasePolicy
 
     public function manage(Actor $user): bool
     {
-        return $user->can('live.sessions.manage');
+        // M10 — hasPermission(), not can(): under auth:sanctum, `$user->can()` resolves the request
+        // guard (not the `web` guard permissions are seeded against) and answers false even for a
+        // genuine holder, so live-session management was unreachable for anyone but super_admin.
+        return $user->hasPermission('live.sessions.manage');
     }
 
     public function view(Actor $user, LiveSession $session): bool

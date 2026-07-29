@@ -15,8 +15,10 @@ Route::prefix('v1')->group(function (): void {
     // Public listing
     Route::get('products', [ProductController::class, 'index']);
 
-    // Provider webhook (public; signature verified inside the gateway)
-    Route::post('payment/webhook', [PaymentWebhookController::class, 'handle']);
+    // Provider webhook (public; signature verified inside the gateway). Throttled per source IP as
+    // defence in depth — the signature is the real control (see commerce-webhook limiter).
+    Route::post('payment/webhook', [PaymentWebhookController::class, 'handle'])
+        ->middleware('throttle:commerce-webhook');
 
     // Authenticated commerce
     Route::middleware('auth:sanctum')->group(function (): void {

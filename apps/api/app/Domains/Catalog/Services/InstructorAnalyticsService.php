@@ -8,10 +8,14 @@ use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Shared\Assessment\Contracts\AssessmentStatsPort;
+use App\Platform\Shared\Assessment\Data\AssessmentPassRate;
 use App\Platform\Shared\Curriculum\Contracts\CurriculumReadPort;
 use App\Platform\Shared\Curriculum\Data\CourseRef;
 use App\Platform\Shared\Curriculum\Data\LessonRef;
 use App\Platform\Shared\Curriculum\Data\SectionRef;
+use App\Platform\Shared\Learning\Contracts\EnrollmentStatsPort;
+use App\Platform\Shared\Learning\Data\EnrollmentStats;
+use Illuminate\Support\Collection;
 
 /**
  * Read-only analytics for the Instructor Portal. Concentrates the (baselined) cross-context
@@ -24,6 +28,7 @@ class InstructorAnalyticsService
         private readonly CurriculumReadPort $curriculum,
         private readonly UserLookupPort $users,
         private readonly AssessmentStatsPort $assessments,
+        private readonly EnrollmentStatsPort $enrollments,
     ) {}
 
     /**
@@ -36,28 +41,78 @@ class InstructorAnalyticsService
      */
     public function courseStats(Course $course): array
     {
-        $agg = Enrollment::query()
-            ->where('course_id', $course->id)
-            ->toBase()
-            ->selectRaw('count(*) as total')
-            ->selectRaw('coalesce(sum(case when status = ? then 1 else 0 end), 0) as completions', [EnrollmentStatus::Completed->value])
-            ->selectRaw('coalesce(round(avg(progress_percentage)), 0) as avg_progress')
-            ->first();
+        $id = (int) $course->getKey();
 
-        $tree = $this->curriculum->curriculumTree($course->id, false);
-        $sections = count($tree['sections']);
-        $lessons = array_sum(array_map(static fn (array $s): int => count($s['lessons']), $tree['sections']));
+        // M6: the enrollment aggregate now goes through EnrollmentStatsPort — the ONE canonical
+        // calculator — instead of a fourth open-coded copy of the same count/sum/avg SQL. Same
+        // grain (no window), so the figures are byte-identical to the previous inline query.
+        $stats = $this->enrollments->statsPerCourse([$id])[$id];
+
+        $tree = $this->curriculum->curriculumTree($id, false);
 
         // Quiz outcomes come through a port: Catalog may not read Assessment's tables, and
         // Assessment may not walk Authoring's curriculum. Each side answers only its own question.
         $passRate = $this->assessments->passRateForLessons($this->lessonIds($tree));
 
+        return $this->buildCourseStats($stats, $tree, $passRate);
+    }
+
+    /**
+     * H3: the same per-course stats for MANY courses without a query-per-course. Enrollment
+     * aggregates and quiz outcomes are each computed in ONE batched round trip (statsPerCourse /
+     * passRateForLessonGroups); the curriculum tree is read per course, exactly as the existing
+     * paginated CoursePerformanceService does, because it is a structural read, not an aggregate.
+     * Each returned payload is byte-identical to courseStats() for that course.
+     *
+     * @param  iterable<int, Course>  $courses
+     * @return array<int, array{enrollments:int,completions:int,avg_progress:int,sections:int,lessons:int,assessment_pass_rate:int|null,graded_attempts:int}>
+     */
+    public function courseStatsForCourses(iterable $courses): array
+    {
+        /** @var Collection<int, Course> $courses */
+        $courses = collect($courses);
+        $ids = array_values($courses->map(static fn (Course $c): int => (int) $c->getKey())->all());
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $statsByCourse = $this->enrollments->statsPerCourse($ids);
+
+        /** @var array<int, array{course: ?CourseRef, sections: list<array{section: SectionRef, lessons: list<LessonRef>}>}> $trees */
+        $trees = [];
+        /** @var array<int, list<int>> $lessonGroups */
+        $lessonGroups = [];
+
+        foreach ($courses as $course) {
+            $id = (int) $course->getKey();
+            $trees[$id] = $this->curriculum->curriculumTree($id, false);
+            $lessonGroups[$id] = $this->lessonIds($trees[$id]);
+        }
+
+        $passRates = $this->assessments->passRateForLessonGroups($lessonGroups);
+
+        $result = [];
+        foreach ($courses as $course) {
+            $id = (int) $course->getKey();
+            $result[$id] = $this->buildCourseStats($statsByCourse[$id], $trees[$id], $passRates[$id]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array{course: ?CourseRef, sections: list<array{section: SectionRef, lessons: list<LessonRef>}>}  $tree
+     * @return array{enrollments:int,completions:int,avg_progress:int,sections:int,lessons:int,assessment_pass_rate:int|null,graded_attempts:int}
+     */
+    private function buildCourseStats(EnrollmentStats $stats, array $tree, AssessmentPassRate $passRate): array
+    {
         return [
-            'enrollments' => (int) ($agg->total ?? 0),
-            'completions' => (int) ($agg->completions ?? 0),
-            'avg_progress' => (int) ($agg->avg_progress ?? 0),
-            'sections' => $sections,
-            'lessons' => $lessons,
+            'enrollments' => $stats->enrollments,
+            'completions' => $stats->completions,
+            'avg_progress' => $stats->averageProgress,
+            'sections' => count($tree['sections']),
+            'lessons' => array_sum(array_map(static fn (array $s): int => count($s['lessons']), $tree['sections'])),
             'assessment_pass_rate' => $passRate->passRate(),
             'graded_attempts' => $passRate->gradedAttempts,
         ];

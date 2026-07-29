@@ -43,6 +43,16 @@ interface CurriculumReadPort
     /** The course id a lesson belongs to (via its section), or null if unresolved. */
     public function courseIdForLesson(int $lessonId): ?int;
 
+    /**
+     * Prerequisite lesson ids for many lessons in ONE query, keyed by lesson id. Every supplied id
+     * appears in the result (an empty list when a lesson has no prerequisites), so a caller batching
+     * an access check over a whole curriculum never issues a query per lesson.
+     *
+     * @param  list<int>  $lessonIds
+     * @return array<int, list<int>>
+     */
+    public function prerequisitesForLessonIds(array $lessonIds): array;
+
     // --- Phase 3A id/ref read methods (expand). Consumed by later phases; additive. ---
 
     /** Resolve a course by its public id, or null. */

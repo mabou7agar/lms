@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 /**
  * Scroll-reveal wrapper. Adds `is-visible` once the element enters the viewport (once),
@@ -21,14 +22,11 @@ export function Reveal({
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
+  const hydrated = useHydrated();
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setShown(true);
-      return;
-    }
+    if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
@@ -42,10 +40,14 @@ export function Reveal({
     return () => io.disconnect();
   }, []);
 
+  // Without IntersectionObserver (e.g. jsdom) reveal immediately so content is never left hidden —
+  // matching the previous synchronous fallback, but derived instead of set inside the effect.
+  const visible = shown || (hydrated && typeof IntersectionObserver === "undefined");
+
   return (
     <Tag
       ref={ref}
-      className={cn("reveal", shown && "is-visible", className)}
+      className={cn("reveal", visible && "is-visible", className)}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}

@@ -283,12 +283,6 @@ parameters:
 			path: app/Contexts/Analytics/Models/ScheduledReport.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Analytics\\Models\\ExportJob\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Analytics/Policies/ExportJobPolicy.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Analytics\\Models\\ReportDefinition\:\:\$owner_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -375,13 +369,13 @@ parameters:
 		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Contexts\\Learning\\Models\\Enrollment'' from context ''Analytics''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
-			count: 8
+			count: 7
 			path: app/Contexts/Analytics/Services/Reports/ReportingService.php
 
 		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Contexts\\Learning\\Models\\LessonProgress'' from context ''Analytics''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
-			count: 4
+			count: 3
 			path: app/Contexts/Analytics/Services/Reports/ReportingService.php
 
 		-
@@ -1792,6 +1786,12 @@ parameters:
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Domains\\Catalog\\Models\\Course'' from context ''Authoring''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
 			count: 1
+			path: app/Domains/Authoring/Database/Factories/ModuleFactory.php
+
+		-
+			message: '#^Cross\-context Eloquent access\: static call on ''App\\Domains\\Catalog\\Models\\Course'' from context ''Authoring''\. Query another context only through its Port / read model\.$#'
+			identifier: helbaron.crossContextEloquent
+			count: 1
 			path: app/Domains/Authoring/Database/Seeders/AuthoringSeeder.php
 
 		-
@@ -2087,6 +2087,12 @@ parameters:
 			identifier: helbaron.crossContextModel
 			count: 1
 			path: app/Domains/Authoring/Models/Section.php
+
+		-
+			message: '#^Cross\-context Model reference\: ''App\\Domains\\Catalog\\Models\\Course'' is used from context ''Authoring''\. Access another context''s data through a Port or a published read model, not its Eloquent Model\.$#'
+			identifier: helbaron.crossContextModel
+			count: 1
+			path: app/Domains/Authoring/Models/Module.php
 
 		-
 			message: '#^Method App\\Domains\\Authoring\\Models\\Section\:\:course\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
@@ -2781,7 +2787,7 @@ parameters:
 		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Contexts\\Learning\\Models\\Enrollment'' from context ''Catalog''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
-			count: 4
+			count: 3
 			path: app/Domains/Catalog/Services/InstructorAnalyticsService.php
 
 		-
@@ -3049,12 +3055,6 @@ parameters:
 			path: app/Domains/Certification/Models/Certificate.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Policies/CertificatePolicy.php
-
-		-
 			message: '#^Property App\\Domains\\Certification\\Providers\\CertificationServiceProvider\:\:\$routeFiles type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3080,12 +3080,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Services/CertificateRenderService.php
@@ -3170,12 +3164,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_hash\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Services/SignatureService.php
@@ -4021,12 +4009,6 @@ parameters:
 			path: app/Domains/Live/Actions/Session/RescheduleSessionAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Actions/Session/ScheduleSessionAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4111,12 +4093,6 @@ parameters:
 			path: app/Domains/Live/Http/Resources/EventDetailResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Domains/Live/Http/Resources/EventDetailResource.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$course\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4165,12 +4141,6 @@ parameters:
 			path: app/Domains/Live/Http/Resources/EventListResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/EventListResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$capacity\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4202,12 +4172,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
@@ -4264,12 +4228,6 @@ parameters:
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
 			identifier: property.notFound
 			count: 2
-			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
 			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
 
 		-
@@ -4399,12 +4357,6 @@ parameters:
 			path: app/Domains/Live/Models/LiveSession.php
 
 		-
-			message: '#^Method App\\Domains\\Live\\Models\\LiveSession\:\:registrations\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Live/Models/LiveSession.php
-
-		-
 			message: '#^Method App\\Domains\\Live\\Models\\LiveSession\:\:reminders\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -4463,12 +4415,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Domains/Live/Models/SessionRegistration.php
-
-		-
-			message: '#^Method App\\Domains\\Live\\Models\\SessionReminder\:\:session\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Live/Models/SessionReminder.php
 
 		-
 			message: '#^Method App\\Domains\\Live\\Models\\SessionSeries\:\:liveCourse\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
@@ -4999,22 +4945,10 @@ parameters:
 			path: app/Platform/Notifications/Actions/MarkNotificationReadAction.php
 
 		-
-			message: '#^Match arm comparison between App\\Platform\\Notifications\\Enums\\Channel\:\:WhatsApp and App\\Platform\\Notifications\\Enums\\Channel\:\:WhatsApp is always true\.$#'
-			identifier: match.alwaysTrue
-			count: 1
-			path: app/Platform/Notifications/Channels/ChannelManager.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Platform/Notifications/Channels/Fake/FakeEmailChannel.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Channels/Fake/FakePushChannel.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>phone" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -5053,37 +4987,7 @@ parameters:
 			path: app/Platform/Notifications/Http/Requests/UpdatePreferencesRequest.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$attempts\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$channel\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$dead_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$sent_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Notifications/Http/Resources/NotificationDeliveryResource.php
@@ -5113,24 +5017,6 @@ parameters:
 			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$data\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$locale\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -5149,58 +5035,10 @@ parameters:
 			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
-
-		-
 			message: '#^Method App\\Platform\\Notifications\\Http\\Resources\\NotificationResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$attempts\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$channel\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$data\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$locale\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
-
-		-
-			message: '#^Method App\\Platform\\Notifications\\Jobs\\DeliverNotificationJob\:\:backoff\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Platform/Notifications/Jobs/DeliverNotificationJob.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
@@ -5227,12 +5065,6 @@ parameters:
 			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\ConsultingRequest\:\:\$requested_by\.$#'
 			identifier: property.notFound
 			count: 1
@@ -5245,19 +5077,7 @@ parameters:
 			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
@@ -5317,28 +5137,10 @@ parameters:
 			path: app/Platform/Notifications/Models/Notification.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Models/NotificationDelivery.php
-
-		-
-			message: '#^Method App\\Platform\\Notifications\\Models\\NotificationDelivery\:\:notification\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Platform/Notifications/Models/NotificationDelivery.php
-
-		-
 			message: '#^Method App\\Platform\\Notifications\\Models\\ScheduledAutomation\:\:rule\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
 			path: app/Platform/Notifications/Models/ScheduledAutomation.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Notifications\\Models\\Notification\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Policies/NotificationPolicy.php
 
 		-
 			message: '#^Property App\\Platform\\Notifications\\Providers\\NotificationsServiceProvider\:\:\$routeFiles type has no value type specified in iterable type array\.$#'

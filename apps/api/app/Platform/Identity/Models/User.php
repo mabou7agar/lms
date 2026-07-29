@@ -109,6 +109,24 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
     }
 
     /**
+     * Actor: guard-independent permission check.
+     *
+     * The `web` guard is pinned explicitly because permissions are seeded against it. Without that,
+     * a request authenticated by `auth:sanctum` resolves the sanctum guard, finds no matching
+     * permission row, and reports false for a user who genuinely holds it — which is why
+     * `$user->can()` has never been reliable on the API and why authorization here reads roles in
+     * places it should read permissions.
+     *
+     * `checkPermissionTo()` rather than `hasPermissionTo()`: the former returns false for an
+     * unregistered permission, the latter throws, and an authorization check should deny rather
+     * than 500 when asked about a permission that does not exist.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->checkPermissionTo($permission, 'web');
+    }
+
+    /**
      * Actor: boundary-safe projection. Reads only public display fields; never exposes the
      * $hidden secrets or account/PII internals. Uses the loaded profile relation when available.
      */

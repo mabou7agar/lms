@@ -32,6 +32,16 @@ interface Actor extends Authenticatable, Authorizable
      */
     public function hasRole($roles): bool;
 
+    /**
+     * Permission check that works under EVERY auth guard.
+     *
+     * `$user->can()` is not a safe substitute. Spatie resolves a guard when checking a permission,
+     * and under `auth:sanctum` that guard is not the `web` one permissions are registered against
+     * — so `can()` answers false even for a user who genuinely holds the permission. Implementers
+     * must pin the guard explicitly and return false (never throw) for an unknown permission.
+     */
+    public function hasPermission(string $permission): bool;
+
     /** Convenience projection of this principal to a boundary-safe UserRef. */
     public function toUserRef(): UserRef;
 }

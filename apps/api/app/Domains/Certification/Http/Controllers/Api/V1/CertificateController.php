@@ -32,11 +32,13 @@ class CertificateController extends Controller
 
         $ensure->execute($certificate);
 
-        // Return a short-lived signed URL to the stream route — never the storage path.
+        // Return a short-lived signed URL to the stream route — never the storage path. M1: the
+        // holder's id is bound into the signature (owner) and re-checked when the file is streamed,
+        // so a signed URL can only ever serve the record it was minted for.
         $url = URL::temporarySignedRoute(
             'certificates.file',
             now()->addMinutes((int) config('certification.pdf.download_ttl_minutes', 15)),
-            ['certificate' => $certificate->public_id],
+            ['certificate' => $certificate->public_id, 'owner' => $certificate->user_id],
         );
 
         return ApiResponse::success(['download_url' => $url], 'Download link ready.');

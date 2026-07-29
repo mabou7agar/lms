@@ -11,6 +11,7 @@ use App\Platform\Shared\Curriculum\Data\CourseRef;
 use App\Platform\Shared\Curriculum\Data\LessonRef;
 use App\Platform\Shared\Curriculum\Data\SectionRef;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * TEMPORARY Phase-1 adapter for CurriculumReadPort. Centralizes the model→DTO mapping that
@@ -94,6 +95,35 @@ class CurriculumReadAdapter implements CurriculumReadPort
         $courseId = Section::query()->whereKey($sectionId)->value('course_id');
 
         return $courseId !== null ? (int) $courseId : null;
+    }
+
+    /**
+     * @param  list<int>  $lessonIds
+     * @return array<int, list<int>>
+     */
+    public function prerequisitesForLessonIds(array $lessonIds): array
+    {
+        /** @var array<int, list<int>> $result */
+        $result = array_fill_keys($lessonIds, []);
+
+        if ($lessonIds === []) {
+            return $result;
+        }
+
+        // One pass over the pivot instead of $lesson->prerequisites() per lesson. Mirrors the
+        // relation exactly: prerequisites(self, 'lesson_prerequisites', 'lesson_id',
+        // 'prerequisite_lesson_id') — this lesson's prerequisites are the prerequisite_lesson_id
+        // values keyed by lesson_id. Prerequisite order within a lesson is irrelevant to callers
+        // (membership only), matching the unordered pivot pluck it replaces.
+        $rows = DB::table('lesson_prerequisites')
+            ->whereIn('lesson_id', $lessonIds)
+            ->get(['lesson_id', 'prerequisite_lesson_id']);
+
+        foreach ($rows as $row) {
+            $result[(int) $row->lesson_id][] = (int) $row->prerequisite_lesson_id;
+        }
+
+        return $result;
     }
 
     // --- Phase 3A id/ref read methods (expand). Additive; not yet wired to any caller. ---

@@ -17,13 +17,17 @@ class CertificatePolicy extends BasePolicy
         return null;
     }
 
+    // M10 — hasPermission(), not can(): under auth:sanctum, `$user->can()` resolves the request
+    // guard rather than the `web` guard the permissions are seeded against, so it answers false even
+    // for a genuine holder — leaving certificate revoke/reissue (and manager viewing) unreachable
+    // for anyone but super_admin. Owner self-view via actorId() is unchanged.
     public function view(Actor $user, Certificate $certificate): bool
     {
-        return $certificate->user_id === $user->actorId() || $user->can('certification.certificates.manage');
+        return $certificate->user_id === $user->actorId() || $user->hasPermission('certification.certificates.manage');
     }
 
     public function manage(Actor $user, Certificate $certificate): bool
     {
-        return $user->can('certification.certificates.manage');
+        return $user->hasPermission('certification.certificates.manage');
     }
 }

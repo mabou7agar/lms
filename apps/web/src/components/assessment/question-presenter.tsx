@@ -58,7 +58,6 @@ export function QuestionPresenter({
           and never built from learner input. */}
       <div
         className="prose prose-sm max-w-none dark:prose-invert"
-        // eslint-disable-next-line react/no-danger -- server-sanitized author content
         dangerouslySetInnerHTML={{ __html: question.prompt }}
       />
 

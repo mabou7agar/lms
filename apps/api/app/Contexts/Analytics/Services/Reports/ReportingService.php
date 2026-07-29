@@ -24,6 +24,7 @@ use App\Domains\Live\Enums\RegistrationStatus;
 use App\Domains\Live\Models\LiveSession;
 use App\Domains\Live\Models\SessionAttendance;
 use App\Domains\Live\Models\SessionRegistration;
+use App\Platform\Shared\Analytics\Data\Percentage;
 use App\Platform\Shared\Services\BaseService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -150,7 +151,7 @@ class ReportingService extends BaseService
             ->whereBetween('paid_at', [$from, $to])->count();
 
         // Conversion proxy: paid orders relative to enrollments in the window (both real counts).
-        $conversion = $enrollments > 0 ? round(($paidOrders / $enrollments) * 100, 2) : 0.0;
+        $conversion = Percentage::rate($paidOrders, $enrollments);
 
         $topProducts = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -230,7 +231,7 @@ class ReportingService extends BaseService
                 'course' => (string) ($titles[$cid] ?? ''),
                 'enrollments' => $enrollments,
                 'completions' => $completions,
-                'completion_rate' => $enrollments > 0 ? round(($completions / $enrollments) * 100, 2) : 0.0,
+                'completion_rate' => Percentage::rate($completions, $enrollments),
                 'avg_progress' => (int) $r->avg_progress,
                 'revenue_minor' => (int) ($revenue[$cid] ?? 0),
             ];
@@ -477,7 +478,7 @@ class ReportingService extends BaseService
                     'starts_at' => $r->starts_at === null ? null : (string) $r->starts_at,
                     'registrations' => $reg,
                     'attendances' => $att,
-                    'attendance_rate' => $reg > 0 ? round(($att / $reg) * 100, 2) : 0.0,
+                    'attendance_rate' => Percentage::rate($att, $reg),
                 ];
             })->values()->all();
 
@@ -485,10 +486,10 @@ class ReportingService extends BaseService
             'summary' => [
                 'sessions' => $totalSessions,
                 'completed' => $completed,
-                'completion_rate' => $totalSessions > 0 ? round(($completed / $totalSessions) * 100, 2) : 0.0,
+                'completion_rate' => Percentage::rate($completed, $totalSessions),
                 'registrations' => $registrations,
                 'attendances' => $attendances,
-                'attendance_rate' => $registrations > 0 ? round(($attendances / $registrations) * 100, 2) : 0.0,
+                'attendance_rate' => Percentage::rate($attendances, $registrations),
                 'waitlisted' => $waitlisted,
             ],
             'by_status' => $byStatus,
@@ -587,7 +588,7 @@ class ReportingService extends BaseService
             ->distinct()
             ->count('enrollments.id');
 
-        $pct = static fn (int $n): float => $enrolled > 0 ? round(($n / $enrolled) * 100, 2) : 0.0;
+        $pct = static fn (int $n): float => Percentage::rate($n, $enrolled);
 
         $steps = [
             ['step' => 'enrolled', 'count' => $enrolled, 'percentage' => $pct($enrolled)],
@@ -617,60 +618,64 @@ class ReportingService extends BaseService
      */
     public function retention(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $cohorts = Enrollment::query()
-            ->toBase()
-            ->selectRaw('user_id, MIN(enrolled_at) as first_enroll')
-            ->groupBy('user_id')
-            ->get();
+        // C5: computed entirely in SQL. The prior version materialized one row per user (first
+        // enrollment + last activity) into PHP and bucketed there, so memory scaled with the user
+        // count and OOM'd at volume. This groups the SAME definition in one query whose result is one
+        // row per cohort month — bounded by the window, not the user count.
+        //
+        // Semantics preserved exactly:
+        //   - cohort           = calendar month of MIN(enrolled_at) per user (computed over ALL
+        //                        enrollments, then filtered to first-enrollments within [from, to]).
+        //   - retained         = last completed_at is strictly AFTER the cohort month. "> the last
+        //                        microsecond of the month" is, for any real timestamp, identical to
+        //                        ">= the first day of the following month", which is what the SQL uses.
+        //   - full-precision bindings so the [from, to] boundary matches the prior Carbon comparison.
+        //   - soft-deleted enrollments are excluded (deleted_at is null) in BOTH CTEs, matching the
+        //     Enrollment model's SoftDeletes global scope. Raw SQL bypasses Eloquent scopes, so this
+        //     must be explicit — otherwise a revoked/refunded enrollment would still inflate a cohort
+        //     (and, if it was the user's earliest, could even mis-assign their cohort month).
+        $rows = DB::select(
+            <<<'SQL'
+            with first_enroll as (
+                select user_id, min(enrolled_at) as fe
+                from enrollments
+                where deleted_at is null
+                group by user_id
+            ),
+            last_activity as (
+                select e.user_id, max(lp.completed_at) as la
+                from lesson_progress lp
+                join enrollments e on e.id = lp.enrollment_id
+                where lp.completed_at is not null
+                  and e.deleted_at is null
+                group by e.user_id
+            )
+            select
+                to_char(date_trunc('month', fe.fe), 'YYYY-MM') as cohort,
+                count(*) as cohort_size,
+                count(*) filter (where la.la >= date_trunc('month', fe.fe) + interval '1 month') as retained
+            from first_enroll fe
+            left join last_activity la on la.user_id = fe.user_id
+            where fe.fe >= ? and fe.fe <= ?
+            group by date_trunc('month', fe.fe)
+            order by date_trunc('month', fe.fe)
+            SQL,
+            [$from->format('Y-m-d H:i:s.u'), $to->format('Y-m-d H:i:s.u')],
+        );
 
-        /** @var array<int, string> $lastActivity user_id => max completed_at */
-        $lastActivity = LessonProgress::query()
-            ->join('enrollments', 'enrollments.id', '=', 'lesson_progress.enrollment_id')
-            ->whereNotNull('lesson_progress.completed_at')
-            ->toBase()
-            ->selectRaw('enrollments.user_id as user_id, MAX(lesson_progress.completed_at) as last_activity')
-            ->groupBy('enrollments.user_id')
-            ->pluck('last_activity', 'user_id')
-            ->map(static fn ($v): string => (string) $v)
-            ->all();
+        $cohorts = collect($rows)->map(function ($row): array {
+            $size = (int) $row->cohort_size;
+            $retained = (int) $row->retained;
 
-        /** @var array<string, array{size: int, retained: int}> $buckets */
-        $buckets = [];
-
-        foreach ($cohorts as $c) {
-            if ($c->first_enroll === null) {
-                continue;
-            }
-            $firstEnroll = CarbonImmutable::parse((string) $c->first_enroll);
-            if ($firstEnroll->lt($from) || $firstEnroll->gt($to)) {
-                continue;
-            }
-
-            $cohortKey = $firstEnroll->format('Y-m');
-            $monthEnd = $firstEnroll->endOfMonth();
-            $buckets[$cohortKey] ??= ['size' => 0, 'retained' => 0];
-            $buckets[$cohortKey]['size']++;
-
-            $userId = (int) $c->user_id;
-            $activity = $lastActivity[$userId] ?? null;
-            if ($activity !== null && CarbonImmutable::parse($activity)->gt($monthEnd)) {
-                $buckets[$cohortKey]['retained']++;
-            }
-        }
-
-        ksort($buckets);
-
-        $rows = [];
-        foreach ($buckets as $cohort => $b) {
-            $rows[] = [
-                'cohort' => $cohort,
-                'cohort_size' => $b['size'],
-                'retained' => $b['retained'],
-                'retention_rate' => $b['size'] > 0 ? round(($b['retained'] / $b['size']) * 100, 2) : 0.0,
+            return [
+                'cohort' => (string) $row->cohort,
+                'cohort_size' => $size,
+                'retained' => $retained,
+                'retention_rate' => Percentage::rate($retained, $size),
             ];
-        }
+        })->all();
 
-        return ['cohorts' => $rows];
+        return ['cohorts' => $cohorts];
     }
 
     // ---------------------------------------------------------------------------------------

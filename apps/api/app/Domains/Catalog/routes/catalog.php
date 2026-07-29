@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Route;
 /*
  | Public catalog endpoints (read-only, unauthenticated). Base 'api' prefix + these => /api/v1/*.
  */
-Route::prefix('v1')->group(function (): void {
+// M9 — throttle the whole (public, unauthenticated) catalog surface.
+Route::prefix('v1')->middleware('throttle:public-read')->group(function (): void {
     Route::get('courses', [CourseController::class, 'index']);
     Route::get('courses/{publicId}', [CourseController::class, 'show']);
     Route::get('categories', [CategoryController::class, 'index']);

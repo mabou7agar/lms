@@ -37,7 +37,7 @@
 
   --destructive: oklch(0.55 0.19 30);
   --destructive-foreground: oklch(0.98 0.01 88);
-  --success: oklch(0.55 0.11 165);
+  --success: oklch(0.53 0.11 165); /* WCAG AA: text-success-foreground on bg-success = 4.71:1 (was 0.55=4.33:1); hue/chroma preserved (PKG-011B) */
   --success-foreground: oklch(0.98 0.01 88);
   --warning: oklch(0.74 0.12 82);
   --warning-foreground: oklch(0.30 0.02 190);

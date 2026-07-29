@@ -2,6 +2,7 @@
 
 namespace App\Logging;
 
+use Illuminate\Support\Facades\Context;
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
 
@@ -16,7 +17,10 @@ class CorrelationProcessor implements ProcessorInterface
         $record->extra['service'] = (string) config('app.name', 'helbaron');
         $record->extra['env'] = (string) config('app.env', 'production');
 
-        $correlationId = request()?->headers?->get('X-Correlation-ID');
+        // Prefer the propagated Context value (present in BOTH request and queue worker — M2), and
+        // fall back to the inbound request header. Inside a worker request() is a synthetic console
+        // request with no correlation header, which is exactly why the Context lookup comes first.
+        $correlationId = Context::get('correlation_id') ?? request()?->headers?->get('X-Correlation-ID');
         if (is_string($correlationId) && $correlationId !== '') {
             $record->extra['correlation_id'] = $correlationId;
         }

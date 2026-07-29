@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { hasSession } from "@/lib/api/client";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { applyApiFieldErrors, errorMessage } from "@/lib/api/errors";
 import { verifyMfa } from "@/lib/auth/api";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -23,14 +24,11 @@ type Values = { code: string };
 export default function MfaPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [authed, setAuthed] = useState(false);
+  // The session marker is a client-only cookie, so resolve it after hydration (never during SSR)
+  // to avoid a hydration mismatch. `ready` gates the loader exactly as the previous mount effect did.
+  const ready = useHydrated();
+  const authed = ready && hasSession();
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setAuthed(hasSession());
-    setReady(true);
-  }, []);
 
   const schema = z.object({ code: z.string().min(1, t("auth.validation.code")) });
   const {

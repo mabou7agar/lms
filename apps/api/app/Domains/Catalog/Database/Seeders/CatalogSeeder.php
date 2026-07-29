@@ -2,6 +2,7 @@
 
 namespace App\Domains\Catalog\Database\Seeders;
 
+use App\Domains\Catalog\Enums\CatalogPermission;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Models\Category;
 use App\Domains\Catalog\Models\Course;
@@ -14,6 +15,9 @@ use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Helpers\Slug;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role as SpatieRole;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Seeds realistic HElbaron demo content — the 12 business verticals, levels/languages, a handful of
@@ -24,6 +28,20 @@ class CatalogSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolePermissionSeeder::class);
+
+        // Catalog's own permissions were never persisted by any seeder, so `catalog.courses.manage`
+        // — checked three times in CoursePolicy — had no row in the permissions table. Every check
+        // against it could only ever pass through the super_admin before() bypass, meaning an admin
+        // granted the capability did not actually hold it. Seeded here following AuthoringSeeder.
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        foreach (CatalogPermission::values() as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        SpatieRole::findByName('admin', 'web')->givePermissionTo(CatalogPermission::values());
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $levels = collect(['Beginner', 'Intermediate', 'Advanced'])
             ->mapWithKeys(fn ($name, $i) => [$name => CourseLevel::firstOrCreate(['slug' => Slug::make($name)], ['name' => $name, 'position' => $i])]);

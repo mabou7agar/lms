@@ -8,6 +8,7 @@ import { getFeatureFlags, type FeatureFlags } from "@/lib/flags/api";
 import { brandThemeCss, googleFontCss, googleFontHref } from "@/lib/branding/css";
 import { Providers } from "./providers";
 import "./globals.css";
+import { jsonLdScript } from "@/lib/seo/json-ld";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const fraunces = Fraunces({
@@ -71,7 +72,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** Organization schema.org markup for richer search results (rendered once in the root layout). */
 function organizationJsonLd(name: string): string {
-  return JSON.stringify({
+  return jsonLdScript({
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
     name,

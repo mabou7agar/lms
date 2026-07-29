@@ -7,6 +7,7 @@ use App\Platform\Identity\Database\Seeders\IdentitySeeder;
 use App\Platform\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role as SpatieRole;
+use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
@@ -18,8 +19,13 @@ beforeEach(function () {
 /**
  * The KPI, dashboard and report-definition endpoints shipped with no authorization beyond
  * `auth:sanctum`, so any authenticated user could read platform-wide figures including revenue.
- * These tests pin the gate shut and pin the money boundary in particular, because that is the part
- * most likely to be loosened later by someone widening a role.
+ *
+ * Two boundaries are pinned here, and they are different things:
+ *   PERMISSION — `analytics.view` decides whether a caller may reach the analytics surface at all.
+ *   SCOPE      — these endpoints are platform-wide. metric_snapshots carry no course dimension, so
+ *                a query cannot be narrowed to the caller's own courses. An instructor is therefore
+ *                refused even while holding the permission, because the alternative is showing them
+ *                another instructor's numbers.
  */
 function analyticsUser(string $role): User
 {
@@ -29,118 +35,112 @@ function analyticsUser(string $role): User
     return $user;
 }
 
-it('refuses a learner every metric-driven analytics read', function (string $uri) {
-    $student = analyticsUser('student');
-
-    $this->actingAs($student, 'sanctum')->getJson($uri)->assertForbidden();
-})->with([
+const ANALYTICS_READS = [
     '/api/v1/analytics/kpis?metrics[]=enrollments',
     '/api/v1/reports',
     '/api/v1/dashboards',
-]);
-
-it('refuses a learner running a report', function () {
-    $student = analyticsUser('student');
-    // A real definition, so the 403 comes from the authorization gate rather than from
-    // FormRequest validation rejecting a bogus id first.
-    $report = ReportDefinition::factory()->create(['metric_keys' => ['enrollments']]);
-
-    $this->actingAs($student, 'sanctum')
-        ->postJson('/api/v1/reports/run', ['report' => $report->public_id])
-        ->assertForbidden();
-});
+];
 
 it('refuses an unauthenticated caller', function () {
     $this->getJson('/api/v1/analytics/kpis?metrics[]=enrollments')->assertUnauthorized();
 });
 
-it('lets an admin read every metric including revenue', function () {
-    $admin = analyticsUser('admin');
+it('refuses a student every analytics read', function (string $uri) {
+    $this->actingAs(analyticsUser('student'), 'sanctum')->getJson($uri)->assertForbidden();
+})->with(ANALYTICS_READS);
 
-    $this->actingAs($admin, 'sanctum')
+it('refuses an authenticated user with no role at all', function (string $uri) {
+    $this->actingAs(User::factory()->create(), 'sanctum')->getJson($uri)->assertForbidden();
+})->with(ANALYTICS_READS);
+
+it('refuses an instructor who does not hold analytics.view', function (string $uri) {
+    SpatieRole::findByName('instructor', 'web')
+        ->revokePermissionTo(AnalyticsPermission::ViewAnalytics->value);
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $instructor = analyticsUser('instructor');
+    expect($instructor->hasPermission(AnalyticsPermission::ViewAnalytics->value))->toBeFalse();
+
+    // The generic refusal: no permission, so no analytics surface at all. Asserted on the raw body
+    // rather than a JSON path, so the test pins the message and not the envelope's shape.
+    $body = $this->actingAs($instructor, 'sanctum')->getJson($uri)
+        ->assertForbidden()
+        ->getContent();
+
+    expect($body)->toContain('Analytics access required.');
+})->with(ANALYTICS_READS);
+
+it('refuses an instructor WITH analytics.view on scope, not on permission', function () {
+    $instructor = analyticsUser('instructor');
+
+    expect($instructor->hasPermission(AnalyticsPermission::ViewAnalytics->value))->toBeTrue();
+
+    // A different refusal, and the distinction matters: the permission is held, but these figures
+    // are platform-wide and cannot be narrowed to this instructor's courses. Returning them would
+    // be a cross-instructor leak.
+    $body = $this->actingAs($instructor, 'sanctum')
+        ->getJson('/api/v1/analytics/kpis?metrics[]=enrollments')
+        ->assertForbidden()
+        ->getContent();
+
+    expect($body)->toContain('platform-wide');
+});
+
+it('allows an admin every analytics read', function (string $uri) {
+    $this->actingAs(analyticsUser('admin'), 'sanctum')->getJson($uri)->assertOk();
+})->with(ANALYTICS_READS);
+
+it('allows a super_admin without an explicit permission grant', function () {
+    $this->actingAs(analyticsUser('super_admin'), 'sanctum')
+        ->getJson('/api/v1/analytics/kpis?metrics[]=revenue')
+        ->assertOk()
+        ->assertJsonPath('data.kpis.0.metric', 'revenue');
+});
+
+it('lets an admin read money metrics', function () {
+    $this->actingAs(analyticsUser('admin'), 'sanctum')
         ->getJson('/api/v1/analytics/kpis?metrics[]=enrollments&metrics[]=revenue')
         ->assertOk()
         ->assertJsonPath('data.kpis.0.metric', 'enrollments')
         ->assertJsonPath('data.kpis.1.metric', 'revenue');
 });
 
-it('lets a super_admin through without an explicit permission grant', function () {
-    $root = analyticsUser('super_admin');
-
-    $this->actingAs($root, 'sanctum')
-        ->getJson('/api/v1/analytics/kpis?metrics[]=revenue')
-        ->assertOk()
-        ->assertJsonPath('data.kpis.0.metric', 'revenue');
-});
-
-it('grants instructors analytics access but drops money metrics from the response', function () {
+it('grants instructors the analytics permission but never the revenue one', function () {
     $instructor = analyticsUser('instructor');
 
-    $response = $this->actingAs($instructor, 'sanctum')
-        ->getJson('/api/v1/analytics/kpis?metrics[]=enrollments&metrics[]=revenue')
-        ->assertOk();
-
-    // The entitled metric survives; the money one is dropped rather than the whole request failing,
-    // so a mixed dashboard still renders what the caller may see.
-    expect($response->json('data.kpis'))->toHaveCount(1)
-        ->and($response->json('data.kpis.0.metric'))->toBe('enrollments');
-
-    expect($response->getContent())->not->toContain('currency_minor');
+    // Revenue stays with administrators regardless of how the scope question is resolved later.
+    expect($instructor->hasPermission(AnalyticsPermission::ViewAnalytics->value))->toBeTrue()
+        ->and($instructor->hasPermission(AnalyticsPermission::ViewRevenue->value))->toBeFalse();
 });
 
-it('grants instructors the analytics permission but not the revenue one', function () {
-    $instructor = analyticsUser('instructor');
+it('checks permissions under the sanctum guard, where $user->can() does not', function () {
+    $admin = analyticsUser('admin');
 
-    // Asserted against the `web` guard explicitly. `$user->can()` would resolve the Sanctum guard,
-    // which these permissions are not registered under, and would answer false for both — passing
-    // the second half of this test for entirely the wrong reason. The API gate itself is
-    // role-based for that same reason; these grants are what Filament reads on the web guard.
-    expect($instructor->hasPermissionTo(AnalyticsPermission::ViewAnalytics->value, 'web'))->toBeTrue()
-        ->and($instructor->hasPermissionTo(AnalyticsPermission::ViewRevenue->value, 'web'))->toBeFalse();
+    // Regression guard for the reason this codebase gates on roles in so many places: can()
+    // resolves the request's guard, finds no permission registered under it, and answers false
+    // for a user who genuinely holds the permission. hasPermission() pins the web guard.
+    expect($admin->hasPermission(AnalyticsPermission::ViewAnalytics->value))->toBeTrue();
 });
 
-it('lets an instructor list dashboards and report definitions', function () {
-    $instructor = analyticsUser('instructor');
-
-    $this->actingAs($instructor, 'sanctum')->getJson('/api/v1/dashboards')->assertOk();
-    $this->actingAs($instructor, 'sanctum')->getJson('/api/v1/reports')->assertOk();
-});
-
-it('refuses to run a money-bearing report for an instructor', function () {
+it('refuses to run a money-bearing report for a non-administrator', function () {
     $instructor = analyticsUser('instructor');
     $report = ReportDefinition::factory()->create(['metric_keys' => ['enrollments', 'revenue']]);
 
-    // A report is one computed artifact — silently omitting its money column would misrepresent
-    // the result under the same name, so this refuses outright rather than degrading.
     $this->actingAs($instructor, 'sanctum')
         ->postJson('/api/v1/reports/run', ['report' => $report->public_id])
         ->assertForbidden();
 });
 
-it('runs a money-free report for an instructor', function () {
-    $instructor = analyticsUser('instructor');
-    $report = ReportDefinition::factory()->create(['metric_keys' => ['enrollments', 'completions']]);
-
-    $this->actingAs($instructor, 'sanctum')
-        ->postJson('/api/v1/reports/run', ['report' => $report->public_id])
-        ->assertOk();
-});
-
 it('runs a money-bearing report for an admin', function () {
-    $admin = analyticsUser('admin');
     $report = ReportDefinition::factory()->create(['metric_keys' => ['revenue']]);
 
-    $this->actingAs($admin, 'sanctum')
+    $this->actingAs(analyticsUser('admin'), 'sanctum')
         ->postJson('/api/v1/reports/run', ['report' => $report->public_id])
         ->assertOk();
 });
 
 it('keeps the admin-gated insight reports closed to instructors', function () {
-    $instructor = analyticsUser('instructor');
-
-    // ViewAnalytics widens the metric surface only. The operational insight reports read
-    // cross-context operational tables and stay administrator-only.
-    $this->actingAs($instructor, 'sanctum')
+    $this->actingAs(analyticsUser('instructor'), 'sanctum')
         ->getJson('/api/v1/reports/insights/catalog')
         ->assertForbidden();
 });

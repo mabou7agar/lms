@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  */
 final class ApiResponse
 {
-    public static function success(mixed $data = null, ?string $message = null, int $status = 200, array $meta = []): JsonResponse
+    public static function success(mixed $data = null, ?string $message = null, int $status = 200, array $meta = [], int $encodingOptions = 0): JsonResponse
     {
         $payload = ['data' => $data];
 
@@ -29,7 +29,7 @@ final class ApiResponse
             $payload['meta'] = $meta;
         }
 
-        return response()->json($payload, $status);
+        return response()->json($payload, $status, [], $encodingOptions);
     }
 
     public static function created(mixed $data = null, ?string $message = 'Created.'): JsonResponse

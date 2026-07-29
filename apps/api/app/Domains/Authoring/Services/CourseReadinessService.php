@@ -5,6 +5,7 @@ namespace App\Domains\Authoring\Services;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Models\Section;
 use App\Platform\Shared\Assessment\Contracts\LessonAssessmentPort;
+use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Publishing\Data\CourseReadinessInput;
 use App\Platform\Shared\Publishing\Data\ReadinessIssue;
 use App\Platform\Shared\Publishing\Data\ReadinessReport;
@@ -124,6 +125,54 @@ class CourseReadinessService extends BaseService
         } else {
             $passed[] = 'course.no_instructor';
         }
+
+        $this->checkVisibility($course, $issues, $passed);
+    }
+
+    /**
+     * Publishing a course does not put it in the catalog — the catalog listing also requires
+     * `visibility = public` (Course::scopeVisible). An author who publishes a private course and
+     * then cannot find it has hit exactly this, and today nothing tells them why.
+     *
+     * WARNING, not a blocker, on two grounds. Private and unlisted courses are a legitimate
+     * shipping mode — internal, cohort-gated, or link-shared content is published on purpose — so
+     * refusing the publish would break a real workflow. And promoting it to a blocker would
+     * retroactively stop every already-published non-public course from re-publishing, which the
+     * severity policy on ReadinessSeverity explicitly rules out.
+     *
+     * An unrecognised value is reported too rather than ignored: the column is a plain string with
+     * a default, so a bad write is possible, and silently treating it as fine would hide it.
+     *
+     * @param  list<ReadinessIssue>  $issues
+     * @param  list<string>  $passed
+     */
+    private function checkVisibility(CourseReadinessInput $course, array &$issues, array &$passed): void
+    {
+        $visibility = $course->visibility;
+
+        if ($visibility !== null && Visibility::tryFrom($visibility)?->isPublic() === true) {
+            $passed[] = 'course.not_publicly_visible';
+
+            return;
+        }
+
+        $known = $visibility !== null && Visibility::tryFrom($visibility) !== null;
+
+        $issues[] = new ReadinessIssue(
+            code: $known ? 'course.not_publicly_visible' : 'course.invalid_visibility',
+            severity: ReadinessSeverity::Warning,
+            title: $known
+                ? sprintf('The course visibility is "%s", so it will not appear in the catalog.', $visibility)
+                : 'The course visibility is not set to a recognised value.',
+            explanation: $known
+                ? 'Publishing makes the course available, but only public courses are listed in the catalog. Learners will need a direct link or an enrollment you create for them.'
+                : 'The catalog lists only courses marked public, and an unrecognised value is treated as not public.',
+            recommendedAction: $known
+                ? 'Set visibility to public in course settings if you intend learners to find it by browsing.'
+                : sprintf('Set visibility in course settings to one of: %s.', implode(', ', Visibility::values())),
+            entityType: 'course',
+            entityPublicId: $course->coursePublicId,
+        );
     }
 
     /**

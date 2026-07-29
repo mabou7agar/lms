@@ -7,6 +7,9 @@ use App\Contexts\Analytics\Enums\ExportStatus;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $user_id
+ */
 class ExportJob extends Model
 {
     use HasPublicId;

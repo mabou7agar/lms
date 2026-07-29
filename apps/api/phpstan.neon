@@ -14,7 +14,21 @@ parameters:
         - routes
     # Level raised 5 -> 6 in Sprint 0 / A1-S02. Existing findings (the level-6 delta plus the
     # custom architecture rules) are captured in phpstan-baseline.neon; strictness only increases.
-    ignoreErrors: []
+    ignoreErrors:
+        # False positive. PHPStan infers CurrentTenantProvider::currentTenant() as non-null here, but
+        # the port returns ?TenantId and is genuinely null in global/unscoped mode (queue jobs run
+        # WithoutTenancy, admin runs runWithoutTenancy, single-tenant deploys resolve no tenant). The
+        # `?? 'global'` cache-key fallback exists for exactly that case, so the `?->` must stay —
+        # removing it would be a real null dereference.
+        -
+            identifier: nullsafe.neverNull
+            path: app/Contexts/Analytics/Services/ReportCache.php
+        # Intentional raw env(). ValidateEnvironment validates TRUSTED_PROXIES, which bootstrap/app.php
+        # applies inline from env() with no config key; the command must inspect the raw environment
+        # value, so config() is not applicable here.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: app/Console/Commands/ValidateEnvironment.php
     excludePaths:
         - app/Domains/*/openapi/*
         - app/Contexts/*/openapi/*

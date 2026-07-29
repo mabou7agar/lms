@@ -33,6 +33,7 @@ class CurriculumPublishGuard implements CoursePublishGuard
             description: $course->getAttribute('description'),
             thumbnailPath: $course->getAttribute('thumbnail_path'),
             hasInstructor: $course->trainerLinks()->exists(),
+            visibility: $course->getAttribute('visibility')?->value,
         ));
 
         $this->reason = $report->firstBlockerReason();

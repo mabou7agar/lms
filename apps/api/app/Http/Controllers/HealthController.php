@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
  * Kubernetes/LB probes. Liveness answers "is the process up" (no dependencies). Readiness answers
- * "can it serve traffic" by checking Postgres + Redis. Never leaks connection details.
+ * "can it serve traffic" by checking Postgres, Redis, the queue backend, and the storage disk.
+ * Never leaks connection details — each probe reports only a boolean.
  */
 class HealthController extends Controller
 {
@@ -37,6 +40,18 @@ class HealthController extends Controller
             }),
             'redis' => $this->check(function (): bool {
                 Redis::connection()->ping();
+
+                return true;
+            }),
+            // Reading the default queue's depth exercises the queue backend without enqueuing work.
+            'queue' => $this->check(function (): bool {
+                Queue::size();
+
+                return true;
+            }),
+            // A read-only existence probe exercises the configured disk (local/S3) without writing.
+            'storage' => $this->check(function (): bool {
+                Storage::disk((string) config('filesystems.default', 'local'))->exists('.health-probe');
 
                 return true;
             }),

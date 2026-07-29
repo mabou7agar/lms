@@ -11,4 +11,9 @@ return [
     'preview' => [
         'default' => false,
     ],
+
+    // P2/W02: master switch for the Content Block model (Block/Module aggregates + backfill).
+    // Off by default. The backfill — the only path that writes blocks today — and every future
+    // block read/write path consult this flag, so the feature is genuinely dormant until enabled.
+    'blocks_enabled' => (bool) env('AUTHORING_BLOCKS_ENABLED', false),
 ];

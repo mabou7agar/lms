@@ -14,7 +14,17 @@ return [
 
     'guard' => [],
 
-    'expiration' => null,
+    // H7 — token lifetime. `null` meant tokens NEVER expired: a stolen bearer stayed valid forever.
+    // We now expire tokens after a configurable number of minutes. The default (30 days) closes the
+    // hole while sitting comfortably above the 14-day web BFF session, so interactive users are not
+    // logged out mid-session; operators can shorten it via SANCTUM_TOKEN_EXPIRATION_MINUTES, or set
+    // it to a non-numeric/empty value only in environments that deliberately want non-expiring
+    // tokens. Expired tokens are rejected at auth time and reaped by the scheduled
+    // `sanctum:prune-expired` command (see routes/console.php). `Sanctum::actingAs()` in tests
+    // bypasses this entirely, so test behavior is unchanged.
+    'expiration' => is_numeric(env('SANCTUM_TOKEN_EXPIRATION_MINUTES', 43200))
+        ? (int) env('SANCTUM_TOKEN_EXPIRATION_MINUTES', 43200)
+        : null,
 
     'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 

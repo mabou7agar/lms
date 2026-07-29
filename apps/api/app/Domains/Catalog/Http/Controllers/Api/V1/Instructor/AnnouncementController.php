@@ -55,14 +55,17 @@ class AnnouncementController extends InstructorController
             ->values()
             ->all();
 
-        if ($studentIds !== []) {
-            $notifications->executeForUserIds(
-                $studentIds,
-                NotificationCategory::Learning,
-                'course_announcement',
-                ['title' => $announcement->title, 'body' => $announcement->body, 'course' => $course->title],
-            );
-        }
+        // H4 — async, chunked fan-out. The request returns immediately after enqueuing one Bus batch
+        // of chunk jobs; workers do the delivery. A 10k-learner course no longer times out the POST.
+        // Behaviour is unchanged: the same dispatcher, so each learner still receives the announcement
+        // exactly once (Sprint 3 de-duplication), just off the request thread.
+        $notifications->queueForUserIds(
+            $studentIds,
+            NotificationCategory::Learning,
+            'course_announcement',
+            ['title' => $announcement->title, 'body' => $announcement->body, 'course' => $course->title],
+            'course-announcement:'.$announcement->getKey(),
+        );
 
         return ApiResponse::created(new CourseAnnouncementResource($announcement));
     }

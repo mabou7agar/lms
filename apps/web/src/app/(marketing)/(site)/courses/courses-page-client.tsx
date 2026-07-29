@@ -37,11 +37,21 @@ function CoursesCatalog() {
     const id = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(id);
   }, [q]);
-  useEffect(() => setPage(1), [debouncedQ, category, featured]);
+
+  // Reset to page 1 when the search/filters change — done during render (React's documented
+  // "adjust state while rendering" pattern) instead of in an effect, which avoids the extra
+  // cascading render. The prevKey guard makes this run exactly once per filter change.
+  const filterKey = `${debouncedQ}|${category}|${featured}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
 
   const query = useCourses({ q: debouncedQ || undefined, category: category || undefined, featured, page, per_page: 12 });
 
-  const items = query.data?.data ?? [];
+  // Memoize on the query result so the derived level/language sets are stable across renders.
+  const items = useMemo(() => query.data?.data ?? [], [query.data]);
   const levels = useMemo(() => Array.from(new Set(items.map((c) => c.level).filter(Boolean))) as string[], [items]);
   const languages = useMemo(() => Array.from(new Set(items.map((c) => c.language).filter(Boolean))) as string[], [items]);
   const refined = items.filter((c) => (!level || c.level === level) && (!language || c.language === language));

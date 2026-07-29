@@ -44,6 +44,9 @@ jobs:
           php-version: '8.3'
           extensions: pdo_pgsql, pgsql, mbstring, bcmath, intl, zip, pcntl
           coverage: none
+          # NV1: pin the CLI memory_limit so PHPStan + Pest pass at the default, with no per-command
+          # `-d memory_limit` / `--memory-limit` override needed. This is the proven infra gap.
+          ini-values: memory_limit=1G
       - name: Cache composer
         uses: actions/cache@v4
         with:
@@ -79,6 +82,8 @@ jobs:
           php-version: '8.3'
           extensions: mbstring, intl
           coverage: none
+          # NV1: default CLI memory_limit high enough for Deptrac without an override.
+          ini-values: memory_limit=1G
       - name: Cache composer
         uses: actions/cache@v4
         with:

@@ -7,7 +7,10 @@ use App\Platform\Notifications\Contracts\Providers\MailProvider;
 use App\Platform\Notifications\Contracts\Providers\PushProvider;
 use App\Platform\Notifications\Contracts\Providers\SmsProvider;
 use App\Platform\Notifications\Listeners\NotificationEventSubscriber;
+use App\Platform\Notifications\Listeners\NotificationTelemetrySubscriber;
 use App\Platform\Notifications\Models\Notification;
+use App\Platform\Notifications\Models\NotificationDelivery;
+use App\Platform\Notifications\Observers\NotificationDeliveryObserver;
 use App\Platform\Notifications\Policies\NotificationPolicy;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -43,5 +46,11 @@ class NotificationsServiceProvider extends BaseDomainServiceProvider
     protected function bootDomain(): void
     {
         Event::subscribe(NotificationEventSubscriber::class);
+
+        // Sprint 4 observability (additive; no delivery behavior changes). The observer emits
+        // lifecycle events off persisted delivery state; the telemetry subscriber turns every
+        // lifecycle event into a structured log line and an idempotent metric.
+        NotificationDelivery::observe(NotificationDeliveryObserver::class);
+        Event::subscribe(NotificationTelemetrySubscriber::class);
     }
 }
