@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://corelms.local/.ai/schema/gate_history.schema.json",
+  "title": "CoreLMS AI Layer — gate_history",
+  "type": "object",
+  "required": ["ai_layer_version", "runs"],
+  "additionalProperties": true,
+  "properties": {
+    "ai_layer_version": { "type": "string" },
+    "note": { "type": "string" },
+    "gates_defined_in": { "type": "string" },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "captured_at", "result"],
+        "properties": {
+          "id": { "type": "string" },
+          "captured_at": { "type": "string", "format": "date-time" },
+          "observed_from": { "type": "string", "enum": ["git", "local", "ci", "reported"] },
+          "commit": { "type": "string" },
+          "environment": { "type": "string" },
+          "result": { "type": "string", "enum": ["green", "red", "partial", "unknown"] },
+          "detail": { "type": "string" },
+          "verified_live": { "type": "boolean" }
+        }
+      }
+    },
+    "pending": { "type": "array", "items": { "type": "string" } }
+  }
+}

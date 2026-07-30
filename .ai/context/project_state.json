@@ -1,0 +1,128 @@
+{
+  "$schema": "../schema/project_state.schema.json",
+  "ai_layer_version": "1.0",
+  "generated_at": "2026-07-30T16:07:47Z",
+  "generated_by": "claude:execution-agent",
+  "project": {
+    "name": "CoreLMS",
+    "internal_name": "HElbaron",
+    "description": "Bilingual (AR/EN) enterprise LMS. Laravel 12 modular monolith API + custom Next.js frontend.",
+    "repo_root": "D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation\\corelms",
+    "connected_folder": "D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation",
+    "repo_version": "1.0.0-rc.1",
+    "latest_tag": "v0.4.0"
+  },
+  "git": {
+    "branch": "main",
+    "head": "ed960b1",
+    "head_subject": "chore: stop tracking generated exports, cache, and temp archives",
+    "latest_wave_commit": {
+      "sha": "e494c6d",
+      "subject": "W04 complete: Media, Learning Runtime, Assignments, Gradebook, Frontend integration"
+    },
+    "working_tree": {
+      "tracked_clean": true,
+      "untracked_scan": "not_captured",
+      "note": "git status -uno reported no tracked changes at 2026-07-30T15:20Z. Full untracked enumeration skipped (slow NTFS bind mount)."
+    }
+  },
+  "wave": {
+    "current": "W05",
+    "current_title": "Commerce / Entitlements",
+    "current_phase": "planning",
+    "current_status": "in_progress",
+    "current_note": "W05 backend was staged 2026-07-29 then rolled back; artifacts retained in ../../_w05_removed (EntitlementPort.php, w05_backend.tgz, w05src.tgz). Scope: Commerce context exposes EntitlementPort (hasCourseEntitlement / entitledCourseIds) to Learning. Reconfirm scope against docs/redesign/100_EXECUTION_BACKLOG.md (Sprint 5 / epic B1).",
+    "previous_completed": "W04",
+    "baseline": {
+      "tag": "v0.4.0",
+      "version": "1.0.0-rc.1",
+      "note": "v1.0 RC 10-domain LMS built end-to-end (see corelms/CHANGELOG.md). The redesign-execution arc (Sprint 0 -> W##) runs on top of this baseline."
+    },
+    "completed": [
+      { "id": "W04", "title": "Media, Learning Runtime, Assignments, Gradebook, Frontend integration", "evidence": "commit e494c6d", "verified": true },
+      { "id": "W03", "title": "Authoring / Assessment / Publishing (Course Builder, grading engine, publish-readiness)", "evidence": "commits 350b5ae,335e1a8,8eafe57,3561c30 + docs/implementation/reports", "verified": false },
+      { "id": "W02", "title": "Catalog / Curriculum (content versioning migration)", "evidence": "docs/implementation/reports/CURRICULUM_PHASE1..4", "verified": false },
+      { "id": "W01", "title": "Identity (row-level multi-tenancy, contracts seam, policies)", "evidence": "docs/implementation/reports/IDENTITY_PHASE1..3C", "verified": false },
+      { "id": "Sprint 0", "title": "Architecture Fitness & Tooling (Deptrac, PHPStan arch rules, ADR-link check)", "evidence": "ADR-19, ADR-20 (Implemented)", "verified": true }
+    ]
+  },
+  "tasks": {
+    "running": [],
+    "pending": [
+      "Reconfirm W05 (Commerce/Entitlements) scope against docs/redesign/100_EXECUTION_BACKLOG.md before re-implementing",
+      "Decide fate of ../../_w05_removed artifacts (re-apply cleanly vs discard)",
+      "Verify exact W01-W03 wave boundaries from git tags/history and mark verified",
+      "Capture a full CI gate run into verification/gate_history.json"
+    ]
+  },
+  "modules": {
+    "backend_path": "apps/api",
+    "frontend_path": "apps/web",
+    "domains": ["Identity", "Catalog", "Authoring", "Learning", "Commerce", "Certification", "Live", "CRM", "Analytics", "Notifications"],
+    "context_namespaces": ["App\\Domains\\*", "App\\Contexts\\*", "App\\Platform\\*"]
+  },
+  "completed_modules": [
+    { "name": "Identity", "state": "baseline-complete + reworked (multi-tenancy/contracts seam)", "verified": true },
+    { "name": "Catalog", "state": "baseline-complete + curriculum/versioning rework", "verified": true },
+    { "name": "Authoring", "state": "baseline-complete + Course Builder", "verified": true },
+    { "name": "Learning", "state": "baseline-complete + runtime/assignments/gradebook (W04)", "verified": true },
+    { "name": "Certification", "state": "baseline-complete (v1.0 RC)", "verified": false },
+    { "name": "Live", "state": "baseline-complete (v1.0 RC)", "verified": false },
+    { "name": "CRM", "state": "baseline-complete (v1.0 RC)", "verified": false },
+    { "name": "Analytics", "state": "baseline-complete; read-only (ADR-18)", "verified": false },
+    { "name": "Notifications", "state": "baseline-complete; automation/digest deferred", "verified": false },
+    { "name": "Commerce", "state": "baseline-complete; W05 entitlement seam in progress", "verified": false }
+  ],
+  "modified_files": {
+    "current_batch": {
+      "label": "AI collaboration layer bootstrap (2026-07-30)",
+      "app_code_changed": [],
+      "added": ["corelms/.ai/** (16 files: context, handoff, reports, verification, prompts, schema)"],
+      "note": "No apps/api or apps/web source files were modified in this batch. On each future wave, replace this with the concrete list of changed source paths for that batch."
+    }
+  },
+  "known_issues": [
+    { "id": "KI-01", "severity": "high", "area": "backend", "summary": "Course-announcement notification fan-out is synchronous and unbounded; request time scales with enrollment (can time out on large courses). Should be a queued, chunked job." },
+    { "id": "KI-02", "severity": "medium", "area": "backend", "summary": "Public Events listing has an N+1 speaker lookup (~12-24 extra queries/page)." },
+    { "id": "KI-03", "severity": "medium", "area": "backend", "summary": "First certificate-PDF download renders Chromium synchronously in-request; should pre-generate on CertificateIssued." },
+    { "id": "KI-04", "severity": "medium", "area": "frontend", "summary": "Lighthouse Performance 72 (mobile throttled); deficit is entirely LCP due to client-rendered shell. No representative production run captured." },
+    { "id": "KI-05", "severity": "low", "area": "security", "summary": "CSP uses script-src 'unsafe-inline' in production (Next inline runtime); nonce-based CSP is optional future hardening." },
+    { "id": "KI-06", "severity": "low", "area": "ci", "summary": ".trivyignore carries a picomatch exception (CVE-2026-33671) for Next's vendored copy; upstream fix >=4.0.4 exists." }
+  ],
+  "deferred_subsystems": [
+    { "id": "DEF-01", "name": "Automation/Digest engine", "state": "formally deferred (not shipped in v1.0.0); schema-complete, no execution path" },
+    { "id": "DEF-02", "name": "Live-session reminders (H9)", "state": "deferred; SessionReminder rows written but no consumer delivers them" }
+  ],
+  "known_technical_debt": {
+    "source_of_truth": "corelms/KNOWN_LIMITATIONS.md",
+    "items": [
+      { "id": "TD-01", "area": "white-label", "summary": "Transactional emails render via config('app.name'), not the admin BrandSetting.email group (unused)." },
+      { "id": "TD-02", "area": "white-label", "summary": "~15 marketing route files + i18n dictionaries hardcode the brand name (valid fallbacks; not a leak)." },
+      { "id": "TD-03", "area": "seo", "summary": "No default/dynamic og:image; no Course JSON-LD; no BreadcrumbList; hreflang effectively absent." },
+      { "id": "TD-04", "area": "frontend", "summary": "39 arbitrary Tailwind bracket values could map to scale tokens; 3 raw <button> could use ui/Button." },
+      { "id": "TD-05", "area": "frontend", "summary": "components/ui/breadcrumb.tsx used only by the design-system showcase; no exhaustive ts-prune/depcheck sweep yet." },
+      { "id": "TD-06", "area": "db", "summary": "course_trainer pivot lacks unique (course_id,user_id); courses.published_at (list sort key) unindexed." },
+      { "id": "TD-07", "area": "env", "summary": "Repo on Windows NTFS D:\\ path bind-mounted into containers; WSL2 relocation is the definitive dev-speed fix." }
+    ]
+  },
+  "tech_debt_ref": "corelms/KNOWN_LIMITATIONS.md",
+  "gates": {
+    "last_full_green": {
+      "event": "CI run #13 all seven mandatory jobs green (final GO)",
+      "evidence": "commit 89e57e7",
+      "captured_in_layer": false
+    },
+    "definition_ref": "verification/local_checks.md",
+    "history_ref": "verification/gate_history.json"
+  },
+  "sync": {
+    "bridge_connected": true,
+    "verified_against_working_tree": true,
+    "last_verified": "2026-07-30T16:07:47Z",
+    "verified_by": "claude via device bridge (read-only inspection of corelms git repo)",
+    "caveats": [
+      "Untracked-file scan skipped (slow bind mount); tracked tree confirmed clean.",
+      "W01-W03 titles/boundaries inferred from git history + docs/implementation/reports; not yet cross-checked against wave tags."
+    ]
+  }
+}

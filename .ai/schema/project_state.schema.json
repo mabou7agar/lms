@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://corelms.local/.ai/schema/project_state.schema.json",
+  "title": "CoreLMS AI Layer — project_state",
+  "type": "object",
+  "required": ["ai_layer_version", "generated_at", "project", "git", "wave", "sync"],
+  "additionalProperties": true,
+  "properties": {
+    "ai_layer_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": { "type": "string" },
+    "project": {
+      "type": "object",
+      "required": ["name", "repo_root"],
+      "properties": {
+        "name": { "type": "string" },
+        "internal_name": { "type": "string" },
+        "description": { "type": "string" },
+        "repo_root": { "type": "string" },
+        "connected_folder": { "type": "string" },
+        "repo_version": { "type": "string" },
+        "latest_tag": { "type": "string" }
+      }
+    },
+    "git": {
+      "type": "object",
+      "required": ["branch", "head"],
+      "properties": {
+        "branch": { "type": "string" },
+        "head": { "type": "string" },
+        "head_subject": { "type": "string" },
+        "latest_wave_commit": { "type": "object" },
+        "working_tree": {
+          "type": "object",
+          "properties": {
+            "tracked_clean": { "type": "boolean" },
+            "untracked_scan": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "wave": {
+      "type": "object",
+      "required": ["current"],
+      "properties": {
+        "current": { "type": "string" },
+        "current_title": { "type": "string" },
+        "current_phase": { "type": "string", "enum": ["planning", "in_progress", "review", "done"] },
+        "current_status": { "type": "string" },
+        "current_note": { "type": "string" },
+        "previous_completed": { "type": "string" },
+        "baseline": { "type": "object" },
+        "completed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "verified"],
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "evidence": { "type": "string" },
+              "verified": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "properties": {
+        "running": { "type": "array", "items": { "type": "string" } },
+        "pending": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "modules": { "type": "object" },
+    "completed_modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "verified"],
+        "properties": {
+          "name": { "type": "string" },
+          "state": { "type": "string" },
+          "verified": { "type": "boolean" }
+        }
+      }
+    },
+    "modified_files": {
+      "type": "object",
+      "description": "Files changed in the current/last implementation batch. Replace per batch; never let it accumulate stale entries."
+    },
+    "known_technical_debt": {
+      "type": "object",
+      "properties": {
+        "source_of_truth": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "summary"],
+            "properties": {
+              "id": { "type": "string" },
+              "area": { "type": "string" },
+              "summary": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "known_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "summary"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+          "area": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "deferred_subsystems": { "type": "array" },
+    "tech_debt_ref": { "type": "string" },
+    "gates": { "type": "object" },
+    "sync": {
+      "type": "object",
+      "required": ["bridge_connected", "verified_against_working_tree", "last_verified"],
+      "properties": {
+        "bridge_connected": { "type": "boolean" },
+        "verified_against_working_tree": { "type": "boolean" },
+        "last_verified": { "type": ["string", "null"] },
+        "verified_by": { "type": "string" },
+        "caveats": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

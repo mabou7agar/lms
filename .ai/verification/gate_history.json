@@ -1,0 +1,21 @@
+{
+  "$schema": "../schema/gate_history.schema.json",
+  "ai_layer_version": "1.0",
+  "note": "Append one entry per gate run (local or CI). Newest last. Do not fabricate: only record runs actually observed.",
+  "gates_defined_in": "local_checks.md",
+  "runs": [
+    {
+      "id": "ci-run-13",
+      "captured_at": "2026-07-30T15:20:43Z",
+      "observed_from": "git",
+      "commit": "89e57e7",
+      "environment": "github-actions",
+      "result": "green",
+      "detail": "Recorded in git as 'final GO - CI run #13 all seven mandatory jobs green'. Predates W04 feature commits.",
+      "verified_live": false
+    }
+  ],
+  "pending": [
+    "Capture a post-W04 full gate run (HEAD ed960b1): Pint, PHPStan/Larastan, Deptrac, Pest, ESLint, tsc, Vitest, Playwright, axe, Trivy."
+  ]
+}
