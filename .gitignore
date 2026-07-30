@@ -35,3 +35,5 @@ apps/api/storage/app/i18n_splice.cjs
 /_pkg001_web_src.tgz
 /_w05_removed/
 apps/web/.spdtest
+
+apps/api/.deptrac.cache
