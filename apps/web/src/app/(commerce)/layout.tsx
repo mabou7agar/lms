@@ -1,21 +1,19 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { RequireAuth } from "@/lib/auth/guards";
-import { AnnouncementBar } from "@/components/landing/announcement-bar";
-import { LandingHeader } from "@/components/landing/landing-header";
-import { LandingFooter } from "@/components/landing/landing-footer";
-import { PageTransition } from "@/components/layout/page-transition";
+import { AppShell } from "@/components/layout/app-shell";
+import { commerceNav } from "@/config/nav";
 
+/**
+ * Authenticated commerce workspace (orders, billing, subscriptions, contracts). Uses the shared
+ * AppShell so the commerce nav is always present — desktop sidebar and mobile drawer — rather than
+ * the marketing header, which left billing/subscriptions reachable only by typing the URL.
+ */
 export default function CommerceLayout({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
-      <div className="flex min-h-dvh flex-col">
-        <AnnouncementBar />
-        <LandingHeader />
-        <main id="main-content" className="flex-1">
-          <PageTransition className="mx-auto w-full max-w-6xl px-4 py-10">{children}</PageTransition>
-        </main>
-        <LandingFooter />
-      </div>
+      <AppShell nav={commerceNav}>{children}</AppShell>
     </RequireAuth>
   );
 }

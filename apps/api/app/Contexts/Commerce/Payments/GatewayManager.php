@@ -3,37 +3,81 @@
 namespace App\Contexts\Commerce\Payments;
 
 use App\Contexts\Commerce\Contracts\PaymentGateway;
+use App\Contexts\Commerce\Payments\Gateways\AmazonPaymentServicesGateway;
 use App\Contexts\Commerce\Payments\Gateways\FakeGateway;
+use App\Contexts\Commerce\Payments\Gateways\HyperPayGateway;
+use App\Contexts\Commerce\Payments\Gateways\MoyasarGateway;
+use App\Contexts\Commerce\Payments\Gateways\PaymobGateway;
 use App\Contexts\Commerce\Payments\Gateways\StripeGateway;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Http\Client\Factory as HttpClient;
+use App\Contexts\Commerce\Payments\Gateways\TapGateway;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Client\Factory;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
- * Resolves the configured PaymentGateway (fake | stripe) from config/commerce.php. The Stripe
- * adapter receives services.stripe config here so no other code reads vendor secrets.
+ * Resolves the active payment gateway from configuration and constructs it with the shared
+ * Illuminate HTTP client plus its own credentials block from config('commerce.gateways.*').
+ *
+ * The concrete provider is selected by config('commerce.payment.provider') and every adapter is
+ * built uniformly with ($http, $config) so the manager never needs to know a provider's internals.
+ * A hard production guard refuses the 'fake' gateway outside local/testing so a misconfigured
+ * deploy can never silently accept "successful" payments that never touch a real processor.
+ *
+ * Bind the PaymentGateway port to this manager's resolved instance in the service provider, e.g.
+ *   $this->app->bind(PaymentGateway::class, fn ($app) => $app->make(GatewayManager::class)->resolve());
+ * so every consumer (CheckoutAction, InitiatePaymentAction, ProcessWebhook, RefundOrder) shares
+ * one configured adapter.
  */
 class GatewayManager
 {
-    public function __construct(private readonly Container $app) {}
+    public function __construct(
+        private readonly Factory $http,
+        private readonly Application $app,
+    ) {}
 
+    /**
+     * Build the configured gateway adapter. Fails closed: an unknown provider throws rather than
+     * falling back to a permissive default, and 'fake' is refused in production.
+     */
     public function resolve(): PaymentGateway
     {
-        $provider = (string) config('commerce.payment.provider', 'fake');
+        return $this->resolveProvider((string) config('commerce.payment.provider', 'fake'));
+    }
 
-        // The fake gateway approves every charge. Reaching it in production means real orders are
-        // fulfilled without a real payment, so an unset or mistyped COMMERCE_PAYMENT_PROVIDER must
-        // fail loudly at boot rather than silently degrade into free checkout. Defence in depth:
-        // the webhook signature check is the real control, this stops the misconfiguration.
-        if ($provider !== 'stripe' && $this->app->make('config')->get('app.env') === 'production') {
-            throw new \RuntimeException(
-                "Refusing to use the '{$provider}' payment gateway in production. "
-                .'Set COMMERCE_PAYMENT_PROVIDER=stripe.',
-            );
+    /**
+     * Build a named provider's adapter (used by the per-provider webhook route). Fails closed the
+     * same way as resolve(): an unknown provider throws rather than falling back to a permissive
+     * default, and 'fake' is refused in production. Verifying the signature still happens inside the
+     * returned adapter.
+     */
+    public function resolveProvider(string $provider): PaymentGateway
+    {
+        if ($provider === 'fake' && $this->app->make('config')->get('app.env') === 'production') {
+            throw new RuntimeException('The fake payment gateway is not permitted in production.');
         }
 
         return match ($provider) {
-            'stripe' => new StripeGateway($this->app->make(HttpClient::class), (array) config('services.stripe')),
-            default => $this->app->make(FakeGateway::class),
+            'fake' => new FakeGateway,
+            'stripe' => new StripeGateway($this->http, $this->configFor('stripe')),
+            'paymob' => new PaymobGateway($this->http, $this->configFor('paymob')),
+            'moyasar' => new MoyasarGateway($this->http, $this->configFor('moyasar')),
+            'hyperpay' => new HyperPayGateway($this->http, $this->configFor('hyperpay')),
+            'tap' => new TapGateway($this->http, $this->configFor('tap')),
+            'aps' => new AmazonPaymentServicesGateway($this->http, $this->configFor('aps')),
+            default => throw new InvalidArgumentException("Unsupported payment provider [{$provider}]."),
         };
+    }
+
+    /**
+     * The credentials/base_url/webhook_secret block for a provider.
+     *
+     * @return array<string, mixed>
+     */
+    private function configFor(string $provider): array
+    {
+        $config = config('commerce.gateways.'.$provider, []);
+
+        return is_array($config) ? $config : [];
     }
 }

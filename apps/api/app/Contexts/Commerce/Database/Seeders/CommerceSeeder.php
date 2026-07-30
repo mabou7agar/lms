@@ -22,6 +22,8 @@ class CommerceSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(CommerceTaxSeeder::class);
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         foreach (CommercePermission::values() as $permission) {
             Permission::findOrCreate($permission, 'web');

@@ -9,6 +9,7 @@ const base: Order = {
   currency: "SAR",
   subtotal_minor: 29900,
   discount_minor: 0,
+  tax_minor: 0,
   total_minor: 29900,
   placed_at: "2026-06-02T14:20:00Z",
   paid_at: "2026-06-02T14:21:00Z",

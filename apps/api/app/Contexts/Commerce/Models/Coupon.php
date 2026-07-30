@@ -20,7 +20,8 @@ class Coupon extends Model
 
     protected $fillable = [
         'code', 'type', 'value', 'scope', 'currency', 'max_redemptions', 'redeemed_count',
-        'starts_at', 'ends_at', 'is_active',
+        'starts_at', 'ends_at', 'is_active', 'per_user_limit', 'first_order_only',
+        'min_subtotal_minor', 'stackable',
     ];
 
     protected function casts(): array
@@ -34,6 +35,10 @@ class Coupon extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'is_active' => 'boolean',
+            'per_user_limit' => 'integer',
+            'first_order_only' => 'boolean',
+            'min_subtotal_minor' => 'integer',
+            'stackable' => 'boolean',
         ];
     }
 
@@ -58,6 +63,34 @@ class Coupon extends Model
     public function isExhausted(): bool
     {
         return $this->max_redemptions !== null && $this->redeemed_count >= $this->max_redemptions;
+    }
+
+    /** Per-user redemption cap (null = unlimited). Typed read for PHPStan-clean callers. */
+    public function perUserLimit(): ?int
+    {
+        $value = $this->getAttribute('per_user_limit');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** Whether the coupon is restricted to a user's first (never-yet-paid) order. */
+    public function isFirstOrderOnly(): bool
+    {
+        return (bool) $this->getAttribute('first_order_only');
+    }
+
+    /** Minimum eligible subtotal in minor units (null = no minimum). */
+    public function minSubtotalMinor(): ?int
+    {
+        $value = $this->getAttribute('min_subtotal_minor');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** Whether the coupon may be combined with other coupons. */
+    public function isStackable(): bool
+    {
+        return (bool) $this->getAttribute('stackable');
     }
 
     protected static function newFactory(): CouponFactory

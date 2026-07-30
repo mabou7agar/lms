@@ -4,25 +4,40 @@ namespace App\Contexts\Commerce\Actions\Payment;
 
 use App\Contexts\Commerce\Contracts\PaymentGateway;
 use App\Contexts\Commerce\Enums\OrderStatus;
+use App\Contexts\Commerce\Enums\RefundReason;
+use App\Contexts\Commerce\Enums\RefundStatus;
 use App\Contexts\Commerce\Enums\TransactionStatus;
 use App\Contexts\Commerce\Enums\TransactionType;
 use App\Contexts\Commerce\Events\OrderRefunded;
-use App\Contexts\Commerce\Exceptions\OrderNotRefundableException;
+use App\Contexts\Commerce\Exceptions\RefundNotAllowedException;
 use App\Contexts\Commerce\Models\Order;
 use App\Contexts\Commerce\Models\PaymentTransaction;
+use App\Contexts\Commerce\Models\Refund;
 use App\Contexts\Commerce\Payments\Data\RefundRequest;
 use App\Platform\Shared\Actions\BaseAction;
 use App\Platform\Shared\Audit\AuditLogger;
 use Throwable;
 
 /**
- * Refunds a paid order via the gateway, records the refund transaction, and marks the order
- * refunded. Enrollment revocation happens via the OrderRefunded listener (Learning unenroll).
+ * Issues a refund against a paid order — full by default, or a partial amount bounded by the
+ * order's remaining refundable balance. Generalizes the original full-refund action while keeping
+ * its lock-then-charge-outside-transaction shape:
  *
- * Concurrency-safe and idempotent: the order row is locked and transitioned Paid -> Refunding
- * BEFORE the gateway call, and the gateway call runs OUTSIDE any DB transaction (network I/O
- * never holds row locks). A concurrent or repeated refund attempt sees a non-Paid status and
- * fails with a domain error instead of double-refunding.
+ *   Phase 1 (locked, COMMITS first) — lock the order, re-derive remaining refundable = paid total
+ *     minus the sum of the order's NON-FAILED (pending + succeeded) refunds, validate the request,
+ *     and create a pending Refund plus a pending refund PaymentTransaction. Counting in-flight
+ *     pending refunds under the lock reserves capacity, so concurrent requests can never
+ *     over-refund a partially-refunded order.
+ *   Phase 2 (no DB transaction) — call the gateway to move the money. No network I/O ever runs
+ *     inside a DB transaction. A thrown error or a declined result settles the pending refund as
+ *     failed (freeing its reserved capacity) and re-raises.
+ *   Phase 3 (locked) — on success settle the Refund and its transaction as succeeded, then compute
+ *     whether the order is now FULLY refunded. Full refund -> order becomes Refunded (refunded_at
+ *     stamped) and OrderRefunded is dispatched AFTER commit, so enrollments are revoked only on a
+ *     complete refund. A partial refund leaves the order Paid and emits no domain event.
+ *
+ * Every refund attempt is audited. Money is integer minor units throughout; the gateway is asked
+ * to refund against the original charge's provider reference.
  */
 class RefundOrderAction extends BaseAction
 {
@@ -31,85 +46,202 @@ class RefundOrderAction extends BaseAction
         private readonly AuditLogger $audit,
     ) {}
 
-    public function execute(Order $order): Order
-    {
-        // Phase 1: lock the order, re-check refundability under the lock, and claim it.
-        $charge = $this->transaction(function () use (&$order): ?PaymentTransaction {
-            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+    /**
+     * @param  int|null  $amountMinor  Minor-unit amount to refund; null refunds the full remaining balance.
+     */
+    public function execute(
+        Order $order,
+        ?int $amountMinor = null,
+        RefundReason $reason = RefundReason::RequestedByCustomer,
+    ): Refund {
+        if ($this->statusOf($order) !== OrderStatus::Paid) {
+            throw RefundNotAllowedException::notPaid((string) $order->getAttribute('public_id'));
+        }
 
-            if ($order->status !== OrderStatus::Paid) {
-                throw new OrderNotRefundableException;
+        $paidTotal = (int) $order->getAttribute('total_minor');
+        $currency = (string) $order->getAttribute('currency');
+
+        // Phase 1: validate under a lock and create the pending refund ledger. Commits first.
+        $prepared = $this->transaction(function () use ($order, $amountMinor, $reason, $paidTotal, $currency): array {
+            $locked = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($this->statusOf($locked) !== OrderStatus::Paid) {
+                throw RefundNotAllowedException::notPaid((string) $locked->getAttribute('public_id'));
             }
 
-            $alreadyRefunded = $order->transactions()
-                ->where('type', TransactionType::Refund->value)
-                ->where('status', TransactionStatus::Succeeded->value)
-                ->exists();
+            // Reserve against non-failed refunds so an in-flight pending refund cannot be double-spent.
+            $reservedMinor = (int) Refund::where('order_id', $locked->getKey())
+                ->whereIn('status', [RefundStatus::Pending->value, RefundStatus::Succeeded->value])
+                ->sum('amount_minor');
 
-            if ($alreadyRefunded) {
-                throw new OrderNotRefundableException('This order has already been refunded.');
+            $remaining = $paidTotal - $reservedMinor;
+
+            // A null request means "refund everything still refundable".
+            $requested = $amountMinor ?? $remaining;
+
+            if ($requested <= 0) {
+                throw RefundNotAllowedException::invalidAmount($requested);
             }
 
-            $order->forceFill(['status' => OrderStatus::Refunding->value])->save();
+            if ($requested > $remaining) {
+                throw RefundNotAllowedException::exceedsRemaining($requested, $remaining);
+            }
 
-            return $order->transactions()
+            // Locate the original charge so the gateway can find the payment to reverse.
+            $charge = $locked->transactions()
                 ->where('type', TransactionType::Charge->value)
                 ->where('status', TransactionStatus::Succeeded->value)
                 ->latest('id')
-                ->first();
+                ->first()
+                ?? $locked->transactions()
+                    ->where('type', TransactionType::Charge->value)
+                    ->latest('id')
+                    ->first();
+
+            $providerName = $charge?->getAttribute('provider') ?? (string) config('commerce.payment.provider');
+            $chargeReference = $charge?->getAttribute('provider_reference') ?? (string) $locked->getAttribute('public_id');
+
+            $refundTxn = PaymentTransaction::create([
+                'order_id' => $locked->getKey(),
+                'provider' => $providerName,
+                'provider_reference' => null,
+                'type' => TransactionType::Refund->value,
+                'status' => TransactionStatus::Pending->value,
+                'amount_minor' => $requested,
+                'currency' => $currency,
+            ]);
+
+            $refund = Refund::create([
+                'order_id' => $locked->getKey(),
+                'payment_transaction_id' => $refundTxn->getKey(),
+                'amount_minor' => $requested,
+                'currency' => $currency,
+                'status' => RefundStatus::Pending->value,
+                'reason' => $reason->value,
+            ]);
+
+            return [
+                'refund' => $refund,
+                'refund_transaction_id' => $refundTxn->getKey(),
+                'amount_minor' => $requested,
+                'charge_reference' => (string) $chargeReference,
+            ];
         });
 
-        // Phase 2: call the provider OUTSIDE any DB transaction.
+        /** @var Refund $refund */
+        $refund = $prepared['refund'];
+        $refundTxnId = $prepared['refund_transaction_id'];
+        $requestedMinor = (int) $prepared['amount_minor'];
+
+        // Phase 2: move the money OUTSIDE any DB transaction.
         try {
             $result = $this->gateway->refund(new RefundRequest(
-                providerReference: (string) ($charge?->provider_reference ?? ''),
-                amountMinor: $order->total_minor,
-                currency: $order->currency,
+                providerReference: $prepared['charge_reference'],
+                amountMinor: $requestedMinor,
+                currency: $currency,
             ));
         } catch (Throwable $e) {
-            $this->release($order);
+            $this->settleFailure($order, $refund, $refundTxnId, $requestedMinor, $currency, $reason);
 
             throw $e;
         }
 
-        // Phase 3: record the outcome and finalize the status.
-        $refunded = $this->transaction(function () use ($order, $result): Order {
-            PaymentTransaction::create([
-                'order_id' => $order->id,
-                'provider' => (string) config('commerce.payment.provider'),
-                'provider_reference' => $result->providerReference,
-                'type' => TransactionType::Refund->value,
-                'status' => $result->isSucceeded() ? TransactionStatus::Succeeded->value : TransactionStatus::Failed->value,
-                'amount_minor' => $order->total_minor,
-                'currency' => $order->currency,
-            ]);
+        if (! $result->isSucceeded()) {
+            $this->settleFailure($order, $refund, $refundTxnId, $requestedMinor, $currency, $reason);
 
-            $order->forceFill($result->isSucceeded()
-                ? ['status' => OrderStatus::Refunded->value, 'refunded_at' => now()]
-                : ['status' => OrderStatus::Paid->value])->save();
-
-            return $order;
-        });
-
-        if ($refunded->status !== OrderStatus::Refunded) {
-            throw new OrderNotRefundableException('The payment provider declined the refund.');
+            throw RefundNotAllowedException::gatewayDeclined((string) $order->getAttribute('public_id'));
         }
 
-        $this->audit->log('order.refunded', $refunded, [
-            'amount_minor' => $refunded->total_minor,
-            'currency' => $refunded->currency,
+        // Phase 3: settle success under a lock and decide full-vs-partial.
+        $fullyRefunded = $this->transaction(function () use ($order, $refund, $refundTxnId, $result, $paidTotal): bool {
+            $locked = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            $refund->forceFill([
+                'status' => RefundStatus::Succeeded->value,
+                'provider_reference' => $result->providerReference,
+                'processed_at' => now(),
+            ])->save();
+
+            PaymentTransaction::whereKey($refundTxnId)->update([
+                'status' => TransactionStatus::Succeeded->value,
+                'provider_reference' => $result->providerReference,
+            ]);
+
+            $refundedMinor = (int) Refund::where('order_id', $locked->getKey())
+                ->where('status', RefundStatus::Succeeded->value)
+                ->sum('amount_minor');
+
+            $fully = $refundedMinor >= $paidTotal;
+
+            // Full refund flips the order to Refunded; a partial refund leaves it Paid.
+            if ($fully) {
+                $locked->forceFill([
+                    'status' => OrderStatus::Refunded->value,
+                    'refunded_at' => now(),
+                ])->save();
+            }
+
+            return $fully;
+        });
+
+        $this->audit->log('commerce.order.refunded', $refund, [
+            'order_id' => (string) $order->getAttribute('public_id'),
+            'amount_minor' => $requestedMinor,
+            'currency' => $currency,
+            'reason' => $reason->value,
+            'provider_reference' => $result->providerReference,
+            'full_refund' => $fullyRefunded,
         ]);
 
-        OrderRefunded::dispatch($refunded);
+        // Revoke enrollments only when the order is FULLY refunded.
+        if ($fullyRefunded) {
+            $this->audit->log('order.refunded', $order, [
+                'amount_minor' => $requestedMinor,
+                'currency' => $currency,
+            ]);
 
-        return $refunded;
+            OrderRefunded::dispatch($order->refresh());
+        }
+
+        return $refund;
     }
 
-    /** Compensating action: return a claimed (Refunding) order to Paid so it can be retried. */
-    private function release(Order $order): void
+    /**
+     * Settle a pending refund as failed (freeing its reserved capacity), leaving the order Paid,
+     * and audit the failed attempt.
+     */
+    private function settleFailure(
+        Order $order,
+        Refund $refund,
+        int|string $refundTxnId,
+        int $amountMinor,
+        string $currency,
+        RefundReason $reason,
+    ): void {
+        $this->transaction(function () use ($refund, $refundTxnId): void {
+            $refund->forceFill([
+                'status' => RefundStatus::Failed->value,
+                'processed_at' => now(),
+            ])->save();
+
+            PaymentTransaction::whereKey($refundTxnId)->update([
+                'status' => TransactionStatus::Failed->value,
+            ]);
+        });
+
+        $this->audit->log('commerce.order.refund_failed', $refund, [
+            'order_id' => (string) $order->getAttribute('public_id'),
+            'amount_minor' => $amountMinor,
+            'currency' => $currency,
+            'reason' => $reason->value,
+        ]);
+    }
+
+    /** Derive the order's status enum without depending on a model accessor (PHPStan-clean). */
+    private function statusOf(Order $order): OrderStatus
     {
-        Order::whereKey($order->id)
-            ->where('status', OrderStatus::Refunding->value)
-            ->update(['status' => OrderStatus::Paid->value]);
+        $status = $order->getAttribute('status');
+
+        return $status instanceof OrderStatus ? $status : OrderStatus::from((string) $status);
     }
 }

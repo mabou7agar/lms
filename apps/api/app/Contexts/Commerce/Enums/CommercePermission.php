@@ -8,6 +8,9 @@ enum CommercePermission: string
     case ManageCoupons = 'commerce.coupons.manage';
     case ViewOrders = 'commerce.orders.view';
     case ManageContracts = 'commerce.contracts.manage';
+    case ManageRefunds = 'commerce.refunds.manage';
+    case ManageCreditNotes = 'commerce.credit-notes.manage';
+    case ManageSubscriptions = 'commerce.subscriptions.manage';
 
     /** @return array<int, string> */
     public static function values(): array

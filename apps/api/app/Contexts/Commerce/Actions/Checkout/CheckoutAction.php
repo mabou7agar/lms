@@ -3,6 +3,7 @@
 namespace App\Contexts\Commerce\Actions\Checkout;
 
 use App\Contexts\Commerce\Contracts\PaymentGateway;
+use App\Contexts\Commerce\Contracts\TaxCalculator;
 use App\Contexts\Commerce\Enums\InvoiceStatus;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\TransactionStatus;
@@ -19,6 +20,7 @@ use App\Contexts\Commerce\Models\PaymentTransaction;
 use App\Contexts\Commerce\Payments\Data\ChargeRequest;
 use App\Contexts\Commerce\Services\CartService;
 use App\Contexts\Commerce\Services\ContractService;
+use App\Contexts\Commerce\Services\CouponService;
 use App\Contexts\Commerce\Services\InvoiceNumberService;
 use App\Platform\Shared\Actions\BaseAction;
 use Throwable;
@@ -33,6 +35,10 @@ use Throwable;
  * marks the order failed and releases the coupon redemption. The order public_id doubles as
  * the gateway idempotency key so provider-side retries cannot double-charge.
  *
+ * Tax is server-authoritative: it is computed via the TaxCalculator port on the DISCOUNTED
+ * base (never trusted from the client) and folded into the order/invoice grand total, which is
+ * what the gateway is asked to charge.
+ *
  * @phpstan-type CheckoutResult array{order: Order, contract: ?\App\Contexts\Commerce\Models\Contract, charge: \App\Contexts\Commerce\Payments\Data\ChargeResult}
  */
 class CheckoutAction extends BaseAction
@@ -42,6 +48,8 @@ class CheckoutAction extends BaseAction
         private readonly ContractService $contracts,
         private readonly InvoiceNumberService $invoiceNumbers,
         private readonly PaymentGateway $gateway,
+        private readonly TaxCalculator $tax,
+        private readonly CouponService $coupons,
     ) {}
 
     /** @return array{order: Order, contract: mixed, charge: mixed} */
@@ -55,27 +63,46 @@ class CheckoutAction extends BaseAction
 
         // Phase 1: create the order, invoice, coupon redemption, and contract; COMMIT first.
         [$order, $contract] = $this->transaction(function () use ($userId, $cart): array {
-            // Lock the coupon row to serialize redemption counting.
-            $coupon = $cart->coupon;
-            if ($coupon !== null) {
-                $coupon = $coupon->newQuery()->whereKey($coupon->id)->lockForUpdate()->first();
+            // Lock the coupon row to serialize redemption counting; re-load as a typed Coupon.
+            $cartCoupon = $cart->coupon;
+            $coupon = null;
+            if ($cartCoupon !== null) {
+                $coupon = Coupon::query()->whereKey($cartCoupon->getKey())->lockForUpdate()->first();
 
                 // Re-validate under the lock: the counter may have moved since it was applied.
                 if ($coupon === null || $coupon->isExhausted()) {
                     throw new CouponExhaustedException;
                 }
+
+                // Also re-assert the per-user rules under the lock (first-order-only, per-user cap):
+                // apply-time validation is racy, so this is where the authoritative check happens.
+                $this->coupons->assertPromotionRulesForUser($coupon, $userId);
             }
 
             $totals = $this->carts->totals($cart);
 
+            // Server-authoritative tax. The taxable base is the DISCOUNTED subtotal, passed as a
+            // single line so the base is exactly max(0, subtotal - discount) with no per-line
+            // rounding drift. Jurisdiction + inclusive flag come from config, never the client.
+            $tax = $this->tax->calculate(
+                $cart->getAttribute('currency'),
+                (string) config('commerce.tax.default_country'),
+                [$totals['total_minor']],
+                (bool) config('commerce.tax.prices_include_tax', false),
+            );
+
             $order = Order::create([
                 'user_id' => $userId,
                 'status' => OrderStatus::Pending->value,
-                'currency' => $cart->currency,
+                'currency' => $cart->getAttribute('currency'),
                 'subtotal_minor' => $totals['subtotal_minor'],
                 'discount_minor' => $totals['discount_minor'],
-                'total_minor' => $totals['total_minor'],
-                'coupon_id' => $coupon?->id,
+                'tax_minor' => $tax->taxMinor,
+                // Grand total is tax-inclusive: the discounted subtotal plus tax when prices are
+                // tax-exclusive (the default), or the tax-inclusive base itself otherwise. In both
+                // cases this equals the gross of the taxable base.
+                'total_minor' => $tax->grossMinor,
+                'coupon_id' => $coupon?->getKey(),
                 'placed_at' => now(),
             ]);
 
@@ -93,6 +120,10 @@ class CheckoutAction extends BaseAction
                 'number' => $this->invoiceNumbers->next(),
                 'status' => InvoiceStatus::Issued->value,
                 'currency' => $order->currency,
+                // Invoice reconciles as net + tax = total: subtotal is the net (pre-tax) taxable
+                // base, tax is the VAT, total is the tax-inclusive grand total.
+                'subtotal_minor' => $tax->netMinor,
+                'tax_minor' => $tax->taxMinor,
                 'total_minor' => $order->total_minor,
                 'issued_at' => now(),
             ]);
@@ -107,7 +138,7 @@ class CheckoutAction extends BaseAction
             return [$order, $contract];
         });
 
-        // Phase 2: gateway charge OUTSIDE any DB transaction.
+        // Phase 2: gateway charge OUTSIDE any DB transaction. Amount is the tax-inclusive total.
         try {
             $charge = $this->gateway->charge(new ChargeRequest(
                 reference: $order->public_id,

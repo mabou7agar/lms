@@ -8,15 +8,19 @@ import {
   clearCart,
   getCart,
   getContracts,
+  getOrder,
   getOrders,
   getProducts,
   removeCartItem,
+  validateCoupon,
 } from "./api";
 
 export const useProducts = (page: number) =>
   useQuery({ queryKey: ["products", page], queryFn: () => getProducts(page) });
 export const useCart = () => useQuery({ queryKey: ["cart"], queryFn: getCart });
 export const useOrders = (page: number) => useQuery({ queryKey: ["orders", page], queryFn: () => getOrders(page) });
+export const useOrder = (id: string) =>
+  useQuery({ queryKey: ["order", id], queryFn: () => getOrder(id), enabled: id.length > 0 });
 export const useContracts = () => useQuery({ queryKey: ["contracts"], queryFn: getContracts });
 
 export function useAddToCart() {
@@ -56,4 +60,7 @@ export function useAcceptContract() {
       qc.invalidateQueries({ queryKey: ["orders"] });
     },
   });
+}
+export function useValidateCoupon() {
+  return useMutation({ mutationFn: (code: string) => validateCoupon(code) });
 }

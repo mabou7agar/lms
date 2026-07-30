@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { errorMessage } from "@/lib/api/errors";
 import { formatMoney } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useAcceptContract, useCart, useCheckout, useContracts } from "@/lib/commerce/hooks";
 import type { Cart } from "@/lib/commerce/api";
 import { RequireAuth } from "@/lib/auth/guards";
+import { CouponField } from "@/components/commerce/coupon-field";
 import { PageHeader } from "@/components/student/page-header";
 import { QueryState } from "@/components/student/query-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +20,7 @@ import { EmptyState } from "@/components/states/empty-state";
 
 function Summary({ cart }: { cart: Cart }) {
   const { t, locale } = useI18n();
+  const tax = cart.tax_minor ?? 0;
   return (
     <div className="space-y-2 text-sm">
       {cart.items.map((i) => (
@@ -26,8 +29,22 @@ function Summary({ cart }: { cart: Cart }) {
           <span className="tabular-nums">{formatMoney(i.unit_amount_minor, cart.currency, locale)}</span>
         </div>
       ))}
-      <div className="flex justify-between border-t pt-2 font-semibold">
-        <span>{t("commerce.cart.total")}</span>
+      <div className="flex justify-between border-t pt-2 text-muted-foreground">
+        <span>{t("commerce.checkoutBilling.subtotal")}</span>
+        <span className="tabular-nums">{formatMoney(cart.subtotal_minor, cart.currency, locale)}</span>
+      </div>
+      {cart.discount_minor > 0 ? (
+        <div className="flex justify-between text-muted-foreground">
+          <span>{t("commerce.checkoutBilling.discount")}</span>
+          <span className="tabular-nums">−{formatMoney(cart.discount_minor, cart.currency, locale)}</span>
+        </div>
+      ) : null}
+      <div className="flex justify-between text-muted-foreground">
+        <span>{t("commerce.checkoutBilling.tax")}</span>
+        <span className="tabular-nums">{formatMoney(tax, cart.currency, locale)}</span>
+      </div>
+      <div className="flex justify-between border-t pt-2 text-base font-semibold">
+        <span>{t("commerce.checkoutBilling.total")}</span>
         <span className="tabular-nums">{formatMoney(cart.total_minor, cart.currency, locale)}</span>
       </div>
     </div>
@@ -37,6 +54,7 @@ function Summary({ cart }: { cart: Cart }) {
 function CheckoutFlow() {
   const { t } = useI18n();
   const router = useRouter();
+  const qc = useQueryClient();
   const cartQuery = useCart();
   const checkout = useCheckout();
   const contracts = useContracts();
@@ -45,12 +63,20 @@ function CheckoutFlow() {
   const [contractId, setContractId] = useState<string | null>(null);
   const [placed, setPlaced] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onPlaceOrder = () => {
     setError(null);
     checkout.mutate(undefined, {
       onSuccess: (res) => {
+        // Hosted MENA gateway: hand off to the provider's payment page.
+        const redirectUrl = res.data.payment.redirect_url;
+        if (redirectUrl) {
+          setRedirecting(true);
+          window.location.assign(redirectUrl);
+          return;
+        }
         setPlaced(true);
         setContractId(res.data.contract_id);
         if (!res.data.contract_id) router.push("/checkout/success");
@@ -69,6 +95,16 @@ function CheckoutFlow() {
       onError: (e) => setError(errorMessage(e, t("common.error"))),
     });
   };
+
+  if (redirecting) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+          {t("commerce.checkoutBilling.redirecting")}
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Step 2: contract acceptance after the order is placed.
   if (placed && contractId) {
@@ -106,6 +142,7 @@ function CheckoutFlow() {
           <CardContent className="space-y-4">
             {error ? <FormAlert>{error}</FormAlert> : null}
             <Summary cart={cart} />
+            <CouponField currency={cart.currency} onApplied={() => qc.invalidateQueries({ queryKey: ["cart"] })} />
             <Button className="w-full" loading={checkout.isPending} onClick={onPlaceOrder}>
               {t("commerce.checkout.placeOrder")}
             </Button>

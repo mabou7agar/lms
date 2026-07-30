@@ -4,9 +4,11 @@ namespace App\Contexts\Commerce\Models;
 
 use App\Contexts\Commerce\Database\Factories\OrderFactory;
 use App\Contexts\Commerce\Enums\OrderStatus;
+use App\Contexts\Commerce\Enums\RefundStatus;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,7 +22,7 @@ class Order extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'status', 'currency', 'subtotal_minor', 'discount_minor', 'total_minor',
+        'user_id', 'status', 'currency', 'subtotal_minor', 'discount_minor', 'tax_minor', 'total_minor',
         'coupon_id', 'placed_at', 'paid_at', 'fulfilled_at', 'refunded_at',
     ];
 
@@ -30,6 +32,7 @@ class Order extends Model
             'status' => OrderStatus::class,
             'subtotal_minor' => 'integer',
             'discount_minor' => 'integer',
+            'tax_minor' => 'integer',
             'total_minor' => 'integer',
             'placed_at' => 'datetime',
             'paid_at' => 'datetime',
@@ -63,9 +66,29 @@ class Order extends Model
         return $this->hasMany(OrderCourseGrant::class);
     }
 
+    /** @return BelongsTo<Coupon, $this> */
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
     public function isPaid(): bool
     {
         return $this->status === OrderStatus::Paid || $this->paid_at !== null;
+    }
+
+    /** Sum of this order's succeeded refunds, in integer minor units. */
+    public function refundedTotalMinor(): int
+    {
+        return (int) $this->refunds()
+            ->where('status', RefundStatus::Succeeded->value)
+            ->sum('amount_minor');
     }
 
     protected static function newFactory(): OrderFactory

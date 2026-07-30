@@ -24,6 +24,8 @@ export type Cart = {
   items: CartItem[];
   subtotal_minor: number;
   discount_minor: number;
+  // Tax is computed server-side (VAT/GST). Optional so pre-tax carts stay backward-compatible.
+  tax_minor?: number;
   total_minor: number;
 };
 export type Order = {
@@ -32,6 +34,8 @@ export type Order = {
   currency: string;
   subtotal_minor: number;
   discount_minor: number;
+  // Tax component of the order total (VAT/GST), computed server-side.
+  tax_minor: number;
   total_minor: number;
   placed_at: string | null;
   paid_at: string | null;
@@ -50,7 +54,46 @@ export type CheckoutResult = {
   order: Order;
   contract_id: string | null;
   // client_secret is a per-intent token for the browser SDK — NOT a secret API key.
-  payment: { provider_reference: string; client_secret: string | null; status: string };
+  // redirect_url is set when the gateway is hosted/redirect-based (MENA HPP) rather than inline.
+  payment: {
+    provider_reference: string;
+    client_secret: string | null;
+    status: string;
+    redirect_url?: string | null;
+  };
+};
+
+// A single ledger movement against an order (charge, capture, refund, …).
+export type OrderTransaction = {
+  id: string;
+  type: string;
+  status: string;
+  amount_minor: number;
+  provider_reference: string | null;
+  created_at: string | null;
+};
+// Invoice with the full tax breakdown, as returned on the order detail endpoint.
+export type OrderInvoice = {
+  number: string;
+  status: string;
+  subtotal_minor: number;
+  discount_minor: number;
+  tax_minor: number;
+  total_minor: number;
+};
+// Order detail extends the list shape with the richer invoice and the transaction ledger.
+export type OrderDetail = Omit<Order, "invoice"> & {
+  invoice?: OrderInvoice | null;
+  transactions?: OrderTransaction[];
+};
+
+// Result of validating a coupon code against the current cart/context.
+export type CouponValidation = {
+  code: string;
+  valid: boolean;
+  discount_minor: number;
+  currency?: string;
+  reason?: string | null;
 };
 
 export const getProducts = (page = 1) => api.get<Paginated<Product>>(`products?page=${page}`, { auth: false });
@@ -62,5 +105,8 @@ export const removeCartItem = (productPublicId: string) =>
 export const clearCart = () => api.del("cart");
 export const checkout = () => api.post<ApiSuccess<CheckoutResult>>("checkout");
 export const getOrders = (page = 1) => api.get<Paginated<Order>>(`orders?page=${page}`);
+export const getOrder = (id: string) => api.data<OrderDetail>(`orders/${id}`);
 export const getContracts = () => api.data<Contract[]>("contracts");
 export const acceptContract = (contractId: string) => api.post(`contracts/${contractId}/accept`);
+export const validateCoupon = (code: string) =>
+  api.data<CouponValidation>("coupons/validate", { method: "POST", body: { code } });
