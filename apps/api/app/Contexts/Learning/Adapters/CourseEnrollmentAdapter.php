@@ -22,6 +22,18 @@ class CourseEnrollmentAdapter implements CourseEnrollmentPort
             ->exists();
     }
 
+    public function hasCourseAccess(int $courseId, int $userId): bool
+    {
+        // Access survives completion: active OR completed enrollment grants it (mirrors the lesson
+        // player's grantsAccess() scope), so a learner who finished the course can still take or
+        // retake its assessments.
+        return Enrollment::query()
+            ->where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->grantsAccess()
+            ->exists();
+    }
+
     /**
      * All actively-enrolled learner user ids for the course, ascending and de-duplicated.
      *

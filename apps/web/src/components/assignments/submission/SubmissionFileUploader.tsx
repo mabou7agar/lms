@@ -125,7 +125,7 @@ export function SubmissionFileUploader({
             >
               <div className="flex items-center justify-between">
                 <span className="truncate text-slate-700">{it.name}</span>
-                <span className="ml-2 shrink-0 text-xs text-slate-500">
+                <span className="ms-2 shrink-0 text-xs text-slate-500">
                   {STAGE_LABEL[it.stage]}
                 </span>
               </div>

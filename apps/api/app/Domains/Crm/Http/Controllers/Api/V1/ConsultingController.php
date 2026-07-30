@@ -16,12 +16,15 @@ class ConsultingController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        // Paginated: a user's consulting-request history grows without bound. The `data` envelope
+        // stays an array of the same resource shape (meta/links additive), so consumers are unaffected.
         $requests = ConsultingRequest::query()
             ->where('requested_by', $request->user()->id)
             ->latest('id')
-            ->get();
+            ->paginate(max(1, min((int) $request->integer('per_page', 20), 100)))
+            ->withQueryString();
 
-        return ApiResponse::success(ConsultingRequestResource::collection($requests));
+        return ApiResponse::paginated($requests, ConsultingRequestResource::class);
     }
 
     public function store(ConsultingRequestRequest $request, CreateConsultingRequestAction $action): JsonResponse

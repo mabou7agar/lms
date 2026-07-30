@@ -10,6 +10,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Delivers one chunk of a notification fan-out (H4). One of these is dispatched per chunk of
@@ -39,6 +41,9 @@ class FanOutNotificationJob implements ShouldQueue
         public readonly array $data,
     ) {}
 
+    /** Hard ceiling on a single chunk so a stuck worker is reclaimed rather than hanging forever. */
+    public int $timeout = 120;
+
     public function tries(): int
     {
         return (int) config('notifications.retry.max_attempts', 3);
@@ -58,5 +63,20 @@ class FanOutNotificationJob implements ShouldQueue
         }
 
         $action->executeForUserIds($this->userIds, $this->category, $this->templateKey, $this->data);
+    }
+
+    /**
+     * All retries for this chunk are exhausted (or the worker timed out). Per-recipient dedup makes
+     * the delivery itself retry-safe, but a total chunk failure would otherwise vanish silently —
+     * emit a dead-letter log line so the dropped cohort is observable.
+     */
+    public function failed(Throwable $e): void
+    {
+        Log::error('notifications.fanout.failed', [
+            'template_key' => $this->templateKey,
+            'category' => $this->category->value,
+            'recipient_count' => count($this->userIds),
+            'error' => $e->getMessage(),
+        ]);
     }
 }

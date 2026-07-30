@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
-  Presentation, LineChart, Film,
+  Presentation, LineChart, Film, Receipt, CreditCard,
 } from "lucide-react";
 
 /**
@@ -28,6 +28,8 @@ export const accountNav: NavItem[] = [
 
 export const commerceNav: NavItem[] = [
   { labelKey: "nav.orders", href: "/orders", icon: ShoppingCart },
+  { labelKey: "nav.billing", href: "/billing", icon: Receipt },
+  { labelKey: "nav.subscriptions", href: "/subscriptions", icon: CreditCard },
   { labelKey: "nav.contracts", href: "/contracts", icon: FileSignature },
 ];
 

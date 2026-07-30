@@ -44,7 +44,9 @@ function LoginForm() {
 
   const mutation = useMutation({
     mutationFn: (v: Values) => auth.login(v.email, v.password, mfa ? v.mfa_code : undefined),
-    onSuccess: () => router.replace(safeRedirect(params.get("redirect"))),
+    // With no explicit redirect target, land on the authenticated dashboard rather than the public
+    // marketing home (safeRedirect's default "/"), which reads to users as "login did nothing".
+    onSuccess: () => router.replace(safeRedirect(params.get("redirect") ?? "/dashboard")),
     onError: (err) => {
       if (isMfaRequired(err)) {
         setMfa(true);

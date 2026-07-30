@@ -18,8 +18,9 @@ class OrganizationController extends Controller
     {
         Gate::authorize('viewAny', Organization::class);
 
+        $perPage = max(1, min((int) request('per_page', 15), 100));
         $orgs = Organization::query()->withCount('members')->latest('id')
-            ->paginate((int) request('per_page', 15))->withQueryString();
+            ->paginate($perPage)->withQueryString();
 
         return ApiResponse::paginated($orgs, OrganizationResource::class);
     }

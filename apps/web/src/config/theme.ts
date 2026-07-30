@@ -147,9 +147,9 @@ export const brandTheme = {
           { label: { en: "Live cohorts", ar: "الأفواج" }, href: "/cohorts" },
           { label: { en: "Workshops", ar: "الورش" }, href: "/workshops" },
           { label: { en: "Events", ar: "الفعاليات" }, href: "/events" },
-          { label: { en: "Certificates", ar: "الشهادات" }, href: "/certificates" },
+          { label: { en: "Certificates", ar: "الشهادات" }, href: "/verify" },
           { label: { en: "Pricing", ar: "الأسعار" }, href: "/pricing" },
-          { label: { en: "Become an instructor", ar: "كن مدرّبًا" }, href: "/trainers" },
+          { label: { en: "Become an instructor", ar: "كن مدرّبًا" }, href: "/teach/apply" },
         ],
       },
       {
@@ -165,7 +165,7 @@ export const brandTheme = {
         title: { en: "Company", ar: "الشركة" } as Localized,
         links: [
           { label: { en: "About", ar: "من نحن" }, href: "/about" },
-          { label: { en: "Organizations", ar: "المؤسسات" }, href: "/org" },
+          { label: { en: "Organizations", ar: "المؤسسات" }, href: "/enterprise" },
           { label: { en: "Trainers", ar: "المدرّبون" }, href: "/trainers" },
           { label: { en: "Contact", ar: "تواصل" }, href: "/contact" },
         ],
@@ -175,7 +175,6 @@ export const brandTheme = {
       { label: { en: "Verify certificate", ar: "التحقق من الشهادات" }, href: "/verify" },
       { label: { en: "Privacy", ar: "الخصوصية" }, href: "/privacy" },
       { label: { en: "Terms", ar: "الشروط" }, href: "/terms" },
-      { label: { en: "العربية", ar: "English" }, href: "#lang" },
     ] as LinkItem[],
   },
 

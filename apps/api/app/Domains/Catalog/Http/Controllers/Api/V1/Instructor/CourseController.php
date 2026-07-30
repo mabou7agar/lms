@@ -32,15 +32,22 @@ class CourseController extends InstructorController
             $query->where('status', $status);
         }
 
-        $courses = $query->latest('id')->get();
+        // Paginated: an instructor's course list is unbounded, and the per-course curriculum read in
+        // courseStatsForCourses is O(courses) — paginating bounds both the payload and that work to a
+        // single page. The `data` envelope stays an array of the same resource shape (meta/links
+        // additive), so existing consumers are unaffected.
+        $paginator = $query->latest('id')
+            ->paginate(max(1, min((int) $request->integer('per_page', 20), 100)))
+            ->withQueryString();
+        $courses = $paginator->getCollection();
 
         // H3: batch the per-course analytics (enrollment aggregates + quiz pass rates) into two
-        // queries for the whole list instead of ~3 per course. The payload each course receives is
+        // queries for the page instead of ~3 per course. The payload each course receives is
         // identical to the previous courseStats($c) call, so the response shape is unchanged.
         $stats = $analytics->courseStatsForCourses($courses);
         $courses->each(fn (Course $c) => $c->setAttribute('stats_payload', $stats[(int) $c->getKey()] ?? []));
 
-        return ApiResponse::success(InstructorCourseResource::collection($courses));
+        return ApiResponse::paginated($paginator, InstructorCourseResource::class);
     }
 
     /** GET /teach/courses/{course} — detail + analytics (404 if not the caller's). */

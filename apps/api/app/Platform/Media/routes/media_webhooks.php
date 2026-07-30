@@ -12,5 +12,12 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1/media/webhooks')->middleware('throttle:120,1')->group(function (): void {
     Route::post('mux', [MediaWebhookController::class, 'mux']);
     Route::post('s3', [MediaWebhookController::class, 's3']);
-    Route::post('fake', [MediaWebhookController::class, 'fake']);
+
+    // The `fake` provider is credential-free (HMAC over a shared dev secret) and exists ONLY for
+    // local development and the test suite. Registering it in production would expose a forgeable
+    // endpoint that can flip asset status / override playback ids, so it is bound only in
+    // local/testing environments.
+    if (app()->environment(['local', 'testing'])) {
+        Route::post('fake', [MediaWebhookController::class, 'fake']);
+    }
 });

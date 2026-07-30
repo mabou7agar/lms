@@ -43,10 +43,15 @@ class GradebookController
     public function export(Request $request, string $course): StreamedResponse
     {
         $courseId = $this->manageableCourse($request, $course);
-        $csv = $this->gradebook->toCsv($courseId);
 
-        return response()->streamDownload(function () use ($csv): void {
-            echo $csv;
+        // Stream the CSV line-by-line in bounded roster chunks rather than building the entire file
+        // in memory first — a large-enrollment course would otherwise spike memory on export.
+        return response()->streamDownload(function () use ($courseId): void {
+            $out = fopen('php://output', 'wb');
+            foreach ($this->gradebook->streamCsv($courseId) as $line) {
+                fwrite($out, $line);
+            }
+            fclose($out);
         }, "gradebook-course-{$courseId}.csv", ['Content-Type' => 'text/csv']);
     }
 

@@ -6,6 +6,7 @@ import {
   Eye,
   GitCompare,
   GraduationCap,
+  ListChecks,
   MoreHorizontal,
   Pencil,
   Send,
@@ -149,6 +150,11 @@ export function CourseActionsMenu({
           <DropdownMenuItem asChild>
             <Link href={`/teach/courses/${courseId}/edit#assessments`}>
               <GraduationCap className="size-4" aria-hidden /> {t("teach.actions.viewAssessments")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/teach/courses/${courseId}/gradebook`}>
+              <ListChecks className="size-4" aria-hidden /> {t("teach.actions.gradebook")}
             </Link>
           </DropdownMenuItem>
 

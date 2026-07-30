@@ -69,6 +69,15 @@ class OtpService extends BaseService
 
             if (! hash_equals($otp->code_hash, hash('sha256', $code))) {
                 $otp->increment('attempts');
+
+                // Enforce the per-code guess ceiling: the `attempts` column was recorded but never
+                // acted on, so a code was brute-forceable until it expired. Once the ceiling is hit,
+                // burn the code (consume it) so no further guesses against it are possible.
+                $maxAttempts = max(1, (int) config('identity.otp.max_verify_attempts', 5));
+                if ((int) $otp->getAttribute('attempts') >= $maxAttempts) {
+                    $otp->forceFill(['consumed_at' => now()])->save();
+                }
+
                 throw new InvalidOtpException;
             }
 

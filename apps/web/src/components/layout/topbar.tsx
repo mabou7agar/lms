@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/i18n-context";
 import { Button } from "@/components/ui/button";
 import { LangToggle } from "./lang-toggle";
 import { ThemeToggle } from "./theme-toggle";
@@ -17,15 +18,17 @@ export interface TopbarProps {
 }
 
 export function Topbar({ onMenuClick, start, menuExpanded, menuControlsId }: TopbarProps) {
+  const { t } = useI18n();
+
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6" aria-label="Top bar">
+    <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6" aria-label={t("nav.topbar")}>
       <div className="flex items-center gap-2">
         {onMenuClick ? (
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden"
-            aria-label="Open navigation menu"
+            aria-label={t("nav.openMenu")}
             aria-haspopup="dialog"
             aria-expanded={menuExpanded ?? false}
             aria-controls={menuControlsId}

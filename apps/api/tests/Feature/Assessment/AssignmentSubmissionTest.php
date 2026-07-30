@@ -51,6 +51,11 @@ function asgFakeEnrollment(bool $enrolled = true): CourseEnrollmentPort
             return $this->enrolled;
         }
 
+        public function hasCourseAccess(int $courseId, int $userId): bool
+        {
+            return $this->enrolled;
+        }
+
         public function enrolledLearnerIds(int $courseId): array
         {
             return [];

@@ -51,8 +51,24 @@ class GradebookService
      */
     public function toCsv(int $courseId): string
     {
+        $out = '';
+        foreach ($this->streamCsv($courseId) as $line) {
+            $out .= $line;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Yield the gradebook as CSV one line at a time, processing the roster in bounded chunks so a
+     * large-enrollment course never materializes every row (nor the whole CSV string) in memory at
+     * once. Output is byte-identical to the previous single-string build.
+     *
+     * @return \Generator<int, string>
+     */
+    public function streamCsv(int $courseId): \Generator
+    {
         $columns = $this->columns($courseId);
-        $rows = $this->rowsFor($this->roster($courseId, $columns), $columns);
 
         $header = ['learner_id'];
         foreach ($columns['assignments'] as $a) {
@@ -63,19 +79,19 @@ class GradebookService
         }
         $header[] = 'overall_percent';
 
-        $lines = [$this->csvLine($header)];
+        yield $this->csvLine($header)."\n";
 
-        foreach ($rows as $row) {
-            $line = [(string) $row['user_id']];
-            foreach ($row['cells'] as $cell) {
-                $line[] = $this->csvCell($cell);
+        foreach (array_chunk($this->roster($courseId, $columns), 200) as $chunk) {
+            foreach ($this->rowsFor($chunk, $columns) as $row) {
+                $line = [(string) $row['user_id']];
+                foreach ($row['cells'] as $cell) {
+                    $line[] = $this->csvCell($cell);
+                }
+                $line[] = $row['summary']['average_percent'] === null
+                    ? '' : (string) $row['summary']['average_percent'];
+                yield $this->csvLine($line)."\n";
             }
-            $line[] = $row['summary']['average_percent'] === null
-                ? '' : (string) $row['summary']['average_percent'];
-            $lines[] = $this->csvLine($line);
         }
-
-        return implode("\n", $lines)."\n";
     }
 
     /**

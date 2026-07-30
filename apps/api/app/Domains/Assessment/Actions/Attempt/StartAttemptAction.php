@@ -5,8 +5,10 @@ namespace App\Domains\Assessment\Actions\Attempt;
 use App\Domains\Assessment\Enums\AttemptStatus;
 use App\Domains\Assessment\Models\Assessment;
 use App\Domains\Assessment\Models\AssessmentAttempt;
+use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Opens an attempt, or returns the learner's existing open one.
@@ -16,12 +18,26 @@ use Illuminate\Validation\ValidationException;
  */
 class StartAttemptAction
 {
+    public function __construct(private readonly CourseEnrollmentPort $enrollment) {}
+
     public function execute(Assessment $assessment, int $userId, ?int $lessonId = null): AssessmentAttempt
     {
         if (! $assessment->isAttemptable()) {
             throw ValidationException::withMessages([
                 'assessment' => 'This assessment is not currently open for attempts.',
             ]);
+        }
+
+        // Enrollment gate: a course-scoped assessment (the graded, potentially paid content) may
+        // only be attempted by a learner enrolled in / entitled to that course — mirrors the
+        // assignment path (SubmissionService::submit). Without this, any authenticated user could
+        // start an attempt by public_id and read every served question, bypassing enrollment.
+        // Platform-level banks (course_id null) carry no course to check and are left as-is.
+        // Uses course ACCESS (active OR completed), not strict active enrollment, so a learner who
+        // has completed the course can still take/retake its assessments (e.g. a standalone final).
+        $courseId = $assessment->course_id;
+        if ($courseId !== null && ! $this->enrollment->hasCourseAccess((int) $courseId, $userId)) {
+            throw new AccessDeniedHttpException('You do not have access to this course.');
         }
 
         return DB::transaction(function () use ($assessment, $userId, $lessonId): AssessmentAttempt {

@@ -33,7 +33,7 @@ export function ChangesRequestedBanner({ note, className }: ChangesRequestedBann
       {note && (
         <blockquote
           data-testid="changes-requested-note"
-          className="mt-2 border-l-2 border-amber-400 pl-2 text-amber-800"
+          className="mt-2 border-s-2 border-amber-400 ps-2 text-amber-800"
         >
           {note}
         </blockquote>

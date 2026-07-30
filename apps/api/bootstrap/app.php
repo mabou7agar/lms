@@ -28,8 +28,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind ALB/CloudFront: trust forwarded headers so isSecure()/host are correct.
+        // Fail CLOSED by default — trusting all proxies ('*') when the env var is unset lets a
+        // client spoof X-Forwarded-For and defeat every IP-keyed rate limiter. Trust nothing unless
+        // an explicit proxy list (CIDRs, or an explicit literal '*') is configured.
+        $trustedProxies = trim((string) env('TRUSTED_PROXIES', ''));
         $middleware->trustProxies(
-            at: env('TRUSTED_PROXIES', '*') === '*' ? '*' : explode(',', (string) env('TRUSTED_PROXIES')),
+            at: match (true) {
+                $trustedProxies === '' => [],
+                $trustedProxies === '*' => '*',
+                default => explode(',', $trustedProxies),
+            },
         );
 
         // Enforce Host allow-list in production only (avoids blocking local/test hosts).

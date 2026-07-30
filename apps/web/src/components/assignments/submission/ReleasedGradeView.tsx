@@ -78,7 +78,7 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
           {grade.score}
           {maxGrade != null && <span className="text-base font-normal text-slate-500"> / {maxGrade}</span>}
           {passingGrade != null && (
-            <span className="ml-2 text-xs font-normal text-slate-400">
+            <span className="ms-2 text-xs font-normal text-slate-400">
               {t('assignments.submission.grade.passMark', `Pass mark ${passingGrade}`)}
             </span>
           )}
@@ -94,7 +94,7 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
                 <span className="text-slate-600">
                   {row.levelTitle ?? '—'}
                   {row.points != null && (
-                    <span className="ml-1 font-semibold">
+                    <span className="ms-1 font-semibold">
                       ({row.points}/{row.maxPoints})
                     </span>
                   )}

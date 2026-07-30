@@ -27,13 +27,20 @@ export interface SidebarProps {
 export function Sidebar({ items, brand = "HElbaron", className, navLabel = "Primary" }: SidebarProps) {
   const pathname = usePathname();
 
+  // Only the LONGEST matching href is "active" — otherwise a parent (e.g. /teach) and its child
+  // (/teach/courses) both highlight and both emit aria-current="page", so a screen reader announces
+  // two current pages. Pick the most specific match.
+  const activeHref =
+    items
+      .filter((i) => !i.external && (pathname === i.href || pathname.startsWith(`${i.href}/`)))
+      .reduce<string | null>((best, i) => (i.href.length > (best?.length ?? -1) ? i.href : best), null);
+
   return (
     <aside className={cn("flex h-full w-64 flex-col border-e bg-card", className)}>
       <div className="flex h-16 items-center px-6 text-lg font-semibold">{brand}</div>
       <nav className="flex-1 space-y-1 px-3 py-2" aria-label={navLabel}>
         {items.map((item) => {
-          const active =
-            !item.external && (pathname === item.href || pathname.startsWith(`${item.href}/`));
+          const active = !item.external && item.href === activeHref;
           const Icon = item.icon;
           const className = cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",

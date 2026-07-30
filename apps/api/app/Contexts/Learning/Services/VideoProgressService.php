@@ -39,9 +39,13 @@ class VideoProgressService extends BaseService
             ->where('lesson_id', $lessonId)
             ->first();
 
+        // Completion basis MUST be server-authoritative: the media asset's probed duration, or a
+        // previously-persisted authoritative value. The client-supplied hint is deliberately NOT used
+        // to decide completion — trusting it let a learner mark a video complete with a single forged
+        // heartbeat (duration_seconds == position_seconds). With no authoritative duration, the video
+        // simply cannot be auto-completed via progress.
         $duration = $this->mediaAssets->assetForLesson($lessonId)->durationSeconds
-            ?? $existing->duration_seconds
-            ?? $clientDurationSeconds;
+            ?? $existing->duration_seconds;
 
         if ($duration !== null && $duration > 0 && $positionSeconds > $duration) {
             throw new InvalidProgressException('Playback position exceeds the media duration.', [

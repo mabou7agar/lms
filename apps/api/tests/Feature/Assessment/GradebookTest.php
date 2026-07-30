@@ -28,6 +28,11 @@ function asgGradebookWith(array $rosterIds): GradebookService
             return in_array($userId, $this->ids, true);
         }
 
+        public function hasCourseAccess(int $courseId, int $userId): bool
+        {
+            return in_array($userId, $this->ids, true);
+        }
+
         public function enrolledLearnerIds(int $courseId): array
         {
             return $this->ids;
@@ -89,6 +94,20 @@ it('exports the gradebook as CSV', function () {
     expect($csv)->toContain('learner_id')
         ->and($csv)->toContain('assignment:Essay')
         ->and($csv)->toContain('88');
+});
+
+it('streams every learner across chunk boundaries in the CSV export', function () {
+    // streamCsv processes the roster in chunks of 200. A roster larger than one chunk guards against
+    // rows being dropped at the boundary — the 1-learner test above never enters the chunk loop.
+    $courseId = 6100;
+    $roster = range(1, 201);
+    $csv = asgGradebookWith($roster)->toCsv($courseId);
+
+    $lines = array_values(array_filter(explode("\n", $csv), static fn (string $l): bool => $l !== ''));
+
+    // 1 header + one data row per learner, and the first learner of the SECOND chunk is present.
+    expect(count($lines))->toBe(1 + count($roster))
+        ->and($csv)->toContain("\n201,");
 });
 
 it('authorizes gradebook access only for an instructor of the course', function () {

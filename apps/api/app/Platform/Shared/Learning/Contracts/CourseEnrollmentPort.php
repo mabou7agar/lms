@@ -14,6 +14,14 @@ interface CourseEnrollmentPort
     public function isEnrolled(int $courseId, int $userId): bool;
 
     /**
+     * Does this learner have runtime ACCESS to the course — active OR completed enrollment?
+     * Course access survives completion (a learner who finished the course may still open its
+     * lessons and take/retake its assessments), so attempt-gating must use this, not the stricter
+     * active-only isEnrolled().
+     */
+    public function hasCourseAccess(int $courseId, int $userId): bool;
+
+    /**
      * All learner user ids enrolled in the course. Used to build the gradebook roster (so a learner
      * with no submission still shows as "missing"). Returns [] for an unknown course.
      *

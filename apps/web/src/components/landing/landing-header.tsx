@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { brandTheme, pickLocale } from "@/config/theme";
@@ -8,12 +10,14 @@ import { useBranding } from "@/lib/branding/context";
 import { useNavigation } from "@/lib/navigation/hooks";
 import { safeRel } from "@/lib/navigation/api";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { LangToggle } from "@/components/layout/lang-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function LandingHeader() {
-  const { locale } = useI18n();
+  const { t, locale } = useI18n();
   const { status } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const branding = useBranding();
   const authed = status === "authenticated";
   // Brand name comes from the admin Branding settings; falls back to the built-in brand.
@@ -55,7 +59,7 @@ export function LandingHeader() {
           <span className="font-serif text-lg font-semibold tracking-tight">{brandName}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label={t("nav.primary")}>
           {navLinks.map((l) =>
             l.external ? (
               <a
@@ -82,14 +86,68 @@ export function LandingHeader() {
         <div className="ms-auto flex items-center gap-1">
           <LangToggle />
           <ThemeToggle />
-          <Button asChild size="sm" variant="ghost">
+          <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
             <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
           </Button>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="hidden sm:inline-flex">
             <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
+          </Button>
+
+          {/* Mobile: the primary nav is hidden below lg, so surface it (and the CTAs) in a drawer. */}
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="lg:hidden"
+            aria-label={t("nav.openMenu")}
+            aria-expanded={menuOpen}
+            aria-controls="landing-mobile-nav"
+            onClick={() => setMenuOpen(true)}
+          >
+            <Menu className="size-5" aria-hidden />
           </Button>
         </div>
       </div>
+
+      <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+        <DrawerContent id="landing-mobile-nav" className="p-6">
+          <DrawerTitle className="sr-only">{t("nav.menu")}</DrawerTitle>
+          <DrawerDescription className="sr-only">{t("nav.primary")}</DrawerDescription>
+          <nav className="flex flex-col gap-1" aria-label={t("nav.primary")}>
+            {navLinks.map((l) =>
+              l.external ? (
+                <a
+                  key={l.key}
+                  href={l.href}
+                  target={l.target ?? "_blank"}
+                  rel={l.rel ?? "noopener noreferrer"}
+                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link
+                  key={l.key}
+                  href={l.href}
+                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {l.label}
+                </Link>
+              ),
+            )}
+          </nav>
+          <div className="mt-4 flex flex-col gap-2">
+            <Button asChild variant="ghost" onClick={() => setMenuOpen(false)}>
+              <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
+            </Button>
+            <Button asChild onClick={() => setMenuOpen(false)}>
+              <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </header>
   );
 }

@@ -20,7 +20,7 @@ class NotificationController extends Controller
             ->active()
             ->orderByRaw('read_at IS NOT NULL')
             ->latest('id')
-            ->paginate((int) $request->input('per_page', 20))->withQueryString();
+            ->paginate(max(1, min((int) $request->input('per_page', 20), 100)))->withQueryString();
 
         return ApiResponse::paginated($notifications, NotificationResource::class);
     }

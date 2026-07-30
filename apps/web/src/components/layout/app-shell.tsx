@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import type { NavItem } from "@/config/nav";
 import { pickLocale } from "@/config/theme";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -31,6 +32,13 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [open, setOpen] = useState(false);
   const { t, locale } = useI18n();
+  const pathname = usePathname();
+
+  // Close the mobile nav drawer on navigation — the drawer links are plain <Link>s, so without
+  // this the drawer stays open covering the page after every tap.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const cms = useNavigation(location);
   const flags = useFeatureFlags();
@@ -51,7 +59,7 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
 
   return (
     <div className="flex h-dvh w-full overflow-hidden">
-      {isDesktop ? <Sidebar items={items} brand={brand} navLabel="Primary" /> : null}
+      {isDesktop ? <Sidebar items={items} brand={brand} navLabel={t("nav.primary")} /> : null}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           onMenuClick={isDesktop ? undefined : () => setOpen(true)}
@@ -64,9 +72,9 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
         <Drawer open={open} onOpenChange={setOpen}>
           <DrawerContent id="mobile-nav" className="h-[85dvh] p-0">
             {/* Accessible name/description for the dialog (screen readers) — visually hidden. */}
-            <DrawerTitle className="sr-only">Navigation menu</DrawerTitle>
-            <DrawerDescription className="sr-only">Primary navigation links</DrawerDescription>
-            <Sidebar items={items} brand={brand} navLabel="Mobile" className="w-full border-e-0" />
+            <DrawerTitle className="sr-only">{t("nav.menu")}</DrawerTitle>
+            <DrawerDescription className="sr-only">{t("nav.primary")}</DrawerDescription>
+            <Sidebar items={items} brand={brand} navLabel={t("nav.menu")} className="w-full border-e-0" />
           </DrawerContent>
         </Drawer>
       ) : null}

@@ -55,7 +55,7 @@ export function SubmissionHistory({
                 data-testid={`history-row-${s.attempt_no}`}
                 aria-current={selected ? 'true' : undefined}
                 onClick={() => onSelect?.(s)}
-                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-slate-50 ${selected ? 'bg-slate-50' : ''}`}
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-sm hover:bg-slate-50 ${selected ? 'bg-slate-50' : ''}`}
               >
                 <span className="flex items-center gap-2">
                   <span className="font-medium text-slate-700">

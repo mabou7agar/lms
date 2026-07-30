@@ -85,10 +85,25 @@ class SeoController extends Controller
             throw new AccessDeniedHttpException('Admin access required.');
         }
 
-        $rows = SeoMeta::query()->orderBy('entity_type')->orderBy('entity_key')->get();
+        // Paginated: the SEO table grows with every course/page/entity, so it must not be loaded in
+        // one unbounded query. The `records` envelope is preserved and pagination is exposed under
+        // meta so the admin manager can page through.
+        $paginator = SeoMeta::query()
+            ->orderBy('entity_type')
+            ->orderBy('entity_key')
+            ->paginate(max(1, min((int) $request->integer('per_page', 50), 200)))
+            ->withQueryString();
 
-        return ApiResponse::success([
-            'records' => $rows->map(fn (SeoMeta $m) => (new SeoMetaResource($m))->resolve())->values(),
-        ]);
+        return ApiResponse::success(
+            ['records' => $paginator->getCollection()->map(fn (SeoMeta $m) => (new SeoMetaResource($m))->resolve())->values()],
+            null,
+            200,
+            ['pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ]],
+        );
     }
 }

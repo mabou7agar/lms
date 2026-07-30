@@ -11,6 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Delivers one due session reminder (H9). Publishes SessionReminderDue for the Notifications consumer
@@ -30,6 +31,9 @@ class DispatchSessionReminderJob implements ShouldQueue
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
+
+    /** Hard ceiling on a single run so a stuck worker is reclaimed rather than hanging forever. */
+    public int $timeout = 60;
 
     public function __construct(public readonly int $reminderId) {}
 
@@ -68,6 +72,26 @@ class DispatchSessionReminderJob implements ShouldQueue
             'reminder_id' => (int) $reminder->getKey(),
             'session_id' => (int) $session->getKey(),
             'offset_minutes' => $reminder->offset_minutes,
+        ]);
+    }
+
+    /**
+     * All retries exhausted (or the worker timed out). Retire the reminder so it is not left
+     * Pending forever, and emit a dead-letter log line so the failure is observable rather than
+     * silent. Emitting the event before the Sent write means a genuinely-delivered reminder that
+     * failed only on the terminal write is still de-duplicated by the consumer.
+     */
+    public function failed(Throwable $e): void
+    {
+        $reminder = SessionReminder::find($this->reminderId);
+
+        if ($reminder !== null && $reminder->status === ReminderStatus::Pending) {
+            $reminder->forceFill(['status' => ReminderStatus::Cancelled->value])->save();
+        }
+
+        Log::error('live.reminder.failed', [
+            'reminder_id' => $this->reminderId,
+            'error' => $e->getMessage(),
         ]);
     }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "isomorphic-dompurify";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,12 +54,12 @@ export function QuestionPresenter({
 
   return (
     <div className="space-y-4">
-      {/* Prompts are sanitized server-side on write (HtmlSanitizer) and again here is unnecessary,
-          but the value is still author-controlled HTML, so it is rendered as markup deliberately
-          and never built from learner input. */}
+      {/* Prompts are author-controlled HTML rendered as markup. Sanitized server-side on write
+          (HtmlSanitizer) AND re-sanitized here with DOMPurify before injection (defense in depth),
+          matching the lesson/CMS renderers so a single missed server path can't become stored XSS. */}
       <div
         className="prose prose-sm max-w-none dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: question.prompt }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.prompt) }}
       />
 
       {question.hint ? (

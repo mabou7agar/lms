@@ -8,8 +8,13 @@ import { NextRequest, NextResponse } from "next/server";
  */
 const SESSION_COOKIE = "helbaron_session";
 
+// Real URL prefixes only — NOT route-group folder names like "(account)". "/account" was a phantom
+// entry (no such URL), leaving the actual account routes (/profile, /notifications) with no edge
+// check; the commerce workspace (/billing, /subscriptions, /cart) and the admin console (/admin)
+// were likewise unguarded at the edge and relied solely on client-side guards.
 const PROTECTED_PREFIXES = [
-  "/account",
+  "/profile",
+  "/notifications",
   "/dashboard",
   "/my-learning",
   "/continue-learning",
@@ -20,8 +25,12 @@ const PROTECTED_PREFIXES = [
   "/crm",
   "/org",
   "/orders",
+  "/cart",
   "/checkout",
   "/contracts",
+  "/billing",
+  "/subscriptions",
+  "/admin",
   "/analytics",
   "/reports",
   "/dashboards",
