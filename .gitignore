@@ -22,3 +22,16 @@ apps/api/storage/framework/views/*.blade.php
 apps/api/storage/framework/testing/disks/
 apps/api/bootstrap/cache/packages.php
 apps/api/bootstrap/cache/services.php
+
+# --- Repository stabilization (W05–W07): runtime artifacts, never commit ---
+apps/api/storage/app/private/exports/
+apps/api/storage/framework/cache/data/
+apps/api/storage/app/*.b64
+apps/api/storage/app/i18n_splice.cjs
+
+# Temporary transfer / quarantine artifacts (delete these folders manually)
+/_to_delete/
+/_pkg001_to_delete/
+/_pkg001_web_src.tgz
+/_w05_removed/
+apps/web/.spdtest
