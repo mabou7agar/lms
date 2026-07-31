@@ -27,6 +27,11 @@ return [
     // Request paths that receive 'csp_web' instead of the locked-down API 'csp'.
     'web_paths' => ['admin', 'admin/*', 'livewire/*'],
 
+    // Config mirror of the trusted proxy/host allow-lists (bootstrap/app.php reads the raw env for
+    // the framework; these give a cache-safe, testable view for ProductionConfigValidator).
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+    'trusted_hosts' => env('APP_TRUSTED_HOSTS', ''),
+
     'hsts' => [
         'enabled' => (bool) env('SECURITY_HSTS_ENABLED', true),
         'max_age' => (int) env('SECURITY_HSTS_MAX_AGE', 31536000),

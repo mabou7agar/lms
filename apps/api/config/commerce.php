@@ -12,6 +12,10 @@ return [
         'provider' => env('COMMERCE_PAYMENT_PROVIDER', 'fake'), // fake | stripe | paymob | moyasar | hyperpay | tap | aps
         // Fake webhook HMAC secret (local/test only). Real gateways use commerce.gateways.<provider>.webhook_secret.
         'webhook_secret' => env('COMMERCE_WEBHOOK_SECRET', 'whsec_fake'),
+        // Explicit escape hatch: permit the `fake` gateway in production ONLY for a deliberate
+        // non-payment environment (e.g. a content preview). ProductionConfigValidator rejects fake
+        // in production unless this is true.
+        'allow_fake_gateway' => (bool) env('COMMERCE_ALLOW_FAKE_GATEWAY', false),
     ],
 
     'invoice' => [
