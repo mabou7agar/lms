@@ -1,5 +1,13 @@
 vendor
 node_modules
+
+# Local env — never bake secrets or env files into the image
 .env
+.env.*
+
+# Laravel storage symlink: dangling absolute symlink in the build context
+# (created by `artisan storage:link`); recreate at runtime, never COPY it.
+public/storage
+
 storage/logs/*
 .git
