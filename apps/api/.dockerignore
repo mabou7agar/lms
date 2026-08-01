@@ -9,5 +9,10 @@ node_modules
 # (created by `artisan storage:link`); recreate at runtime, never COPY it.
 public/storage
 
+# Compiled bootstrap cache: dev-generated (can reference require-dev providers
+# such as Collision), which breaks package:discover in a --no-dev image.
+# Regenerated in-container by composer dump-autoload; never COPY the host copies.
+bootstrap/cache/*.php
+
 storage/logs/*
 .git
