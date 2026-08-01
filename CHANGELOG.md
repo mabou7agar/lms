@@ -1,42 +1,36 @@
 # Changelog
 
-All notable changes to HElbaron are documented here. Format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.0.0/); versioning is [SemVer](https://semver.org/).
+All notable changes to HELBARON LMS are documented here. This project follows
+semantic versioning; pre-release builds use `-rc.N` suffixes.
 
-## [1.0.0-rc.1] - 2026-07-05
+## [1.0.0-rc.1] — 2026-08-01
 
-First tagged Release Candidate of HElbaron v1.0.0. Adds production deploy/rollback scripts,
-an environment-validation command, and a LICENSE. No API or business changes.
+First release candidate. Cumulative of waves W01–W09 (bilingual EN/AR RTL MENA LMS:
+catalog, learning, authoring, assessment, assignments, certification, commerce,
+subscriptions, CRM, notifications, analytics; Laravel 12 API + Next.js 15 web).
 
-## [1.0.0] - 2026-07-05
-First production release candidate. A bilingual (AR/EN) enterprise LMS: Laravel 12 modular
-monolith API + custom Next.js 15 frontend, PostgreSQL, Redis/Horizon, S3/CloudFront, Mux.
+### Fixed (W09 release-blocking)
+- **Web API client double-versioned every authoring/media/grading/player request.**
+  The media, assignments, versioning, gradebook and learning-player modules prefixed
+  paths with `v1/`, but the BFF proxy base already ends in `/api/v1`, so requests
+  resolved to `/api/v1/v1/...` and returned 404 in every environment — silently
+  breaking the entire instructor-authoring, media, grading and lesson-player surface.
+  Paths are now bare (matching the working majority). Guarded by
+  `apps/web/tests/contract/no-double-v1-prefix.test.ts`.
+- **Checkout could double-charge on a duplicate submit.** Two rapid `POST /checkout`
+  requests (double-click / concurrent) each created a separate order with a distinct
+  gateway idempotency key, producing two charges from one cart. Checkout is now
+  serialized per user with a distributed lock held across the gateway call; a queued
+  duplicate re-reads the emptied cart and is safely rejected (409
+  `COMMERCE_CHECKOUT_IN_PROGRESS`, or 422 `COMMERCE_CART_EMPTY` once captured). Guarded
+  by two regression tests in `tests/Feature/Commerce/CartCheckoutTest.php`.
 
-### Added
-- **Domains (10):** Identity, Catalog, Authoring, Learning, Commerce, Certification, Live,
-  CRM, Analytics, Notifications — each with models, services, actions, events, policies,
-  REST API (v1), Filament resources, factories, seeders, and Pest tests.
-- **Shared foundation:** standard success/error envelope with correlation ids, value objects,
-  enums, base classes, UUIDv7 public ids.
-- **Frontend foundation (Next.js 15/React 19):** design tokens + light/dark + RTL/LTR, i18n,
-  shadcn-style component library, TanStack Query, typed API client, auth context, route guards.
-- **External integrations (Step 14):** Stripe (charge/refund/webhook signature), Mux signed
-  playback, S3 + CloudFront signed URLs, Mailgun / Twilio / Firebase — all behind provider
-  abstractions with fakes as the local/test default.
-- **Production hardening (Step 15):** security headers + CSP + HSTS, correlation-id middleware,
-  trusted proxies/hosts, secure cookies, restricted CORS, structured JSON logging,
-  liveness/readiness health checks, tuned Horizon + queue config, production Docker image +
-  compose + nginx, CI (Pint/PHPStan/Pest + Node build), and the full ops documentation set.
-
-### Security
-- Token-only Sanctum auth (`sanctum.guard = []`); logout revokes token + device.
-- Media/certificate/export access only via signed, expiring URLs — storage keys never exposed.
-- Provider secrets read only by adapters; nothing committed.
+### Changed
+- Web `postcss` → 8.5.x and `sharp` → 0.35.x (W08 security remediation; both images
+  now scan clean).
+- Application version set to `1.0.0-rc.1`.
 
 ### Notes
-- Filament v4 admin panel (`/admin`) is **registered** (`AdminPanelProvider`) with per-domain
-  resource + widget discovery; access is gated by `canAccessPanel()` (super_admin/admin) and,
-  when `ADMIN_REQUIRE_MFA`, by `EnforceAdminMfa`.
-- Firebase push uses FCM legacy HTTP; HTTP v1 planned.
-- The automation/digest engine is present but unwired and **deferred** for v1.0 (see
-  `KNOWN_LIMITATIONS.md`); live-session reminders are written but not yet delivered (H9, deferred).
+- No database schema changes in W09 — this candidate is a code-only advance over W08.
+- See `docs/releases/v1.0.0-rc.1.md` for release notes, rollback and known limitations,
+  and `docs/verification/w09/` for the UAT matrix and gate evidence.
