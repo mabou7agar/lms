@@ -15,4 +15,8 @@ public/storage
 bootstrap/cache/*.php
 
 storage/logs/*
+
+# Dev-only static-analysis cache (~12MB); never needed at runtime.
+.deptrac.cache
+
 .git
