@@ -262,8 +262,14 @@ if(-not $Aborted){
         # Capture container logs while the stack is up (even if a container is unhealthy) so failures
         # can be diagnosed. This runs BEFORE any stack:health abort so evidence is never lost.
         (& docker @Compose logs --no-color --tail 2000) 2>&1 | Out-File (Join-Path $ClogDir 'stack.log')
-        $fatal = Select-String -Path (Join-Path $ClogDir 'stack.log') -Pattern 'PHP Fatal|Uncaught|Stack trace|FATAL' -CaseSensitive:$false
-        Record 'logs: no fatal errors' ($(if($fatal){'FAIL'}else{'PASS'})) $(if($fatal){"$($fatal.Count) matches"}else{'clean'})
+        # Scan for genuine APPLICATION crashes only. Exclude infra containers: Postgres logs routine
+        # "FATAL:" lines during startup ("the database system is starting up") and Redis emits warnings
+        # that are not app failures. Match specific app-fatal signatures, not a bare case-insensitive FATAL.
+        $logLines = @(Get-Content (Join-Path $ClogDir 'stack.log'))
+        $appLines = @($logLines | Where-Object { (($_ -split '\|',2)[0]) -notmatch '(?i)postgres|redis' })
+        $fatal = @($appLines | Select-String -Pattern 'PHP Fatal error|Fatal error:|Uncaught (Error|Exception|TypeError)|production\.(CRITICAL|EMERGENCY|ALERT)')
+        if($fatal.Count -gt 0){ Save 'log-fatal-matches.txt' (($fatal | ForEach-Object { $_.Line }) -join "`r`n") }
+        Record 'logs: no fatal errors' ($(if($fatal.Count -gt 0){'FAIL'}else{'PASS'})) $(if($fatal.Count -gt 0){"$($fatal.Count) matches (see log-fatal-matches.txt)"}else{'clean'})
         # Per-service status snapshot for quick triage.
         Save 'stack-health.txt' (($h.GetEnumerator() | ForEach-Object { "{0} = {1}" -f $_.Key,$_.Value }) -join "`r`n")
         if(-not $ready){ Abort 'stack:health' 1 }
