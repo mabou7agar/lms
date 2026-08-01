@@ -87,13 +87,26 @@ Record 'prereq: php+composer' ($(if($havePhp){'PASS'}else{'SKIP'})) $(if($havePh
 Record 'prereq: trivy'    ($(if($haveTrivy){'PASS'}else{'SKIP'})) $(if($haveTrivy){'native'}else{'CLI absent — docker-run fallback'})
 
 # ---------------------------------------------------------------------------
-# 1. Disposable local env (placeholders only; never real secrets)
+# 1. Environment values (validated, never printed). If you already keep a REAL
+#    apps\api\.env.production, this script does NOT overwrite it — it validates and
+#    uses it. Otherwise it writes a DISPOSABLE local-only file (placeholders + a
+#    generated APP_KEY + a random local DB password). REPLACE the disposable values
+#    with real secrets for a production-representative run. Nothing here is printed.
 # ---------------------------------------------------------------------------
-Log 'Writing DISPOSABLE apps\api\.env.production + apps\web\.env.production (local placeholders)'
-$DispoDbPw    = 'local_dispo_' + (Get-Random)
-$AppKeyRaw    = [byte[]]::new(32); (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($AppKeyRaw)
-$AppKey       = 'base64:' + [Convert]::ToBase64String($AppKeyRaw)
+$DispoMarker = '# HELBARON-W09-DISPOSABLE (safe to delete; not real secrets)'
+$ApiEnv = 'apps\api\.env.production'
+$realEnv = (Test-Path $ApiEnv) -and -not (Select-String -Path $ApiEnv -SimpleMatch $DispoMarker -Quiet)
+if ($realEnv) {
+    Record 'env: using existing .env.production' 'PASS' 'real file detected — left untouched'
+    $DispoDbPw = (Select-String -Path $ApiEnv -Pattern '^DB_PASSWORD=(.*)$').Matches.Groups[1].Value
+    if (-not $DispoDbPw) { $DispoDbPw = 'helbaron' }
+} else {
+    Log 'Writing DISPOSABLE apps\api\.env.production + apps\web\.env.production (local placeholders; REPLACE for a real run)'
+    $DispoDbPw    = 'local_dispo_' + (Get-Random)
+    $AppKeyRaw    = [byte[]]::new(32); (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($AppKeyRaw)
+    $AppKey       = 'base64:' + [Convert]::ToBase64String($AppKeyRaw)
 @"
+$DispoMarker
 APP_NAME=HELBARON
 APP_ENV=production
 APP_KEY=$AppKey
@@ -133,7 +146,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:8080
 API_INTERNAL_URL=http://nginx:80/api/v1
 NODE_ENV=production
 "@ | Set-Content -Encoding ASCII 'apps\web\.env.production'
-Record 'disposable env written' 'PASS' 'apps\api\.env.production, apps\web\.env.production (gitignored)'
+    Record 'disposable env written' 'PASS' 'apps\api\.env.production, apps\web\.env.production (gitignored)'
+}
 
 # ---------------------------------------------------------------------------
 # 2. Frontend host gates (node)
