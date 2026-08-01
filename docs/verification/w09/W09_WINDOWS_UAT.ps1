@@ -1,6 +1,6 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
-    W09_WINDOWS_UAT.ps1 — HELBARON LMS 1.0.0-rc.1 local release validation (single orchestrator).
+    W09_WINDOWS_UAT.ps1 - HELBARON LMS 1.0.0-rc.1 local release validation (single orchestrator).
 
     Runs every gate that cannot run in the cloud sandbox (Docker build, stack health, Trivy,
     Playwright, axe, backup/restore, operational failure tests) plus the host unit gates, and
@@ -13,7 +13,7 @@
       written (placeholders + a generated APP_KEY + a random local DB password).
     - Backend gates run against EPHEMERAL, published Postgres + Redis containers started just for the
       gates and removed in finally, so the running app's database is never touched.
-    - Evidence files contain variable NAMES and PASS/FAIL only — never secret values.
+    - Evidence files contain variable NAMES and PASS/FAIL only - never secret values.
     - Critical-stage failure short-circuits dependent stages; the stack is always torn down; evidence
       is always written.
 
@@ -168,7 +168,7 @@ NODE_ENV=production
 "@ | Set-Content -Encoding ASCII $WebEnv
         Record 'env: wrote disposable local env' 'PASS' 'REPLACE values for a real run'
     }
-    # Placeholder-secret + required-name validation. NAMES + PASS/FAIL only — no values.
+    # Placeholder-secret + required-name validation. NAMES + PASS/FAIL only - no values.
     $envText = Get-Content $ApiEnv -Raw
     $required = 'APP_KEY','APP_ENV','APP_URL','DB_PASSWORD','REDIS_HOST','COMMERCE_WEBHOOK_SECRET'
     $names = @(); $bad = @()
@@ -273,7 +273,7 @@ if(-not $Aborted){
         & docker run -d --name $GateRd -p 6380:6379 redis:7-alpine
         if($LASTEXITCODE){ throw 'redis start failed' }
         # Wait for pg to accept connections. NOTE: a `for` loop runs in the current scope, so the
-        # $ok assignment propagates (a ForEach-Object block would not — it runs in a child scope).
+        # $ok assignment propagates (a ForEach-Object block would not - it runs in a child scope).
         $ok=$false
         for($i=0; $i -lt 30 -and -not $ok; $i++){
             & docker exec $GatePg pg_isready -U helbaron *>$null
@@ -375,7 +375,7 @@ $skip = @($results | Where-Object status -eq 'SKIP').Count
 $overall = if($fail.Count -eq 0 -and -not $Aborted){'PASS'}else{'FAIL'}
 
 $sb = @()
-$sb += "HELBARON W09 Local UAT — 1.0.0-rc.1"
+$sb += "HELBARON W09 Local UAT - 1.0.0-rc.1"
 $sb += "timestamp=$Stamp host=$env:COMPUTERNAME"
 $sb += "overall=$overall  pass=$pass fail=$($fail.Count) skip=$skip  aborted=$Aborted"
 $sb += ''
