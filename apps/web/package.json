@@ -74,7 +74,7 @@
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-import": "^2.31.0",
     "jsdom": "^25.0.1",
-    "postcss": "^8.4.0",
+    "postcss": "^8.5.18",
     "storybook": "^8.6.14",
     "tailwindcss": "^4.0.0",
     "tailwindcss-animate": "^1.0.7",
@@ -83,6 +83,8 @@
   },
   "overrides": {
     "picomatch": "4.0.4",
-    "webpack": "5.100.2"
+    "webpack": "5.100.2",
+    "sharp": "^0.35.0",
+    "postcss": "$postcss"
   }
 }
