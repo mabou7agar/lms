@@ -167,6 +167,42 @@ class SubscriptionLifecycleTest extends TestCase
         Event::assertNotDispatched(SubscriptionRenewed::class);
     }
 
+    /**
+     * Renewal-collision guard: two invocations racing on the SAME due period (e.g. the scheduler
+     * firing twice, or a retry racing the first run) must not corrupt billing. Both derive the
+     * gateway idempotency key from the period start, so production dedups the charge; and both
+     * advance to the same deterministic target, so the period moves exactly one interval — never two.
+     */
+    public function test_duplicate_renewal_for_the_same_period_advances_once_with_one_key(): void
+    {
+        $user = User::factory()->create();
+        $plan = $this->createPlan(amount: 9900);
+        $oldEnd = Carbon::create(2020, 2, 1, 0, 0, 0);
+
+        $subscription = $this->createSubscription($user, $plan, [
+            'status' => SubscriptionStatus::Active->value,
+            'current_period_start' => Carbon::create(2020, 1, 1, 0, 0, 0),
+            'current_period_end' => $oldEnd,
+        ]);
+        $id = $subscription->getKey();
+
+        $gateway = $this->gateway(true);
+        $action = new RenewSubscriptionAction($gateway, app(AuditLogger::class));
+
+        // Two STALE instances both loaded at the same due period_end simulate the collision.
+        $a = Subscription::findOrFail($id);
+        $b = Subscription::findOrFail($id);
+        $action->execute($a);
+        $action->execute($b);
+
+        // Period advanced by exactly ONE interval — no double advance / no billing-period corruption.
+        $fresh = Subscription::findOrFail($id);
+        $this->assertTrue($fresh->currentPeriodEnd()->equalTo($oldEnd->copy()->addMonth()));
+        // The idempotency key is derived from the period start (identical for both racers), so the
+        // real gateway collapses them to a single charge.
+        $this->assertStringContainsString(':r20200201', (string) $fresh->getAttribute('provider_reference'));
+    }
+
     public function test_cancel_at_period_end_flags_without_terminating(): void
     {
         Event::fake([SubscriptionCanceled::class]);

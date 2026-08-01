@@ -1,5 +1,6 @@
 <?php
 
+use App\Contexts\Commerce\Models\Order;
 use App\Domains\Catalog\Models\Course;
 use App\Domains\Certification\Actions\GenerateCertificateAction;
 use App\Domains\Certification\Database\Seeders\CertificationSeeder;
@@ -145,4 +146,17 @@ it('denies viewing another user\'s certificate without the manage permission', f
     Sanctum::actingAs($other);
 
     $this->getJson("/api/v1/certificates/{$cert->public_id}")->assertForbidden();
+});
+
+// ---------------------------------------------------------------- RefundController::commerce.refunds.manage
+// Refunds are a P0 financial action guarded by can:commerce.refunds.manage. Lock the guard so a
+// future refactor that drops the middleware cannot silently expose refunds to unprivileged users.
+it('denies issuing a refund to a user without the refunds.manage permission', function () {
+    $order = Order::factory()->create();
+    $user = User::factory()->create(); // no roles / no permissions
+
+    Sanctum::actingAs($user);
+
+    $this->postJson("/api/v1/admin/orders/{$order->getRouteKey()}/refund", ['amount_minor' => 500])
+        ->assertForbidden();
 });
