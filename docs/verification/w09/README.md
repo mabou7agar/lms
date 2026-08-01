@@ -2,7 +2,17 @@
 
 Concise evidence index for the RC gate. Runnable gates were executed in the cloud
 sandbox at the RC code; Docker/browser gates are consolidated into
-`W09_WINDOWS_UAT.ps1` for the release host.
+`W09_WINDOWS_UAT.ps1` and were executed **end-to-end on the Windows release host**.
+
+## Full local UAT — result
+
+`W09_WINDOWS_UAT.ps1` completed **PASS (52/52 gates, 0 failures)** on the Docker release
+host at RC HEAD `d4c7881`. Evidence: `evidence/20260801-151751/` (`summary.txt`,
+`summary.json`, per-gate logs, `container-logs/`, `playwright-results/`). The single run
+covers image builds, Trivy (0 HIGH/CRITICAL), secret scan, full six-service stack health,
+`config:validate --strict`, prod-DB `migrate --force`, the backend suite, the frontend
+gates, Playwright (functional + a11y + RTL + mobile), correlation-ID propagation,
+readiness-degradation + recovery, and the backup/restore drill.
 
 ## Gate results (executed this wave)
 
@@ -17,19 +27,30 @@ sandbox at the RC code; Docker/browser gates are consolidated into
 | Frontend Lint | **PASS** | 0 errors (9 pre-existing warnings) |
 | Frontend Vitest | **PASS** | 498 passed / 100 files |
 | Frontend Build | **PASS** | compiled successfully |
-| Config validation (`config:validate --strict`) | **PASS** (W08, on-machine) | rejects placeholder config as designed |
-| Backup / restore drill | **PASS** | 520K dump, integrity + SHA-256 OK, 148 = 148 restored |
-| API image build + Trivy | **PASS** (W08, on-machine) | build OK; 0 vulnerabilities |
-| Web image build + Trivy | **PASS** (W08, on-machine) | build OK; 0 HIGH/CRITICAL after postcss/sharp bump |
+| Config validation (`config:validate --strict`) | **PASS** (release host) | in-container, prod image; rejects placeholder config as designed |
+| Prod-DB `migrate --force` | **PASS** (release host) | schema applied to the running prod stack |
+| Backup / restore drill | **PASS** (release host) | dump + SHA-256 verify + restore; source tables == restored tables |
+| API image build + Trivy | **PASS** (release host) | build OK; 0 HIGH/CRITICAL |
+| Web image build + Trivy | **PASS** (release host) | build OK; 0 HIGH/CRITICAL after postcss/sharp bump |
+| Secret scan (images + repo) | **PASS** (release host) | Trivy secret scanner, 0 findings |
 | CI workflow YAML validation | **PASS** (W08) | ci/deploy/adr/uptime parse clean |
-| Container health smoke | **LOCAL REQUIRED** | no Docker daemon in sandbox — see PS1 |
-| Playwright (Chromium desktop+mobile, EN+AR) | **LOCAL REQUIRED** | e2e wired; needs running stack — see PS1 |
-| axe accessibility | **LOCAL REQUIRED** | `e2e/a11y.spec.ts` — see PS1 |
+| Container health smoke (6 services) | **PASS** (release host) | postgres/redis/api/web/horizon healthy; scheduler running |
+| Ingress routing (`/api/v1/health/*`, homepage) | **PASS** (release host) | 200 via nginx after W09-D3 fix |
+| Playwright (Chromium desktop+mobile, EN+AR) | **PASS** (release host) | functional + RTL + mobile enforced; visual pixels not gated (see note) |
+| axe accessibility | **PASS** (release host) | `e2e/a11y.spec.ts` |
+| Ops: correlation-ID / readiness-degradation / recovery | **PASS** (release host) | X-Correlation-ID echoed; `/ready` 503 with Redis down, `/live` 200, recovers |
 
 ### Caveat — Pest `--parallel`
 The parallel runner reports ~11 spurious failures from cross-worker DB isolation; the
-authoritative **sequential** run is green (823 passed). Run Pest sequentially in CI (or
+authoritative **sequential** run is green. Run Pest sequentially in CI (or
 give each worker an isolated database) until parallel isolation is hardened.
+
+### Note — visual regression is not gated by this UAT
+The `e2e/visual/*` pixel-snapshot specs require a deterministic, demo-seeded backend and
+per-OS baselines (they self-document this). The RC production stack is intentionally not a
+demo-seeded environment, so the UAT runs Playwright with `--ignore-snapshots`: every
+functional, a11y, RTL, and mobile assertion is enforced, but per-OS pixel diffs are owned by
+the dedicated seeded CI environment, not this cross-machine deployment UAT.
 
 ## Defects found & fixed (release-blocking)
 See `UAT_MATRIX.md` for the full table.
@@ -37,6 +58,12 @@ See `UAT_MATRIX.md` for the full table.
   player surface. Fixed across 7 files; guard: `apps/web/tests/contract/no-double-v1-prefix.test.ts`.
 - **W09-D2 (HIGH)** — checkout double-charge on duplicate submit. Fixed with a per-user
   distributed lock; guards in `tests/Feature/Commerce/CartCheckoutTest.php`.
+- **W09-D3 (CRITICAL)** — nginx fronting php-fpm used `SCRIPT_FILENAME $realpath_root$fastcgi_script_name`,
+  but nginx runs in a separate container without the Laravel files, so `$realpath_root` was empty and
+  **every `/api/*` request 404'd — the entire API was unreachable through the production ingress**.
+  Fixed by hardcoding the php-fpm document root (`/var/www/html/public`) in `infra/nginx/nginx.conf`.
+  Verified: `/api/v1/health/{live,ready}` and `/api/v1/health` all return 200 through nginx in the
+  full local UAT.
 
 ## Reproduce the runnable gates
 ```

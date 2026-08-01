@@ -33,6 +33,7 @@ Evidence classes:
 |---|---|---|---|---|
 | W09-D1 | HIGH | Web media/assignments/versioning/gradebook/player clients prefixed `v1/`, doubling to `/api/v1/v1/...` → 404 across the whole authoring/media/grading/player surface | Dropped the prefix in 7 files; paths now bare | `apps/web/tests/contract/no-double-v1-prefix.test.ts` |
 | W09-D2 | HIGH | Checkout double-charge on duplicate submit (two orders, two gateway idempotency keys, one cart) | Per-user distributed lock across the full checkout incl. gateway call; `CheckoutInProgressException` (409) | `tests/Feature/Commerce/CartCheckoutTest.php` (concurrent-lock + duplicate-submit) |
+| W09-D3 | CRITICAL | nginx `SCRIPT_FILENAME $realpath_root...` was empty in the split nginx / php-fpm containers, so every `/api/*` request 404'd — the entire API was unreachable through the production ingress | Hardcoded the php-fpm document root `/var/www/html/public` in `infra/nginx/nginx.conf` | Full local UAT: `/api/v1/health/{live,ready}` + `/api/v1/health` return 200 through nginx; ops + correlation-ID gates pass |
 
 ## Performance — advisory only (no release blockers; from static analysis)
 - N+1: none on audited hot paths (catalog, course details, curriculum, player, gradebook,
