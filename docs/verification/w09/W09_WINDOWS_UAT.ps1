@@ -180,10 +180,15 @@ COMMERCE_WEBHOOK_SECRET=whsec_local_dispo_$(Get-Random)
 COMMERCE_ALLOW_FAKE_GATEWAY=false
 SECURITY_HSTS_ENABLED=true
 "@ | Set-Content -Encoding ASCII $ApiEnv
+        # NEXT_PUBLIC_* are build-time inlined; at runtime they only feed the app's boot-time env
+        # contract (src/instrumentation.ts -> src/lib/env.ts), which THROWS in production if the
+        # public API base is localhost/127.0.0.1. Use valid non-localhost production-like URLs so the
+        # web server boots. Browser API calls go through the same-origin /api/backend BFF proxy, which
+        # uses API_INTERNAL_URL below, so these placeholder public URLs do not affect real requests.
         @"
 $DispoMarker
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
-NEXT_PUBLIC_SITE_URL=http://localhost:8080
+NEXT_PUBLIC_API_BASE_URL=https://uat.helbaron.local/api/v1
+NEXT_PUBLIC_SITE_URL=https://uat.helbaron.local
 API_INTERNAL_URL=http://nginx:80/api/v1
 NODE_ENV=production
 "@ | Set-Content -Encoding ASCII $WebEnv
@@ -242,8 +247,9 @@ if(-not $Aborted){
             $ps = (& docker @Compose ps --format '{{.Service}}|{{.Health}}|{{.State}}') 2>$null
             $ps | Out-File (Join-Path $Ev 'container-status.txt')
             $h = @{}; foreach($line in $ps){ $p=$line -split '\|'; if($p.Count -ge 3){ $h[$p[0]]="$($p[1])/$($p[2])" } }
-            $apiOK=($h['api'] -match 'healthy'); $pgOK=($h['postgres'] -match 'healthy'); $rdOK=($h['redis'] -match 'healthy')
-            $webOK=($h['web'] -match 'healthy'); $hzOK=($h['horizon'] -match 'healthy'); $schOK=($h['scheduler'] -match 'running')
+            # Anchored match: "$health/$state". Use -like 'healthy/*' so "unhealthy/running" does NOT pass.
+            $apiOK=($h['api'] -like 'healthy/*'); $pgOK=($h['postgres'] -like 'healthy/*'); $rdOK=($h['redis'] -like 'healthy/*')
+            $webOK=($h['web'] -like 'healthy/*'); $hzOK=($h['horizon'] -like 'healthy/*'); $schOK=($h['scheduler'] -like '*/running')
             if($apiOK -and $pgOK -and $rdOK -and $webOK -and $hzOK -and $schOK){ $ready=$true; break }
             Start-Sleep 5
         }
@@ -253,6 +259,13 @@ if(-not $Aborted){
         Record 'stack: Web healthy'                 ($(if($webOK){'PASS'}else{'FAIL'})) $h['web']
         Record 'stack: queue worker (horizon)'      ($(if($hzOK){'PASS'}else{'FAIL'})) $h['horizon']
         Record 'stack: scheduler running'           ($(if($schOK){'PASS'}else{'FAIL'})) $h['scheduler']
+        # Capture container logs while the stack is up (even if a container is unhealthy) so failures
+        # can be diagnosed. This runs BEFORE any stack:health abort so evidence is never lost.
+        (& docker @Compose logs --no-color --tail 2000) 2>&1 | Out-File (Join-Path $ClogDir 'stack.log')
+        $fatal = Select-String -Path (Join-Path $ClogDir 'stack.log') -Pattern 'PHP Fatal|Uncaught|Stack trace|FATAL' -CaseSensitive:$false
+        Record 'logs: no fatal errors' ($(if($fatal){'FAIL'}else{'PASS'})) $(if($fatal){"$($fatal.Count) matches"}else{'clean'})
+        # Per-service status snapshot for quick triage.
+        Save 'stack-health.txt' (($h.GetEnumerator() | ForEach-Object { "{0} = {1}" -f $_.Key,$_.Value }) -join "`r`n")
         if(-not $ready){ Abort 'stack:health' 1 }
     } else { Abort 'stack:up' 1 }
 }
@@ -262,18 +275,14 @@ if(-not $Aborted){
     $hc = @()
     $live=HttpStatus 'http://localhost:8080/api/v1/health/live'
     $rdy =HttpStatus 'http://localhost:8080/api/v1/health/ready'
-    $home=HttpStatus 'http://localhost:8080/'
+    $homeStatus=HttpStatus 'http://localhost:8080/'
     $apiv=HttpStatus 'http://localhost:8080/api/v1/health'
-    $hc += "live=$live ready=$rdy home=$home apiv=$apiv"
+    $hc += "live=$live ready=$rdy home=$homeStatus apiv=$apiv"
     Record 'health: API liveness (200)'  ($(if($live -eq '200'){'PASS'}else{'FAIL'})) "HTTP $live"
     Record 'health: API readiness (200)' ($(if($rdy  -eq '200'){'PASS'}else{'FAIL'})) "HTTP $rdy"
-    Record 'health: frontend homepage'   ($(if($home -match '^(200|30\d)$'){'PASS'}else{'FAIL'})) "HTTP $home"
+    Record 'health: frontend homepage'   ($(if($homeStatus -match '^(200|30\d)$'){'PASS'}else{'FAIL'})) "HTTP $homeStatus"
     Record 'health: API v1 route'        ($(if($apiv -eq '200'){'PASS'}else{'FAIL'})) "HTTP $apiv"
     Save 'health-checks.txt' ($hc -join "`n")
-    # Container logs + fatal scan
-    (& docker @Compose logs --no-color --tail 2000) 2>&1 | Out-File (Join-Path $ClogDir 'stack.log')
-    $fatal = Select-String -Path (Join-Path $ClogDir 'stack.log') -Pattern 'PHP Fatal|Uncaught|Stack trace|FATAL' -CaseSensitive:$false
-    Record 'logs: no fatal errors' ($(if($fatal){'FAIL'}else{'PASS'})) $(if($fatal){"$($fatal.Count) matches"}else{'clean'})
 }
 
 # ================================================================== 8. Production config validation (no fake providers)
