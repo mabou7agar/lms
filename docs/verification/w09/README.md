@@ -58,5 +58,8 @@ DATABASE_URL=postgres://user:pass@host:5432/scratch ./scripts/db-restore.sh <dum
 ## Local-only gates
 Everything requiring Docker or a browser is orchestrated by **`W09_WINDOWS_UAT.ps1`**
 in this directory: it builds the images, starts the stack, runs health + backend + frontend
-gates + Playwright + axe + Trivy + the backup/restore drill, writes a timestamped evidence
-file, and tears the stack down. Run it on the Docker host, then attach the evidence file.
+gates + Playwright + axe + Trivy + the backup/restore drill, writes all evidence into
+`docs/verification/w09/evidence/<yyyyMMdd-HHmmss>/` (`summary.txt`, `summary.json`,
+`failures.txt`, per-gate logs, `container-logs/`, `playwright-results/`, `axe-results/`),
+and tears the stack down. Evidence files carry variable NAMES and PASS/FAIL only, never secret
+values. Run it on the Docker host, then attach `summary.txt` + `failures.txt`.

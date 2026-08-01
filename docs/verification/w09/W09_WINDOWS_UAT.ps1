@@ -1,118 +1,137 @@
 #Requires -Version 5.1
 <#
-    W09_WINDOWS_UAT.ps1 — HELBARON LMS 1.0.0-rc.1 local release validation.
+    W09_WINDOWS_UAT.ps1 — HELBARON LMS 1.0.0-rc.1 local release validation (single orchestrator).
 
-    Orchestrates every gate that cannot run in the cloud sandbox (Docker build, stack
-    health, Playwright, axe, Trivy, backup/restore) plus the host unit gates, and writes
-    ONE timestamped evidence file. Copy-paste runnable. Non-destructive outside its own
-    disposable Docker volumes and a disposable local test database.
+    Runs every gate that cannot run in the cloud sandbox (Docker build, stack health, Trivy,
+    Playwright, axe, backup/restore, operational failure tests) plus the host unit gates, and
+    writes ALL evidence into ONE timestamped directory. Copy-paste runnable. Non-destructive
+    outside its own disposable Docker volumes and a disposable test database.
 
-    NO REAL SECRETS ARE EMBEDDED. It writes a DISPOSABLE apps/api/.env.production and
-    apps/web/.env.production containing local-only placeholder values so the stack can boot
-    for smoke testing. DO NOT use these for anything but local validation, and DO NOT commit
-    them (both are already .gitignored via .env.*).
+    SAFETY
+    - No real secrets are embedded. If a REAL apps\api\.env.production already exists (no disposable
+      marker), it is validated and used, never overwritten. Otherwise a DISPOSABLE local-only file is
+      written (placeholders + a generated APP_KEY + a random local DB password).
+    - Backend gates run against EPHEMERAL, published Postgres + Redis containers started just for the
+      gates and removed in finally, so the running app's database is never touched.
+    - Evidence files contain variable NAMES and PASS/FAIL only — never secret values.
+    - Critical-stage failure short-circuits dependent stages; the stack is always torn down; evidence
+      is always written.
 
-    Prerequisites (fail-fast if missing): Docker Desktop running, Node.js + npm.
-    Optional (steps auto-skip with a warning if absent): PHP 8.4 + Composer (backend gates),
-    Trivy (image scans; a Docker fallback is used if the CLI is absent).
+    PREREQUISITES (fail-fast): Docker Desktop running, Node.js + npm, PHP 8.4 + Composer, Trivy.
+    Playwright browsers are installed by the script. The browser stage can be skipped with -SkipBrowser.
 
-    USAGE (from anywhere):
-        powershell -ExecutionPolicy Bypass -File `
+    USAGE (copy-paste):
+        powershell -NoProfile -ExecutionPolicy Bypass -File `
           "D:\Claude_Files\Projects\LMS\CoreLMS Implementation\corelms\docs\verification\w09\W09_WINDOWS_UAT.ps1"
-
-    Optional parameters let you point at a different checkout or skip the slow browser suite.
 #>
 
 param(
-    [string]$RepoRoot = "D:\Claude_Files\Projects\LMS\CoreLMS Implementation\corelms",
-    [switch]$SkipBrowser,        # skip Playwright + axe (fastest smoke)
-    [switch]$KeepStackUp         # leave the stack running for manual inspection
+    [string]$RepoRoot   = "D:\Claude_Files\Projects\LMS\CoreLMS Implementation\corelms",
+    [string]$ExpectedHead = "9dbe6ed",
+    [string]$ExpectedVersion = "1.0.0-rc.1",
+    [switch]$SkipBrowser,
+    [switch]$KeepStackUp
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# ---------------------------------------------------------------------------
-# Evidence collection
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------ evidence + results
 $Stamp    = Get-Date -Format 'yyyyMMdd-HHmmss'
-$RunDir   = Join-Path $RepoRoot "docs\verification\w09\runs\$Stamp"
-$Evidence = Join-Path $RunDir  "W09_EVIDENCE_$Stamp.md"
-$LogDir   = Join-Path $RunDir  "logs"
+$Ev       = Join-Path $RepoRoot "docs\verification\w09\evidence\$Stamp"
+$ClogDir  = Join-Path $Ev 'container-logs'
+$PwDir    = Join-Path $Ev 'playwright-results'
+$AxeDir   = Join-Path $Ev 'axe-results'
 $Compose  = @('compose','--env-file','apps\api\.env.production','-f','docker-compose.prod.yml')
 $results  = [System.Collections.Generic.List[object]]::new()
-
-New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$Aborted  = $false
+$GatePg   = 'w09_gate_pg'; $GateRd = 'w09_gate_redis'; $GatePw = 'w09gatepw'  # ephemeral backend-gate DB/Redis
+New-Item -ItemType Directory -Force -Path $Ev,$ClogDir,$PwDir,$AxeDir | Out-Null
 
 function Log([string]$m){ Write-Host "[W09] $m" -ForegroundColor Cyan }
 function Record([string]$name,[string]$status,[string]$detail=''){
-    $results.Add([pscustomobject]@{ Gate=$name; Status=$status; Detail=$detail })
-    $color = if($status -eq 'PASS'){'Green'} elseif($status -eq 'SKIP'){'Yellow'} else {'Red'}
-    Write-Host ("  {0,-34} {1} {2}" -f $name,$status,$detail) -ForegroundColor $color
+    $results.Add([pscustomobject]@{ gate=$name; status=$status; detail=$detail })
+    $c = @{PASS='Green';FAIL='Red';SKIP='Yellow'}[$status]; if(-not $c){$c='Gray'}
+    Write-Host ("  {0,-40} {1} {2}" -f $name,$status,$detail) -ForegroundColor $c
 }
-# Run a gate; capture stdout+stderr to a log; record PASS/FAIL by exit code (never aborts).
-function Gate([string]$name,[string]$logName,[scriptblock]$body){
-    $log = Join-Path $LogDir $logName
-    Log "→ $name"
-    try {
-        & $body *>&1 | Tee-Object -FilePath $log | Out-Null
-        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { Record $name 'FAIL' "exit $LASTEXITCODE (see $logName)" }
-        else { Record $name 'PASS' $logName }
-    } catch {
-        ($_ | Out-String) | Add-Content $log
-        Record $name 'FAIL' "$($_.Exception.Message) (see $logName)"
+function Save([string]$file,[string]$text){ $text | Out-File -Encoding UTF8 (Join-Path $Ev $file) }
+# Run an external gate, tee output to an evidence file, record PASS/FAIL by exit code. Returns bool.
+function Gate([string]$name,[string]$evFile,[scriptblock]$body){
+    if($Aborted){ Record $name 'SKIP' 'aborted upstream'; return $false }
+    Log "-> $name"
+    $out = ''
+    try { $out = (& $body 2>&1 | Out-String); $code = $LASTEXITCODE }
+    catch { $out = ($_ | Out-String); $code = 1 }
+    Add-Content -Path (Join-Path $Ev $evFile) -Value $out
+    if($null -eq $code){ $code = 0 }
+    if($code -eq 0){ Record $name 'PASS' $evFile; return $true }
+    Record $name 'FAIL' "exit $code ($evFile)"; return $false
+}
+# HTTP status via curl.exe (robust across PS 5.1/7 and works for non-2xx like 503).
+function HttpStatus([string]$url){ (& curl.exe -s -o NUL -w "%{http_code}" --max-time 15 $url) 2>$null }
+function Abort([string]$stage,[int]$code){
+    $Script:Aborted = $true
+    Record "ABORT at $stage" 'FAIL' "exit $code"
+    Log "Critical stage failed: $stage (exit $code). Dependent stages will be skipped; tearing down."
+}
+
+Log "Evidence: $Ev"
+
+# ================================================================== 0. Prerequisites
+function Has($c){ [bool](Get-Command $c -ErrorAction SilentlyContinue) }
+if(-not (Has 'docker')){ Abort 'prereq:docker' 1 }
+if(-not $Aborted){
+    & docker version --format '{{.Server.Version}}' *> $null
+    if($LASTEXITCODE -ne 0){ Abort 'prereq:docker-daemon' 1 } else { Record 'prereq: docker daemon' 'PASS' (& docker version --format '{{.Server.Version}}') }
+}
+foreach($t in 'node','npm','php','composer','trivy'){
+    if(Has $t){ Record "prereq: $t" 'PASS' } else {
+        if($t -in @('php','composer','trivy')){ Abort "prereq:$t" 1 } else { Record "prereq: $t" 'FAIL' 'missing' }
     }
 }
 
-# ---------------------------------------------------------------------------
-# 0. Prerequisites + repo
-# ---------------------------------------------------------------------------
-Log "Evidence dir: $RunDir"
-if (-not (Test-Path (Join-Path $RepoRoot 'docker-compose.prod.yml'))) {
-    throw "Repo not found or wrong path: $RepoRoot (expected docker-compose.prod.yml)"
+# ================================================================== 1. Repository checks
+if(-not $Aborted){
+    if(-not (Test-Path (Join-Path $RepoRoot 'docker-compose.prod.yml'))){ Abort 'repo:path' 1 }
+    else {
+        Set-Location $RepoRoot
+        $branch = (& git rev-parse --abbrev-ref HEAD).Trim()
+        $head   = (& git rev-parse --short HEAD).Trim()
+        & git merge-base --is-ancestor $ExpectedHead HEAD 2>$null; $isDesc = ($LASTEXITCODE -eq 0)
+        $porcelain = (& git status --porcelain)
+        $clean = [string]::IsNullOrWhiteSpace(($porcelain | Out-String))
+        $ver = ''
+        if(Test-Path 'VERSION'){ $ver = (Get-Content 'VERSION' -Raw).Trim() }
+        Save 'git-status.txt' ("branch=$branch`nHEAD=$head`nexpected_ancestor=$ExpectedHead is-ancestor=$isDesc`nversion=$ver`n`n" + ($porcelain | Out-String))
+        Record 'repo: branch is main'       ($(if($branch -eq 'main'){'PASS'}else{'FAIL'})) $branch
+        Record 'repo: HEAD >= 9dbe6ed'      ($(if($isDesc){'PASS'}else{'FAIL'})) $head
+        Record 'repo: working tree clean'   ($(if($clean){'PASS'}else{'FAIL'})) $(if($clean){'clean'}else{'DIRTY'})
+        Record 'repo: version 1.0.0-rc.1'   ($(if($ver -eq $ExpectedVersion){'PASS'}else{'FAIL'})) $ver
+    }
 }
-Set-Location $RepoRoot
 
-function Has($cmd){ [bool](Get-Command $cmd -ErrorAction SilentlyContinue) }
-
-if (-not (Has 'docker')) { throw 'Docker CLI not found. Install/start Docker Desktop.' }
-& docker version --format '{{.Server.Version}}' *> $null
-if ($LASTEXITCODE -ne 0) { throw 'Docker daemon not reachable. Start Docker Desktop (Engine running), then retry.' }
-if (-not (Has 'node')) { throw 'Node.js not found. Install Node 22+.' }
-$havePhp   = (Has 'php') -and (Has 'composer')
-$haveTrivy = Has 'trivy'
-Record 'prereq: docker'   'PASS' (& docker version --format '{{.Server.Version}}')
-Record 'prereq: node'     'PASS' (& node -v)
-Record 'prereq: php+composer' ($(if($havePhp){'PASS'}else{'SKIP'})) $(if($havePhp){'backend gates enabled'}else{'absent — backend gates skipped'})
-Record 'prereq: trivy'    ($(if($haveTrivy){'PASS'}else{'SKIP'})) $(if($haveTrivy){'native'}else{'CLI absent — docker-run fallback'})
-
-# ---------------------------------------------------------------------------
-# 1. Environment values (validated, never printed). If you already keep a REAL
-#    apps\api\.env.production, this script does NOT overwrite it — it validates and
-#    uses it. Otherwise it writes a DISPOSABLE local-only file (placeholders + a
-#    generated APP_KEY + a random local DB password). REPLACE the disposable values
-#    with real secrets for a production-representative run. Nothing here is printed.
-# ---------------------------------------------------------------------------
-$DispoMarker = '# HELBARON-W09-DISPOSABLE (safe to delete; not real secrets)'
-$ApiEnv = 'apps\api\.env.production'
-$realEnv = (Test-Path $ApiEnv) -and -not (Select-String -Path $ApiEnv -SimpleMatch $DispoMarker -Quiet)
-if ($realEnv) {
-    Record 'env: using existing .env.production' 'PASS' 'real file detected — left untouched'
-    $DispoDbPw = (Select-String -Path $ApiEnv -Pattern '^DB_PASSWORD=(.*)$').Matches.Groups[1].Value
-    if (-not $DispoDbPw) { $DispoDbPw = 'helbaron' }
-} else {
-    Log 'Writing DISPOSABLE apps\api\.env.production + apps\web\.env.production (local placeholders; REPLACE for a real run)'
-    $DispoDbPw    = 'local_dispo_' + (Get-Random)
-    $AppKeyRaw    = [byte[]]::new(32); (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($AppKeyRaw)
-    $AppKey       = 'base64:' + [Convert]::ToBase64String($AppKeyRaw)
-@"
+# ================================================================== 2. Environment (validated, never printed)
+if(-not $Aborted){
+    $DispoMarker = '# HELBARON-W09-DISPOSABLE (safe to delete; not real secrets)'
+    $ApiEnv = 'apps\api\.env.production'; $WebEnv = 'apps\web\.env.production'
+    $usingReal = (Test-Path $ApiEnv) -and -not (Select-String -Path $ApiEnv -SimpleMatch $DispoMarker -Quiet)
+    if($usingReal){
+        Record 'env: using existing real .env.production' 'PASS' 'left untouched'
+        $pwMatch = Select-String -Path $ApiEnv -Pattern '^DB_PASSWORD=(.*)$' | Select-Object -First 1
+        $DispoDbPw = if($pwMatch){ $pwMatch.Matches.Groups[1].Value } else { 'helbaron' }
+        if(-not $DispoDbPw){ $DispoDbPw = 'helbaron' }
+    } else {
+        $DispoDbPw = 'local_dispo_' + (Get-Random)
+        $raw = [byte[]]::new(32); [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($raw)
+        $AppKey = 'base64:' + [Convert]::ToBase64String($raw)
+        @"
 $DispoMarker
 APP_NAME=HELBARON
 APP_ENV=production
 APP_KEY=$AppKey
 APP_DEBUG=false
 APP_URL=https://localhost
-APP_VERSION=1.0.0-rc.1
+APP_VERSION=$ExpectedVersion
 APP_TRUSTED_HOSTS=localhost
 TRUSTED_PROXIES=*
 DB_CONNECTION=pgsql
@@ -139,153 +158,239 @@ COMMERCE_PAYMENT_PROVIDER=stripe
 COMMERCE_WEBHOOK_SECRET=whsec_local_dispo_$(Get-Random)
 COMMERCE_ALLOW_FAKE_GATEWAY=false
 SECURITY_HSTS_ENABLED=true
-"@ | Set-Content -Encoding ASCII 'apps\api\.env.production'
-@"
+"@ | Set-Content -Encoding ASCII $ApiEnv
+        @"
+$DispoMarker
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:8080
 API_INTERNAL_URL=http://nginx:80/api/v1
 NODE_ENV=production
-"@ | Set-Content -Encoding ASCII 'apps\web\.env.production'
-    Record 'disposable env written' 'PASS' 'apps\api\.env.production, apps\web\.env.production (gitignored)'
+"@ | Set-Content -Encoding ASCII $WebEnv
+        Record 'env: wrote disposable local env' 'PASS' 'REPLACE values for a real run'
+    }
+    # Placeholder-secret + required-name validation. NAMES + PASS/FAIL only — no values.
+    $envText = Get-Content $ApiEnv -Raw
+    $required = 'APP_KEY','APP_ENV','APP_URL','DB_PASSWORD','REDIS_HOST','COMMERCE_WEBHOOK_SECRET'
+    $names = @(); $bad = @()
+    foreach($k in $required){
+        $m = [regex]::Match($envText, "(?m)^$k=(.*)$")
+        $present = $m.Success -and $m.Groups[1].Value.Trim() -ne ''
+        $names += ("{0}: {1}" -f $k, ($(if($present){'present'}else{'MISSING'})))
+        if(-not $present){ $bad += $k }
+    }
+    foreach($ph in '<','whsec_fake','changeme','your-domain','placeholder'){
+        if($envText -match [regex]::Escape($ph)){ $bad += "placeholder:$ph" }
+    }
+    if($envText -match '(?m)^APP_ENV=production' -and $envText -match '(?m)^COMMERCE_ALLOW_FAKE_GATEWAY=true'){ $bad += 'fake-gateway-enabled' }
+    Save 'environment-validation.txt' (($names -join "`n") + "`n`nissues: " + ($(if($bad){$bad -join ', '}else{'none'})))
+    Record 'env: no placeholder production secrets' ($(if($bad.Count -eq 0){'PASS'}else{'FAIL'})) ($(if($bad){$bad -join ','}else{'ok'}))
+    if($bad.Count -gt 0){ Abort 'env:placeholders' 1 }
 }
 
-# ---------------------------------------------------------------------------
-# 2. Frontend host gates (node)
-# ---------------------------------------------------------------------------
-Push-Location 'apps\web'
-Gate 'web: npm ci'        'web-npm-ci.log'     { & npm ci }
-Gate 'web: typecheck'     'web-typecheck.log'  { & npm run typecheck }
-Gate 'web: lint'          'web-lint.log'       { & npm run lint }
-Gate 'web: vitest'        'web-vitest.log'     { & npx vitest run }
-Gate 'web: build'         'web-build.log'      { & npm run build }
-Pop-Location
+# ================================================================== 3. Compose validation
+if(-not $Aborted){ if(-not (Gate 'docker: compose config' 'docker-compose.txt' { & docker @Compose config })){ Abort 'compose:config' 1 } }
 
-# ---------------------------------------------------------------------------
-# 3. Backend host gates (php + composer + the compose Postgres on :55432)
-# ---------------------------------------------------------------------------
-if ($havePhp) {
-    Push-Location 'apps\api'
-    Gate 'api: composer install' 'api-composer.log' { & composer install --no-interaction --prefer-dist }
-    # Point Pest/artisan at the compose Postgres (published on host :55432) as a DISPOSABLE test DB.
-    $env:DB_HOST='127.0.0.1'; $env:DB_PORT='55432'; $env:DB_DATABASE='helbaron'
-    $env:DB_USERNAME='helbaron'; $env:DB_PASSWORD=$DispoDbPw; $env:CACHE_STORE='array'
-    Gate 'api: migrate:fresh --seed' 'api-migrate.log' { & php artisan migrate:fresh --seed --force }
-    Gate 'api: pest (sequential)'    'api-pest.log'     { & vendor\bin\pest }
-    Gate 'api: phpstan'              'api-phpstan.log'  { & vendor\bin\phpstan analyse --no-progress }
-    Gate 'api: pint'                 'api-pint.log'     { & vendor\bin\pint --test }
-    Gate 'api: deptrac'              'api-deptrac.log'  { & vendor\bin\deptrac analyse --no-progress }
-    Gate 'api: config:validate'      'api-configval.log'{ & php artisan config:validate --strict }
-    Pop-Location
-} else {
-    Record 'backend host gates' 'SKIP' 'php/composer absent — run in CI or the sandbox'
-}
+# ================================================================== 4. Build images
+if(-not $Aborted){ if(-not (Gate 'docker: build API image' 'docker-build-api.txt' { & docker @Compose build api })){ Abort 'build:api' 1 } }
+if(-not $Aborted){ if(-not (Gate 'docker: build Web image' 'docker-build-web.txt' { & docker @Compose build web })){ Abort 'build:web' 1 } }
 
-# ---------------------------------------------------------------------------
-# 4. Build images + Trivy
-# ---------------------------------------------------------------------------
-Gate 'docker: build images' 'docker-build.log' { & docker @Compose build }
+# ================================================================== 5. Trivy + secret scan (fail on HIGH/CRITICAL)
 $imgApi='helbaron-api:1.0.0-rc.1'; $imgWeb='helbaron-web:1.0.0-rc.1'
-$trivyArgs=@('image','--severity','HIGH,CRITICAL','--ignore-unfixed','--exit-code','1')
-if ($haveTrivy) {
-    Gate 'trivy: api image' 'trivy-api.log' { & trivy @trivyArgs $imgApi }
-    Gate 'trivy: web image' 'trivy-web.log' { & trivy @trivyArgs $imgWeb }
-} else {
-    Gate 'trivy: api image (docker)' 'trivy-api.log' { & docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest @trivyArgs $imgApi }
-    Gate 'trivy: web image (docker)' 'trivy-web.log' { & docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest @trivyArgs $imgWeb }
-}
+$tv=@('image','--severity','HIGH,CRITICAL','--ignore-unfixed','--exit-code','1','--no-progress')
+if(-not $Aborted){ Gate 'trivy: API image (HIGH/CRITICAL)' 'trivy-api.txt' { & trivy @tv $imgApi } | Out-Null }
+if(-not $Aborted){ Gate 'trivy: Web image (HIGH/CRITICAL)' 'trivy-web.txt' { & trivy @tv $imgWeb } | Out-Null }
+if(-not $Aborted){ Gate 'secret scan: images + repo' 'secret-scan.txt' {
+    & trivy image --scanners secret --exit-code 1 --no-progress $imgApi; if($LASTEXITCODE){ throw "api image secret finding (exit $LASTEXITCODE)" }
+    & trivy image --scanners secret --exit-code 1 --no-progress $imgWeb; if($LASTEXITCODE){ throw "web image secret finding (exit $LASTEXITCODE)" }
+    & trivy fs --scanners secret --exit-code 1 --no-progress --skip-dirs node_modules --skip-dirs vendor .; if($LASTEXITCODE){ throw "repo secret finding (exit $LASTEXITCODE)" }
+} | Out-Null }
 
-# ---------------------------------------------------------------------------
-# 5. Start stack + health
-# ---------------------------------------------------------------------------
+# ================================================================== 6. Start stack + wait for health
 $stackUp = $false
 try {
-    Gate 'docker: stack up' 'docker-up.log' { & docker @Compose up -d }
-    $stackUp = $true
-    Log 'Waiting for containers to report healthy (up to 180s)...'
-    $deadline=(Get-Date).AddSeconds(180); $healthy=$false
-    while((Get-Date) -lt $deadline){
-        $ps = (& docker @Compose ps --format '{{.Service}} {{.Health}}') 2>$null
-        $ps | Out-File (Join-Path $LogDir 'docker-ps.log')
-        if (($ps -match 'api.*healthy') -and ($ps -match 'postgres.*healthy') -and ($ps -match 'redis.*healthy')) { $healthy=$true; break }
-        Start-Sleep 5
-    }
-    Record 'containers healthy' ($(if($healthy){'PASS'}else{'FAIL'})) 'docker-ps.log'
+if(-not $Aborted){
+    if(Gate 'docker: stack up -d' 'container-status.txt' { & docker @Compose up -d }){
+        $stackUp = $true
+        Log 'Waiting up to 240s for containers to become healthy...'
+        $deadline=(Get-Date).AddSeconds(240); $ready=$false
+        while((Get-Date) -lt $deadline){
+            $ps = (& docker @Compose ps --format '{{.Service}}|{{.Health}}|{{.State}}') 2>$null
+            $ps | Out-File (Join-Path $Ev 'container-status.txt')
+            $h = @{}; foreach($line in $ps){ $p=$line -split '\|'; if($p.Count -ge 3){ $h[$p[0]]="$($p[1])/$($p[2])" } }
+            $apiOK=($h['api'] -match 'healthy'); $pgOK=($h['postgres'] -match 'healthy'); $rdOK=($h['redis'] -match 'healthy')
+            $webOK=($h['web'] -match 'healthy'); $hzOK=($h['horizon'] -match 'healthy'); $schOK=($h['scheduler'] -match 'running')
+            if($apiOK -and $pgOK -and $rdOK -and $webOK -and $hzOK -and $schOK){ $ready=$true; break }
+            Start-Sleep 5
+        }
+        Record 'stack: database (postgres) healthy' ($(if($pgOK){'PASS'}else{'FAIL'})) $h['postgres']
+        Record 'stack: redis healthy'               ($(if($rdOK){'PASS'}else{'FAIL'})) $h['redis']
+        Record 'stack: API healthy'                 ($(if($apiOK){'PASS'}else{'FAIL'})) $h['api']
+        Record 'stack: Web healthy'                 ($(if($webOK){'PASS'}else{'FAIL'})) $h['web']
+        Record 'stack: queue worker (horizon)'      ($(if($hzOK){'PASS'}else{'FAIL'})) $h['horizon']
+        Record 'stack: scheduler running'           ($(if($schOK){'PASS'}else{'FAIL'})) $h['scheduler']
+        if(-not $ready){ Abort 'stack:health' 1 }
+    } else { Abort 'stack:up' 1 }
+}
 
-    function Probe($name,$url){
-        try { $r=Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 15
-              Record $name ($(if($r.StatusCode -eq 200){'PASS'}else{'FAIL'})) "HTTP $($r.StatusCode)" }
-        catch { Record $name 'FAIL' $_.Exception.Message }
-    }
-    Probe 'health/live'      'http://localhost:8080/api/v1/health/live'
-    Probe 'health/ready'     'http://localhost:8080/api/v1/health/ready'
-    Probe 'frontend homepage' 'http://localhost:8080/'
+# ================================================================== 7. Health + logs
+if(-not $Aborted){
+    $hc = @()
+    $live=HttpStatus 'http://localhost:8080/api/v1/health/live'
+    $rdy =HttpStatus 'http://localhost:8080/api/v1/health/ready'
+    $home=HttpStatus 'http://localhost:8080/'
+    $apiv=HttpStatus 'http://localhost:8080/api/v1/health'
+    $hc += "live=$live ready=$rdy home=$home apiv=$apiv"
+    Record 'health: API liveness (200)'  ($(if($live -eq '200'){'PASS'}else{'FAIL'})) "HTTP $live"
+    Record 'health: API readiness (200)' ($(if($rdy  -eq '200'){'PASS'}else{'FAIL'})) "HTTP $rdy"
+    Record 'health: frontend homepage'   ($(if($home -match '^(200|30\d)$'){'PASS'}else{'FAIL'})) "HTTP $home"
+    Record 'health: API v1 route'        ($(if($apiv -eq '200'){'PASS'}else{'FAIL'})) "HTTP $apiv"
+    Save 'health-checks.txt' ($hc -join "`n")
+    # Container logs + fatal scan
+    (& docker @Compose logs --no-color --tail 2000) 2>&1 | Out-File (Join-Path $ClogDir 'stack.log')
+    $fatal = Select-String -Path (Join-Path $ClogDir 'stack.log') -Pattern 'PHP Fatal|Uncaught|Stack trace|FATAL' -CaseSensitive:$false
+    Record 'logs: no fatal errors' ($(if($fatal){'FAIL'}else{'PASS'})) $(if($fatal){"$($fatal.Count) matches"}else{'clean'})
+}
 
-    # Fatal-error scan of container logs.
-    $logs = (& docker @Compose logs --no-color) 2>&1
-    $logs | Out-File (Join-Path $LogDir 'stack-logs.log')
-    $fatal = $logs | Select-String -Pattern 'PHP Fatal|Uncaught|Stack trace|FATAL|segfault' -CaseSensitive:$false
-    Record 'no fatal errors in logs' ($(if($fatal){'FAIL'}else{'PASS'})) $(if($fatal){"$($fatal.Count) matches — see stack-logs.log"}else{'clean'})
+# ================================================================== 8. Production config validation (no fake providers)
+if(-not $Aborted){
+    Gate 'security: config:validate --strict (container)' 'health-checks.txt' {
+        & docker @Compose exec -T api php artisan config:validate --strict
+    } | Out-Null
+    # Debug must be OFF: a 404 must not leak a stack trace.
+    $body = (& curl.exe -s --max-time 15 'http://localhost:8080/api/v1/__definitely_not_a_route__') 2>$null
+    $leak = ($body -match 'Stack trace|vendor/laravel|APP_DEBUG')
+    Record 'security: no debug/stack-trace leak' ($(if($leak){'FAIL'}else{'PASS'})) $(if($leak){'LEAK'}else{'ok'})
+}
 
-    # -----------------------------------------------------------------------
-    # 6. Backup / restore drill (inside the compose Postgres — disposable)
-    # -----------------------------------------------------------------------
-    Gate 'backup/restore drill' 'backup-drill.log' {
-        & docker @Compose exec -T postgres sh -lc `
-          'set -e; SRC=$(psql -U helbaron -d helbaron -tAc "select count(*) from information_schema.tables where table_schema=''public''"); \
-           pg_dump -U helbaron -Fc helbaron > /tmp/rc.dump; \
-           dropdb -U helbaron --if-exists rc_restore; createdb -U helbaron rc_restore; \
-           pg_restore -U helbaron --clean --if-exists --no-owner -d rc_restore /tmp/rc.dump; \
-           RES=$(psql -U helbaron -d rc_restore -tAc "select count(*) from information_schema.tables where table_schema=''public''"); \
-           dropdb -U helbaron rc_restore; \
-           echo "source=$SRC restored=$RES"; test "$SRC" = "$RES"'
-    }
+# ================================================================== 9. Backend gates
+# Backend gates run on the host against EPHEMERAL, published Postgres + Redis started just for the
+# gates (the prod stack does NOT expose its DB/Redis to the host). These are removed in `finally`.
+if(-not $Aborted){
+    Gate 'backend: start ephemeral pg+redis' 'backend-gates.txt' {
+        & docker rm -f $GatePg $GateRd 2>$null | Out-Null
+        & docker run -d --name $GatePg -e POSTGRES_USER=helbaron -e POSTGRES_PASSWORD=$GatePw -e POSTGRES_DB=helbaron_test -p 55432:5432 postgres:16-alpine
+        if($LASTEXITCODE){ throw 'pg start failed' }
+        & docker run -d --name $GateRd -p 6380:6379 redis:7-alpine
+        if($LASTEXITCODE){ throw 'redis start failed' }
+        # Wait for pg to accept connections. NOTE: a `for` loop runs in the current scope, so the
+        # $ok assignment propagates (a ForEach-Object block would not — it runs in a child scope).
+        $ok=$false
+        for($i=0; $i -lt 30 -and -not $ok; $i++){
+            & docker exec $GatePg pg_isready -U helbaron *>$null
+            if($LASTEXITCODE -eq 0){ $ok=$true } else { Start-Sleep 2 }
+        }
+        if(-not $ok){ throw 'pg not ready' }
+    } | Out-Null
+    Push-Location 'apps\api'
+    $env:DB_HOST='127.0.0.1'; $env:DB_PORT='55432'; $env:DB_DATABASE='helbaron_test'
+    $env:DB_USERNAME='helbaron'; $env:DB_PASSWORD=$GatePw; $env:CACHE_STORE='array'
+    $env:REDIS_HOST='127.0.0.1'; $env:REDIS_PORT='6380'; $env:QUEUE_CONNECTION='sync'
+    Gate 'backend: composer install'       'backend-gates.txt' { & composer install --no-interaction --prefer-dist } | Out-Null
+    Gate 'backend: migrate:fresh --seed'   'backend-gates.txt' { & php artisan migrate:fresh --seed --force } | Out-Null
+    Gate 'backend: pest'                    'backend-gates.txt' { & vendor\bin\pest } | Out-Null
+    Gate 'backend: pint --test'             'backend-gates.txt' { & vendor\bin\pint --test } | Out-Null
+    Gate 'backend: phpstan'                 'backend-gates.txt' { & vendor\bin\phpstan analyse --no-progress } | Out-Null
+    Gate 'backend: deptrac'                 'backend-gates.txt' { & vendor\bin\deptrac analyse --no-progress } | Out-Null
+    Pop-Location
+    Remove-Item Env:DB_HOST,Env:DB_PORT,Env:DB_DATABASE,Env:DB_USERNAME,Env:DB_PASSWORD,Env:CACHE_STORE,Env:REDIS_HOST,Env:REDIS_PORT,Env:QUEUE_CONNECTION -ErrorAction SilentlyContinue
+}
 
-    # -----------------------------------------------------------------------
-    # 7. Playwright + axe (against the running stack)
-    # -----------------------------------------------------------------------
-    if (-not $SkipBrowser) {
-        Push-Location 'apps\web'
-        $env:PLAYWRIGHT_BASE_URL='http://localhost:8080'
-        Gate 'playwright: install chromium' 'pw-install.log' { & npx playwright install --with-deps chromium }
-        Gate 'playwright: e2e (smoke + a11y + RTL)' 'pw-e2e.log' { & npx playwright test }
-        Pop-Location
-    } else {
-        Record 'playwright + axe' 'SKIP' '-SkipBrowser'
-    }
+# ================================================================== 10. Frontend gates
+if(-not $Aborted){
+    Push-Location 'apps\web'
+    Gate 'frontend: npm ci'    'frontend-gates.txt' { & npm ci } | Out-Null
+    Gate 'frontend: typecheck' 'frontend-gates.txt' { & npm run typecheck } | Out-Null
+    Gate 'frontend: lint'      'frontend-gates.txt' { & npm run lint } | Out-Null
+    Gate 'frontend: vitest'    'frontend-gates.txt' { & npx vitest run } | Out-Null
+    Gate 'frontend: build'     'frontend-gates.txt' { & npm run build } | Out-Null
+    Pop-Location
+}
+
+# ================================================================== 11. Browser UAT (Playwright: desktop + mobile, EN + AR) + axe
+if(-not $Aborted -and -not $SkipBrowser){
+    Push-Location 'apps\web'
+    $env:PLAYWRIGHT_BASE_URL='http://localhost:8080'
+    Gate 'playwright: install chromium'  'playwright-results\install.txt' { & npx playwright install chromium } | Out-Null
+    Gate 'playwright: e2e (smoke/RTL/mobile) + axe' 'playwright-results\run.txt' {
+        & npx playwright test --reporter=list --output="$PwDir"
+    } | Out-Null
+    if(Test-Path 'playwright-report'){ Copy-Item -Recurse -Force 'playwright-report' (Join-Path $PwDir 'report') }
+    if(Test-Path 'test-results'){ Copy-Item -Recurse -Force 'test-results' (Join-Path $PwDir 'test-results') }
+    'axe assertions run inside the a11y Playwright spec; see playwright-results/.' | Out-File (Join-Path $AxeDir 'README.txt')
+    Remove-Item Env:PLAYWRIGHT_BASE_URL -ErrorAction SilentlyContinue
+    Pop-Location
+} elseif($SkipBrowser){ Record 'browser + axe' 'SKIP' '-SkipBrowser' }
+
+# ================================================================== 12. Operational tests
+if(-not $Aborted){
+    # 12a. Correlation-ID response header echoes an inbound value.
+    $cid = 'w09-' + (Get-Random)
+    $hdrs = (& curl.exe -s -D - -o NUL --max-time 15 -H "X-Correlation-ID: $cid" 'http://localhost:8080/api/v1/health/live') 2>$null
+    $hasCid = ($hdrs -match "(?i)X-Correlation-ID:\s*$cid")
+    Record 'ops: correlation-id response header' ($(if($hasCid){'PASS'}else{'FAIL'})) $(if($hasCid){'echoed'}else{'missing'})
+
+    # 12b. Readiness fails (503) when Redis is down; liveness stays 200; recovers after restart.
+    & docker @Compose stop redis *> (Join-Path $Ev 'ops-redis.txt')
+    Start-Sleep 6
+    $rdyDown=HttpStatus 'http://localhost:8080/api/v1/health/ready'
+    $liveDown=HttpStatus 'http://localhost:8080/api/v1/health/live'
+    & docker @Compose start redis *>> (Join-Path $Ev 'ops-redis.txt')
+    $rec=$false; $deadline=(Get-Date).AddSeconds(90)
+    while((Get-Date) -lt $deadline){ if((HttpStatus 'http://localhost:8080/api/v1/health/ready') -eq '200'){ $rec=$true; break }; Start-Sleep 5 }
+    Record 'ops: readiness 503 when redis down' ($(if($rdyDown -eq '503'){'PASS'}else{'FAIL'})) "HTTP $rdyDown"
+    Record 'ops: liveness stays 200 (redis down)' ($(if($liveDown -eq '200'){'PASS'}else{'FAIL'})) "HTTP $liveDown"
+    Record 'ops: readiness recovers after restart' ($(if($rec){'PASS'}else{'FAIL'})) $(if($rec){'recovered'}else{'not recovered'})
+
+    # 12c. Backup / restore drill inside the stack Postgres (checksum + source/restored table counts).
+    Gate 'ops: backup + checksum + restore + table-count' 'backup-restore.txt' {
+        & docker @Compose exec -T postgres sh -lc @'
+set -e
+SRC=$(psql -U helbaron -d helbaron -tAc "select count(*) from information_schema.tables where table_schema='public'")
+pg_dump -U helbaron -Fc helbaron > /tmp/rc.dump
+sha256sum /tmp/rc.dump | tee /tmp/rc.sha256
+sha256sum -c /tmp/rc.sha256
+dropdb -U helbaron --if-exists rc_restore; createdb -U helbaron rc_restore
+pg_restore -U helbaron --clean --if-exists --no-owner -d rc_restore /tmp/rc.dump
+RES=$(psql -U helbaron -d rc_restore -tAc "select count(*) from information_schema.tables where table_schema='public'")
+dropdb -U helbaron rc_restore
+echo "source_tables=$SRC restored_tables=$RES"
+test "$SRC" = "$RES"
+'@
+    } | Out-Null
+}
 }
 finally {
-    if ($stackUp -and -not $KeepStackUp) {
+    # Teardown must never throw (e.g. docker missing) or it would mask the summary. Guard each call.
+    try { & docker rm -f $GatePg $GateRd *> (Join-Path $Ev 'gate-db-teardown.txt') } catch { }
+    if($stackUp -and -not $KeepStackUp){
         Log 'Tearing down stack (docker compose down -v)...'
-        & docker @Compose down -v *> (Join-Path $LogDir 'docker-down.log')
+        try { & docker @Compose down -v *> (Join-Path $Ev 'container-teardown.txt') } catch { }
     }
 }
 
-# ---------------------------------------------------------------------------
-# 8. Evidence file + summary
-# ---------------------------------------------------------------------------
-$fail = ($results | Where-Object Status -eq 'FAIL').Count
-$pass = ($results | Where-Object Status -eq 'PASS').Count
-$skip = ($results | Where-Object Status -eq 'SKIP').Count
-$overall = if($fail -eq 0){'PASS'}else{'FAIL'}
+# ================================================================== 13. Summary + evidence
+$fail = @($results | Where-Object status -eq 'FAIL')
+$pass = @($results | Where-Object status -eq 'PASS').Count
+$skip = @($results | Where-Object status -eq 'SKIP').Count
+$overall = if($fail.Count -eq 0 -and -not $Aborted){'PASS'}else{'FAIL'}
 
-$md = @()
-$md += "# W09 Local UAT Evidence — 1.0.0-rc.1"
-$md += ""
-$md += "- Timestamp: $Stamp"
-$md += "- Host: $env:COMPUTERNAME  |  Docker: $(& docker version --format '{{.Server.Version}}')  |  Node: $(& node -v)"
-$md += "- Overall: **$overall**  (PASS=$pass FAIL=$fail SKIP=$skip)"
-$md += ""
-$md += "| Gate | Status | Detail |"
-$md += "|---|---|---|"
-foreach($r in $results){ $md += "| $($r.Gate) | $($r.Status) | $($r.Detail) |" }
-$md += ""
-$md += "Logs: `logs/` in this directory."
-$md -join "`r`n" | Set-Content -Encoding UTF8 $Evidence
+$sb = @()
+$sb += "HELBARON W09 Local UAT — 1.0.0-rc.1"
+$sb += "timestamp=$Stamp host=$env:COMPUTERNAME"
+$sb += "overall=$overall  pass=$pass fail=$($fail.Count) skip=$skip  aborted=$Aborted"
+$sb += ''
+$sb += ($results | ForEach-Object { "{0,-42} {1} {2}" -f $_.gate,$_.status,$_.detail })
+Save 'summary.txt' ($sb -join "`r`n")
+$json = [pscustomobject]@{ version=$ExpectedVersion; timestamp=$Stamp; overall=$overall; pass=$pass; fail=$fail.Count; skip=$skip; aborted=$Aborted; results=$results } |
+    ConvertTo-Json -Depth 5
+Save 'summary.json' $json
+Save 'failures.txt' ($(if($fail.Count){ ($fail | ForEach-Object { "{0}  {1}" -f $_.gate,$_.detail }) -join "`r`n" }else{'none'}))
 
-Write-Host ""
-Write-Host "==================================================" -ForegroundColor White
-Write-Host "  W09 LOCAL UAT: $overall  (PASS=$pass FAIL=$fail SKIP=$skip)" -ForegroundColor $(if($overall -eq 'PASS'){'Green'}else{'Red'})
-Write-Host "  Evidence: $Evidence" -ForegroundColor White
-Write-Host "  Logs:     $LogDir" -ForegroundColor White
-Write-Host "==================================================" -ForegroundColor White
-if ($fail -gt 0) { exit 1 } else { exit 0 }
+Write-Host ''
+Write-Host '==================================================' -ForegroundColor White
+Write-Host ("  W09 LOCAL UAT: {0}  (pass={1} fail={2} skip={3})" -f $overall,$pass,$fail.Count,$skip) -ForegroundColor $(if($overall -eq 'PASS'){'Green'}else{'Red'})
+Write-Host "  Evidence: $Ev" -ForegroundColor White
+if($fail.Count){ Write-Host '  Failed gates:' -ForegroundColor Red; $fail | ForEach-Object { Write-Host "   - $($_.gate): $($_.detail)" -ForegroundColor Red } }
+Write-Host '==================================================' -ForegroundColor White
+if($overall -eq 'PASS'){ Write-Host 'W09 LOCAL UAT: PASS' -ForegroundColor Green; exit 0 }
+else { Write-Host 'W09 LOCAL UAT: FAIL' -ForegroundColor Red; exit 1 }
