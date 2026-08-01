@@ -60,8 +60,14 @@ function Gate([string]$name,[string]$evFile,[scriptblock]$body){
     if($Aborted){ Record $name 'SKIP' 'aborted upstream'; return $false }
     Log "-> $name"
     $out = ''
+    # External tools (docker/trivy/npm/composer/playwright) stream progress to STDERR. Under
+    # ErrorActionPreference='Stop', PS 5.1 turns that first stderr line into a terminating
+    # NativeCommandError and aborts a perfectly good build. Judge native commands by exit code only.
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try { $out = (& $body 2>&1 | Out-String); $code = $LASTEXITCODE }
     catch { $out = ($_ | Out-String); $code = 1 }
+    finally { $ErrorActionPreference = $prevEAP }
     Add-Content -Path (Join-Path $Ev $evFile) -Value $out
     if($null -eq $code){ $code = 0 }
     if($code -eq 0){ Record $name 'PASS' $evFile; return $true }
@@ -222,6 +228,10 @@ if(-not $Aborted){ Gate 'secret scan: images + repo' 'secret-scan.txt' {
 
 # ================================================================== 6. Start stack + wait for health
 $stackUp = $false
+# Stages 6-12 make several out-of-Gate native docker calls (ps, logs, stop/start redis) that also
+# stream to stderr; keep ErrorActionPreference=Continue for this whole block so they don't terminate.
+$prevBodyEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
 if(-not $Aborted){
     if(Gate 'docker: stack up -d' 'container-status.txt' { & docker @Compose up -d }){
@@ -381,6 +391,7 @@ finally {
         Log 'Tearing down stack (docker compose down -v)...'
         try { & docker @Compose down -v *> (Join-Path $Ev 'container-teardown.txt') } catch { }
     }
+    $ErrorActionPreference = $prevBodyEAP
 }
 
 # ================================================================== 13. Summary + evidence
