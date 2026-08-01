@@ -1,36 +1,36 @@
-# Current Wave
+# Current Wave — status (live)
 
-## Wave
-W05 — Commerce / Entitlements
+This file changes continuously during execution. It reflects the CURRENT execution status only.
 
-## Phase
-Planning (re-scoping after rollback)
+## Wave: Post-W07 — AI Collaboration Layer
 
-## Status
-In progress. W04 is complete and merged; the tracked working tree is clean at `ed960b1` on `main`.
+### Objective
+Install a permanent, machine-readable AI-collaboration layer (`.ai/`) so any AI reviewer (CTO /
+Architect / QA / Security) can understand the complete project state without reading the whole repo
+or prior conversations. No product code changes in this step.
 
-## Goal
-Introduce the Commerce entitlement boundary that Learning (and other contexts) consume to
-gate course access. The seam is a scalar-in / scalar-out port so consumers never import
-Commerce Eloquent models.
+### Completed tasks
+- Created `.ai/` root with context/, reports/, verification/, handoff/, prompts/.
+- context/project_state.json (single source of truth).
+- context/architecture.md, roadmap.md, decisions.md, current_wave.md.
+- reports/W05.md, W06.md, W07.md.
+- verification/gate_history.json, byte_identity.json, local_checks.md, pending_items.md.
+- handoff/CTO_HANDOFF.md.
+- prompts/next_wave.md, pending_tasks.md.
 
-## Known scope signal (from rolled-back attempt)
-`App\Contexts\Commerce\Contracts\EntitlementPort`:
-- `hasCourseEntitlement(int userId, int courseId): bool`
-- `entitledCourseIds(int userId): list<int>`
-Backing: paid one-off order grants (`OrderCourseGrant`) UNION active subscriptions.
+### Remaining tasks
+- Sync the `.ai/` tree to the device repo (`corelms/.ai/`) and verify byte-identity — BLOCKED while the device bridge is disconnected; will complete when it reconnects (recorded honestly, not claimed).
 
-## Important state
-A first W05 backend implementation was staged on 2026-07-29 and then rolled back. The
-artifacts are retained (not deleted) at `../../_w05_removed/`:
-`EntitlementPort.php`, `w05_backend.tgz`, `w05src.tgz`, `w05_backend.b64`.
-Before re-implementing, decide: re-apply cleanly vs. rebuild from the backlog. Reconfirm
-scope against `docs/redesign/100_EXECUTION_BACKLOG.md` (Sprint 5 / epic B1) and relevant ADRs
-(ADR-06 capability vs permission vs flag; ADR-09 content versioning; ADR-11 Authoring/Learning).
+### Current blockers
+- Device bridge (`mcp__remote-devices__*`) disconnected at the time of writing → `.ai/` files exist and are gate-neutral in the sandbox working tree but are not yet written to the user's machine. Not fabricating a device write.
 
-## Exit criteria (proposed — confirm against backlog)
-- EntitlementPort defined in Commerce; a single adapter binds it.
-- Learning depends on `IdentityContracts` / Commerce contracts only (Deptrac clean).
-- New subsystem behind a capability/flag (default-off) per ADR-06.
-- Tests: unit (grant/subscription union), integration (port/adapter + DB), architecture (Deptrac/PHPStan).
-- All mandatory CI gates green; no baseline growth (PHPStan/Deptrac); coverage not decreased.
+### Current implementation progress
+- `.ai/` layer: files authored (100%). Device sync: pending bridge reconnection.
+
+### Immediately preceding wave (W07): COMPLETE
+- All 9 repository gates + 2 additional QA gates green; 808 backend / 484 frontend tests; W07 changed files byte-identical on device (verified before the bridge dropped).
+
+### Next after this step
+- Resolve the login-hardening product decision.
+- Optionally bootstrap git (first commit + branch).
+- Begin the next feature/ops wave (see prompts/next_wave.md).

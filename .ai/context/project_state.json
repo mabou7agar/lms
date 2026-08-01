@@ -1,128 +1,116 @@
 {
-  "$schema": "../schema/project_state.schema.json",
-  "ai_layer_version": "1.0",
-  "generated_at": "2026-07-30T16:07:47Z",
-  "generated_by": "claude:execution-agent",
+  "$schema_note": "Single source of truth for AI reviewers. Machine-readable. Updated at the end of every meaningful batch. Do not fabricate verification.",
   "project": {
-    "name": "CoreLMS",
-    "internal_name": "HElbaron",
-    "description": "Bilingual (AR/EN) enterprise LMS. Laravel 12 modular monolith API + custom Next.js frontend.",
-    "repo_root": "D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation\\corelms",
-    "connected_folder": "D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation",
-    "repo_version": "1.0.0-rc.1",
-    "latest_tag": "v0.4.0"
+    "name": "HELBARON / CoreLMS",
+    "description": "Bilingual (EN/AR, RTL) MENA Learning Management System with a full commerce stack.",
+    "repository_root_device": "D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation\\corelms",
+    "canonical_backend": "apps/api",
+    "canonical_frontend": "apps/web",
+    "legacy_do_not_touch": "corelms-api"
   },
+  "state_as_of_utc": "2026-07-30T15:01:46Z",
+  "current_wave": "W07",
+  "current_wave_title": "Independent QA & Verification",
+  "current_phase": "COMPLETE — AI collaboration layer being installed (post-W07)",
+  "repository_version": "pre-1.0 (Beta Readiness track; no release tag cut)",
   "git": {
-    "branch": "main",
-    "head": "ed960b1",
-    "head_subject": "chore: stop tracking generated exports, cache, and temp archives",
-    "latest_wave_commit": {
-      "sha": "e494c6d",
-      "subject": "W04 complete: Media, Learning Runtime, Assignments, Gradebook, Frontend integration"
+    "branch": "unknown — the sandbox working tree is not a git repository and the device branch was not inspected",
+    "last_commit_sha": null,
+    "commit_policy": "No git commit has been created in any wave — per standing user instruction 'Do not create a git commit yet.' All sync is file-write + SHA-256 byte-identity verification, not git."
+  },
+  "last_successful_gates": {
+    "verified_utc": "2026-07-30T14:10:00Z",
+    "backend": {
+      "migrate_fresh_seed": "PASS",
+      "phpunit": "PASS (808 passed, 2625 assertions)",
+      "phpstan": "PASS (0 errors, level 6 + baseline)",
+      "deptrac": "PASS (0 violations, 0 errors)",
+      "pint": "PASS"
     },
-    "working_tree": {
-      "tracked_clean": true,
-      "untracked_scan": "not_captured",
-      "note": "git status -uno reported no tracked changes at 2026-07-30T15:20Z. Full untracked enumeration skipped (slow NTFS bind mount)."
-    }
-  },
-  "wave": {
-    "current": "W05",
-    "current_title": "Commerce / Entitlements",
-    "current_phase": "planning",
-    "current_status": "in_progress",
-    "current_note": "W05 backend was staged 2026-07-29 then rolled back; artifacts retained in ../../_w05_removed (EntitlementPort.php, w05_backend.tgz, w05src.tgz). Scope: Commerce context exposes EntitlementPort (hasCourseEntitlement / entitledCourseIds) to Learning. Reconfirm scope against docs/redesign/100_EXECUTION_BACKLOG.md (Sprint 5 / epic B1).",
-    "previous_completed": "W04",
-    "baseline": {
-      "tag": "v0.4.0",
-      "version": "1.0.0-rc.1",
-      "note": "v1.0 RC 10-domain LMS built end-to-end (see corelms/CHANGELOG.md). The redesign-execution arc (Sprint 0 -> W##) runs on top of this baseline."
+    "frontend": {
+      "typecheck": "PASS",
+      "lint": "PASS (0 errors, 9 warnings)",
+      "vitest": "PASS (484 passed)",
+      "build": "PASS"
     },
-    "completed": [
-      { "id": "W04", "title": "Media, Learning Runtime, Assignments, Gradebook, Frontend integration", "evidence": "commit e494c6d", "verified": true },
-      { "id": "W03", "title": "Authoring / Assessment / Publishing (Course Builder, grading engine, publish-readiness)", "evidence": "commits 350b5ae,335e1a8,8eafe57,3561c30 + docs/implementation/reports", "verified": false },
-      { "id": "W02", "title": "Catalog / Curriculum (content versioning migration)", "evidence": "docs/implementation/reports/CURRICULUM_PHASE1..4", "verified": false },
-      { "id": "W01", "title": "Identity (row-level multi-tenancy, contracts seam, policies)", "evidence": "docs/implementation/reports/IDENTITY_PHASE1..3C", "verified": false },
-      { "id": "Sprint 0", "title": "Architecture Fitness & Tooling (Deptrac, PHPStan arch rules, ADR-link check)", "evidence": "ADR-19, ADR-20 (Implemented)", "verified": true }
-    ]
-  },
-  "tasks": {
-    "running": [],
-    "pending": [
-      "Reconfirm W05 (Commerce/Entitlements) scope against docs/redesign/100_EXECUTION_BACKLOG.md before re-implementing",
-      "Decide fate of ../../_w05_removed artifacts (re-apply cleanly vs discard)",
-      "Verify exact W01-W03 wave boundaries from git tags/history and mark verified",
-      "Capture a full CI gate run into verification/gate_history.json"
-    ]
-  },
-  "modules": {
-    "backend_path": "apps/api",
-    "frontend_path": "apps/web",
-    "domains": ["Identity", "Catalog", "Authoring", "Learning", "Commerce", "Certification", "Live", "CRM", "Analytics", "Notifications"],
-    "context_namespaces": ["App\\Domains\\*", "App\\Contexts\\*", "App\\Platform\\*"]
-  },
-  "completed_modules": [
-    { "name": "Identity", "state": "baseline-complete + reworked (multi-tenancy/contracts seam)", "verified": true },
-    { "name": "Catalog", "state": "baseline-complete + curriculum/versioning rework", "verified": true },
-    { "name": "Authoring", "state": "baseline-complete + Course Builder", "verified": true },
-    { "name": "Learning", "state": "baseline-complete + runtime/assignments/gradebook (W04)", "verified": true },
-    { "name": "Certification", "state": "baseline-complete (v1.0 RC)", "verified": false },
-    { "name": "Live", "state": "baseline-complete (v1.0 RC)", "verified": false },
-    { "name": "CRM", "state": "baseline-complete (v1.0 RC)", "verified": false },
-    { "name": "Analytics", "state": "baseline-complete; read-only (ADR-18)", "verified": false },
-    { "name": "Notifications", "state": "baseline-complete; automation/digest deferred", "verified": false },
-    { "name": "Commerce", "state": "baseline-complete; W05 entitlement seam in progress", "verified": false }
-  ],
-  "modified_files": {
-    "current_batch": {
-      "label": "AI collaboration layer bootstrap (2026-07-30)",
-      "app_code_changed": [],
-      "added": ["corelms/.ai/** (16 files: context, handoff, reports, verification, prompts, schema)"],
-      "note": "No apps/api or apps/web source files were modified in this batch. On each future wave, replace this with the concrete list of changed source paths for that batch."
-    }
-  },
-  "known_issues": [
-    { "id": "KI-01", "severity": "high", "area": "backend", "summary": "Course-announcement notification fan-out is synchronous and unbounded; request time scales with enrollment (can time out on large courses). Should be a queued, chunked job." },
-    { "id": "KI-02", "severity": "medium", "area": "backend", "summary": "Public Events listing has an N+1 speaker lookup (~12-24 extra queries/page)." },
-    { "id": "KI-03", "severity": "medium", "area": "backend", "summary": "First certificate-PDF download renders Chromium synchronously in-request; should pre-generate on CertificateIssued." },
-    { "id": "KI-04", "severity": "medium", "area": "frontend", "summary": "Lighthouse Performance 72 (mobile throttled); deficit is entirely LCP due to client-rendered shell. No representative production run captured." },
-    { "id": "KI-05", "severity": "low", "area": "security", "summary": "CSP uses script-src 'unsafe-inline' in production (Next inline runtime); nonce-based CSP is optional future hardening." },
-    { "id": "KI-06", "severity": "low", "area": "ci", "summary": ".trivyignore carries a picomatch exception (CVE-2026-33671) for Next's vendored copy; upstream fix >=4.0.4 exists." }
-  ],
-  "deferred_subsystems": [
-    { "id": "DEF-01", "name": "Automation/Digest engine", "state": "formally deferred (not shipped in v1.0.0); schema-complete, no execution path" },
-    { "id": "DEF-02", "name": "Live-session reminders (H9)", "state": "deferred; SessionReminder rows written but no consumer delivers them" }
-  ],
-  "known_technical_debt": {
-    "source_of_truth": "corelms/KNOWN_LIMITATIONS.md",
-    "items": [
-      { "id": "TD-01", "area": "white-label", "summary": "Transactional emails render via config('app.name'), not the admin BrandSetting.email group (unused)." },
-      { "id": "TD-02", "area": "white-label", "summary": "~15 marketing route files + i18n dictionaries hardcode the brand name (valid fallbacks; not a leak)." },
-      { "id": "TD-03", "area": "seo", "summary": "No default/dynamic og:image; no Course JSON-LD; no BreadcrumbList; hreflang effectively absent." },
-      { "id": "TD-04", "area": "frontend", "summary": "39 arbitrary Tailwind bracket values could map to scale tokens; 3 raw <button> could use ui/Button." },
-      { "id": "TD-05", "area": "frontend", "summary": "components/ui/breadcrumb.tsx used only by the design-system showcase; no exhaustive ts-prune/depcheck sweep yet." },
-      { "id": "TD-06", "area": "db", "summary": "course_trainer pivot lacks unique (course_id,user_id); courses.published_at (list sort key) unindexed." },
-      { "id": "TD-07", "area": "env", "summary": "Repo on Windows NTFS D:\\ path bind-mounted into containers; WSL2 relocation is the definitive dev-speed fix." }
-    ]
-  },
-  "tech_debt_ref": "corelms/KNOWN_LIMITATIONS.md",
-  "gates": {
-    "last_full_green": {
-      "event": "CI run #13 all seven mandatory jobs green (final GO)",
-      "evidence": "commit 89e57e7",
-      "captured_in_layer": false
+    "additional_qa": {
+      "playwright_e2e_chromium_public": "PASS (5 passed, 2 skipped — authenticated legs need a real seeded API)",
+      "accessibility_axe": "PASS (wcag2a/wcag2aa on home, login, pricing)"
     },
-    "definition_ref": "verification/local_checks.md",
-    "history_ref": "verification/gate_history.json"
+    "environment": "All gates executed in the Anthropic cloud sandbox (PHP 8.4.21, Node 22, Postgres 16, Redis on 6380). The device VM has no PHP runtime."
   },
-  "sync": {
-    "bridge_connected": true,
-    "verified_against_working_tree": true,
-    "last_verified": "2026-07-30T16:07:47Z",
-    "verified_by": "claude via device bridge (read-only inspection of corelms git repo)",
-    "caveats": [
-      "Untracked-file scan skipped (slow bind mount); tracked tree confirmed clean.",
-      "W01-W03 titles/boundaries inferred from git history + docs/implementation/reports; not yet cross-checked against wave tags."
-    ]
-  }
+  "modified_files_last_wave_W07": [
+    "apps/api/app/Contexts/Commerce/Http/Controllers/Api/V1/AdminOrderController.php",
+    "apps/api/app/Contexts/Commerce/Http/Controllers/Api/V1/AdminSubscriptionController.php",
+    "apps/api/app/Contexts/Commerce/Http/Controllers/Api/V1/AdminCouponController.php",
+    "apps/api/app/Contexts/Commerce/Http/Controllers/Api/V1/CreditNoteController.php",
+    "apps/api/app/Contexts/Commerce/Http/Controllers/Api/V1/SubscriptionController.php",
+    "apps/api/app/Contexts/Commerce/Actions/Payment/ProcessWebhookAction.php",
+    "apps/api/app/Contexts/Commerce/Services/InvoiceNumberService.php",
+    "apps/api/app/Contexts/Commerce/Services/InvoiceService.php",
+    "apps/api/app/Contexts/Commerce/Payments/Recovery/PaymentRecoveryService.php",
+    "apps/api/app/Contexts/Commerce/Listeners/ReconcileCouponRedemptionOnOrderPaid.php",
+    "apps/api/app/Contexts/Commerce/Providers/CommerceServiceProvider.php",
+    "apps/api/app/Domains/Crm/Http/Controllers/Api/V1/OrganizationController.php",
+    "apps/api/app/Platform/Shared/Learning/Contracts/CourseEnrollmentPort.php",
+    "apps/api/app/Contexts/Learning/Adapters/CourseEnrollmentAdapter.php",
+    "apps/api/app/Domains/Assessment/Actions/Attempt/StartAttemptAction.php",
+    "apps/api/app/Contexts/Learning/Actions/Progress/RecordLessonProgressAction.php",
+    "apps/api/app/Contexts/Learning/Services/VideoProgressService.php",
+    "apps/api/app/Platform/Identity/Services/OtpService.php",
+    "apps/api/tests/Feature/Assessment/AssignmentSubmissionTest.php",
+    "apps/api/tests/Feature/Assessment/GradebookTest.php",
+    "apps/api/tests/Feature/Assessment/AttemptEnrollmentGateTest.php",
+    "apps/api/tests/Feature/Payments/RetryPaymentIdempotencyTest.php",
+    "apps/api/tests/Feature/Payments/PartialRefundWebhookTest.php",
+    "apps/api/tests/Feature/Commerce/InvoiceReconciliationTest.php",
+    "apps/web/src/app/(instructor)/layout.tsx",
+    "apps/web/src/components/layout/app-shell.tsx",
+    "apps/web/src/components/layout/sidebar.tsx",
+    "apps/web/src/config/theme.ts",
+    "apps/web/src/lib/commerce/coupons.ts",
+    "apps/web/src/components/commerce/coupon-form.tsx",
+    "docs/verification/W07_LOCAL_WINDOWS_VERIFICATION.md"
+  ],
+  "major_architectural_decisions": [
+    "DDD modular monolith: Contexts (Commerce, Learning, Analytics) + Domains (Catalog, Authoring, Assessment, Certification, Live, Crm) + Platform (Identity, Notifications, Media, Homepage, Branding, Navigation, Pages, Features, Seo, Shared kernel). Deptrac enforces dependency direction.",
+    "Cross-context communication only via Ports in app/Platform/Shared/<Cap>/Contracts (e.g. EntitlementPort, CourseEnrollmentPort, MediaReferencePort). Contexts never import each other's Eloquent models.",
+    "Money is always integer minor units (or the Money VO). Never floats.",
+    "Idempotency is mandatory on payments, orders, refunds, subscriptions and webhooks. Every webhook signature is verified inside the gateway adapter. No gateway SDK calls outside adapters.",
+    "Tax and invoices are server-authoritative; finalized financial records are immutable.",
+    "PHPStan level 6 with a baseline: existing models use getAttribute()-backed access (baselined property.notFound); only net-new models get @property blocks — to preserve baseline compatibility.",
+    "Frontend API envelope: ApiResponse::success -> {data}; ApiResponse::paginated -> {data, meta, links}. Paginated list endpoints MUST use ::paginated (a nested resource collection under ::success silently drops meta/links)."
+  ],
+  "active_modules": {
+    "commerce": "Products, prices, cart, coupons/promotions, checkout, orders, invoices, credit notes, refunds, subscriptions (renew/grace/cancel/reactivate), entitlements, payments (Fake + MENA gateways: Paymob/Moyasar/HyperPay/Tap/APS/Stripe), webhooks, dunning, commerce analytics.",
+    "learning": "Enrollment, entitlement, lesson access/runtime, progress (lesson/video/block), completion policy, certificates eligibility.",
+    "assessment": "Assessments (quizzes), attempts, assignments, submissions, gradebook.",
+    "identity": "Auth (login/register/verify/reset), MFA/OTP, roles/permissions (Spatie), tenancy scaffolding.",
+    "platform": "Media (upload/playback/webhooks), Notifications (fan-out, dead-letter), Homepage/Branding/Navigation/Pages/SEO CMS, Feature flags.",
+    "frontend": "Next.js 15 App Router; route groups (marketing), (learning), (instructor), (commerce), (account), (organization), (crm), (analytics); AppShell (sidebar+drawer) for authenticated areas; LandingHeader for public + commerce checkout."
+  },
+  "pending_blockers": [],
+  "requires_product_decision": [
+    "Login user-enumeration + email-only lockout DoS (auth, MED, not launch-critical): distinct 401/403/423 responses before the password check form an enumeration oracle, and lockout keyed on email alone enables a targeted-DoS. Security-correct fix = uniform 401 hiding account state, but that removes the 'account locked/disabled' UX and rewrites existing auth tests. Awaiting decision: harden (uniform response + decaying lockout) vs keep current UX."
+  ],
+  "known_technical_debt": [
+    "No git history — all state is file-write + SHA-256 verified, no commits. A first commit + branch strategy is recommended before further waves.",
+    "Sandbox-only composer hacks (phpstan local-zip dist, preferred-install source, use-github-api=false) exist in the sandbox to build a runtime; they are NOT in the device composer.json/lock and must never be synced.",
+    "Filament admin panels exist for commerce resources but are only lightly exercised by automated tests (server-side, no HTTP contract tests).",
+    "Deferred non-blocking a11y polish: i18n of a few low-traffic aria-labels (pagination, breadcrumb, video-modal, course-preview-card); events tablist roving tabindex (operable today).",
+    "Media-query hydration flash on the desktop sidebar (LOW, cosmetic).",
+    "Authenticated Playwright journeys + live-service security spot-checks require the user's local Windows machine (documented)."
+  ],
+  "features_completed": [
+    "W05 Commerce Foundation (payments, tax, subscriptions, refunds, credit notes, invoices, entitlements, coupons, analytics, MENA gateways, checkout, orders, webhooks, learner billing, admin commerce).",
+    "W06 Launch-Blocker Hardening (authz/IDOR, route integrity, data integrity, security, prod readiness, a11y/RTL, performance/pagination, tests).",
+    "W07 Independent QA & Verification (fixed all reproducible launch-critical defects surfaced by adversarial audits; Playwright E2E + axe added to the runnable gate set)."
+  ],
+  "features_in_progress": [],
+  "next_execution_targets": [
+    "Resolve the login-hardening product decision (see requires_product_decision).",
+    "Optional: cut a first git commit + branch to establish version history.",
+    "Run the authenticated Playwright journeys + live security spot-checks on the local Windows machine (see .ai/verification/local_checks.md).",
+    "Proposed next wave: W08 — see .ai/prompts/next_wave.md."
+  ]
 }

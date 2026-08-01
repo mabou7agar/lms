@@ -1,19 +1,28 @@
-# Pending Verification
+# Pending Items (live checklist)
 
-Honest list of what has NOT been verified against the live repo/gates yet. Clear an item only
-after actually confirming it; move confirmed facts into `project_state.json`.
+Known issues, deferred improvements, manual verification pending, environment limits, future refactors.
+Keep current. `[ ]` open · `[x]` done · `[~]` deferred/needs-decision.
 
-## Open
-- [ ] PV-01 — Full post-W04 gate run not captured. Run the gates in `local_checks.md` at HEAD
-      `ed960b1` and append the result to `gate_history.json`.
-- [ ] PV-02 — Untracked working-tree files not enumerated (slow NTFS bind mount). Confirm there
-      is no unexpected untracked source under `apps/` with `git status` locally.
-- [ ] PV-03 — W01-W03 wave boundaries/titles are inferred from git history + docs/implementation/reports.
-      Cross-check against wave tags/commits and set `verified: true` in `project_state.json`.
-- [ ] PV-04 — W05 scope not reconfirmed against `docs/redesign/100_EXECUTION_BACKLOG.md`; the
-      `_w05_removed/` artifacts have not been diffed against `main` to decide re-apply vs rebuild.
-- [ ] PV-05 — `.ai/` is created in the working tree but not committed. Decide whether to commit it
-      (recommended, so the layer is versioned and MCP reads a tracked path).
+## Requires a product decision (blocks nothing else)
+- [~] **Login enumeration + email-only lockout DoS** (auth, MED). Distinct 401/403/423 before password check = enumeration oracle; lockout keyed on email alone = targeted DoS. Fix = uniform 401 + decaying lockout, but it removes the "account locked/disabled" UX and rewrites auth tests. Awaiting user's choice (harden vs keep UX).
 
-## Cleared
-(none yet)
+## Manual verification pending (local Windows)
+- [ ] Authenticated Playwright journeys (login→dashboard→logout; dashboard a11y). See local_checks.md / guide §7–§8.
+- [ ] Live security spot-checks (401 envelope, coupon 429, prod-only fake-webhook 404). Guide §9.
+- [ ] Optional: reproduce all 9 gates locally for toolchain parity. Guide §2–§5.
+
+## Environment limitations
+- [ ] No git history — all sync is file-write + SHA-256, no commits (per standing instruction). Recommend bootstrapping git before further waves.
+- [ ] Device VM has no PHP — all gates run in the cloud sandbox against the real code.
+- [ ] Sandbox-only composer hacks (phpstan local-zip dist; preferred-install=source; use-github-api=false) must NEVER be synced to the device.
+
+## Deferred non-blocking improvements
+- [~] i18n of low-traffic aria-labels (pagination, breadcrumb, video-modal, course-preview-card).
+- [~] Events tablist roving tabindex (operable via Tab+Enter today).
+- [~] Desktop sidebar media-query hydration flash (cosmetic).
+- [~] HTTP contract tests for Filament admin panels (currently server-side only).
+
+## Future refactors (candidate)
+- [ ] Establish CI that runs the 9 gates + Playwright/axe on every push.
+- [ ] Consider a normalized `amountMinor` field on the webhook event so provider-initiated PARTIAL refunds (no prior Refund row) are represented precisely rather than assumed full.
+- [ ] Consider adding PaymentRecoveryService feature tests beyond the idempotency-key regression (dunning window, backoff, abandon).

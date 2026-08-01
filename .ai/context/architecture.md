@@ -1,49 +1,69 @@
-# Architecture
+# Architecture Overview (AI context)
 
-Derived index. Authoritative sources: `corelms/docs/adr/INDEX.md`,
-`corelms/docs/redesign/`, `corelms/apps/api/CoreLMS_C4_Architecture.md` equivalents,
-and the code itself. Do not restate those docs here — link and summarize only.
+Concise map for an AI reviewer. Update whenever architecture changes.
 
-## Stack
-- Backend: Laravel 12 (PHP ^8.3) modular monolith — `apps/api`
-- Admin: Filament v4 (UI only; ADR-04) at `/admin`, gated by `canAccessPanel()` + optional `EnforceAdminMfa`
-- Frontend: custom Next.js 15 / React 19 — `apps/web` (design tokens, light/dark, RTL/LTR, i18n)
-- Database: PostgreSQL
-- Cache/Queue: Redis + Horizon (`predis`)
-- Storage: S3 + CloudFront (`league/flysystem-aws-s3-v3`), signed expiring URLs only
-- Video: Mux (signed playback)
-- Payments: Stripe (charge/refund/webhook signature)
-- Messaging: Mailgun / Twilio / Firebase (FCM) — behind provider ports with fakes as test default
-- Errors/monitoring: Sentry
-- Auth: Laravel Sanctum, token-only (`sanctum.guard = []`); logout revokes token + device
-- AuthZ: `spatie/laravel-permission` + `bezhansalleh/filament-shield`
-- API: REST only, versioned `/api/v1` (ADR-17). No GraphQL.
+## Topology
 
-## Boundaries (enforced)
-- Bounded contexts under `App\Domains\*`, `App\Contexts\*`, `App\Platform\*` with
-  single-writer ownership (ADR-02). Cross-context access via ports only — never direct
-  cross-context Model use.
-- Enforced in CI by Deptrac (baseline) + custom PHPStan architecture rules (ADR-19),
-  plus an ADR-link check (`scripts/adr-link-check.sh`, `.github/workflows/adr-validation.yml`).
-- Identity exposes a contracts seam; contexts depend on `IdentityContracts` only (ADR-20).
-- Row-level multi-tenancy via a global scope; no manual `org_id` where clauses (ADR-07).
-- Media Platform owns bytes; contexts own references (ADR-08).
+Modular monolith, two apps under `corelms/`:
 
-## Domains (10)
-Identity, Catalog, Authoring, Learning, Commerce, Certification, Live, CRM, Analytics, Notifications.
-Each: models, services, actions, events, policies, REST v1, Filament resources, factories, seeders, Pest tests.
+- `apps/api` — Laravel 12 REST API (JSON only, under `/api/v1`) + Filament admin panels. PHP 8.4, PostgreSQL 16, Redis (port 6380). DDD boundaries enforced by Deptrac.
+- `apps/web` — Next.js 15 (App Router, React 19, TypeScript strict, Tailwind 4, TanStack React Query). SSR shell + a BFF proxy to the API.
 
-## Shared foundation
-Standard success/error envelope with correlation ids, value objects, enums, base classes,
-UUIDv7 public ids. Frontend: shadcn-style component library, TanStack Query, typed API client,
-auth context, route guards.
+Legacy `corelms-api` exists in the tree and is NOT touched.
 
-## Removed / not used
-LearnHouse, NestJS, FastAPI. (The top-level `corelms/README.md` and the sibling
-`../corelms-api/` describe a superseded hybrid arc — treat as historical, not current.)
+## Backend layering (`apps/api/app`)
 
-## Authoritative pointers
-- Decisions: `docs/adr/INDEX.md` (ADR-01..20)
-- Backlog / wave scope: `docs/redesign/100_EXECUTION_BACKLOG.md` (Sprints/Epics A1..G5)
-- Redesigns: `docs/redesign/01..05_*.md`, `docs/redesign/99_IMPLEMENTATION_MASTER_PLAN.md`
-- Known limitations / tech debt: `KNOWN_LIMITATIONS.md`
+Three layers; Deptrac enforces that a Context depends only on the Shared kernel + published Contracts, never on another Context's internals.
+
+- **Contexts/** — bounded contexts with their own models/actions/services/routes:
+  - `Commerce/` — the largest. Products, ProductPrice, Cart, Coupon (+redemptions/promotions), Order, OrderItem, OrderCourseGrant, Invoice, InvoiceLine, CreditNote(+lines), Refund, Subscription(+plan/price/change), PaymentTransaction, PaymentAttempt, PaymentWebhookEvent, Contract(+template/acceptance), TaxRate. Payments behind `Contracts/PaymentGateway` (Fake default; adapters: Paymob/Moyasar/HyperPay/Tap/AmazonPaymentServices/Stripe). Tax behind `Contracts/TaxCalculator`. Cross-context entitlement via `app/Platform/Shared/Commerce/Contracts/EntitlementPort`.
+  - `Learning/` — Enrollment, LessonProgress, LessonVideoProgress, LearnerBlockProgress; access/runtime services; completion policy; adapters implementing `CourseEnrollmentPort`.
+  - `Analytics/` — read-model analytics.
+- **Domains/** — supporting domains: `Catalog` (Course, instructor portal), `Authoring` (Section/Lesson/curriculum), `Assessment` (Assessment/Question/Attempt, Assignment/Submission, Gradebook), `Certification`, `Live` (sessions/reminders), `Crm` (Organization, Lead, ConsultingRequest).
+- **Platform/** — cross-cutting: `Identity` (User, auth, MFA/OTP, Spatie roles/permissions, tenancy), `Notifications` (dispatcher, fan-out jobs, dead-letter), `Media` (upload, playback tokens, provider webhooks), `Homepage`/`Branding`/`Navigation`/`Pages`/`Seo`/`Features` (CMS + flags), and **`Shared/`** — the shared kernel.
+
+### Shared kernel (`app/Platform/Shared`)
+
+- `Support/ApiResponse` — canonical envelopes: `success()` → `{data[,message][,meta]}`; `paginated($paginator, ResourceClass)` → `{data, meta:{current_page,per_page,total,last_page,from,to}, links}`.
+- `Actions/BaseAction`, `Services/BaseService`, `Requests/BaseFormRequest`, `Audit/AuditLogger`.
+- `<Cap>/Contracts/*` — the ONLY cross-context surface. Key ports: `Commerce/Contracts/EntitlementPort`, `Learning/Contracts/CourseEnrollmentPort` (`isEnrolled`, `hasCourseAccess`, `enrolledLearnerIds`), `Media/Contracts/MediaReferencePort`/`MediaAssetPort`, `Curriculum/Contracts/CurriculumReadPort`, `Learning/Contracts/AssignmentRequirementPort`/`LessonRequiredBlocksPort`.
+
+### Routing / bootstrap
+
+- `bootstrap/app.php` — API is JSON-only (`ForceJsonForApi`), `ResolveTenant` on the `api` group, `SecurityHeaders`, correlation id, trusted proxies **fail-closed** (empty unless `TRUSTED_PROXIES` set). Health: `/up`, `/api/v1/health`, `/api/v1/health/ready`.
+- Each context/domain registers its own `routes/*.php` under `api/v1` via a `BaseDomainServiceProvider`.
+
+### Authentication / Authorization
+
+- Sanctum tokens. `RequireAuth` equivalent is `auth:sanctum` middleware; MFA/OTP in Identity.
+- Authorization = Policies + `can:<permission>` route gates (permissions from enums, Spatie-backed). Learner reads scoped to `auth id`; admin behind capability gates.
+- Assessment attempts gated on **course access** (active OR completed enrollment) via `CourseEnrollmentPort::hasCourseAccess`. Lesson completion gated by `LessonCompletionPolicy` (required assignment + required blocks) on BOTH the runtime `/complete` endpoint and the legacy `/progress` endpoint.
+
+### Commerce integrity invariants
+
+- Money = integer minor units. Idempotency keys on charges (`{public_id}:r{attemptNo}`). Gateway I/O always OUTSIDE DB transactions.
+- Coupon per-user/first-order rules re-checked under the coupon row lock at checkout; DB `UNIQUE(order_id)` on `coupon_redemptions`; redemption reconciled on OrderPaid (dunning path).
+- Invoice lines apportion the order discount + VAT so they reconcile to the invoice total; credit note issued only on a cumulatively-full refund. Webhook settles exactly one charge row; partial refunds keep the order Paid.
+- Invoice/credit-note numbers allocated under a locked ordered read (no `count()+1`, no `FOR UPDATE` + aggregate on Postgres).
+
+## Frontend structure (`apps/web/src`)
+
+- `app/` — App Router route groups: `(marketing)` (public + auth pages), `(learning)/(app)`, `(instructor)`, `(commerce)`, `(account)`, `(organization)`, `(crm)`, `(analytics)`.
+- `middleware.ts` — edge session-cookie check for protected prefixes (real URL prefixes only, incl. /profile, /notifications, /billing, /subscriptions, /admin, /cart).
+- `components/layout/AppShell` — authenticated shell: desktop `Sidebar` (longest-prefix active state) + mobile `Drawer` (closes on navigation) + `Topbar`. Used by learning/instructor/commerce/account/organization/crm/analytics. Public + checkout use `LandingHeader` (with a mobile hamburger drawer).
+- `config/nav.ts` — nav configs (learningNav, accountNav, commerceNav, instructorNav, organizationNav, crmNav, analyticsNav). `config/theme.ts` — brand + footer.
+- `lib/api` — typed client; `api.data<T>()` unwraps `.data`, `Paginated<T>` for `{data, meta, links}`.
+- `lib/i18n/dictionaries.ts` — EN + AR dictionaries; RTL via logical CSS properties.
+- Rich/author HTML rendered via DOMPurify (lesson-content, homepage rich-text, cms-page, question-presenter).
+
+## Integrations
+
+- Payment gateways (adapters only): Fake (local/test), Stripe, Paymob, Moyasar, HyperPay, Tap, Amazon Payment Services.
+- Media provider webhooks: mux, s3, fake (fake registered only in local/testing).
+- Sentry (optional, no-op without DSN).
+
+## Infrastructure
+
+- Backend: `docker-compose.yml` (Postgres 16, Redis). Queue = redis; scheduler runs dunning + subscription renewals hourly with `withoutOverlapping()->onOneServer()`.
+- Frontend: `next build` (non-standalone for `next start`). Playwright config self-starts a mock API + Next for public E2E.
+- Gates (9): backend migrate:fresh --seed / PHPUnit / PHPStan / Deptrac / Pint; frontend Typecheck / Lint / Vitest / Build. Additional: Playwright E2E (chromium) + axe a11y.

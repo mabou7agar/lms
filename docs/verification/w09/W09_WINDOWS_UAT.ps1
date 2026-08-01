@@ -114,13 +114,28 @@ if(-not $Aborted){
 if(-not $Aborted){
     $DispoMarker = '# HELBARON-W09-DISPOSABLE (safe to delete; not real secrets)'
     $ApiEnv = 'apps\api\.env.production'; $WebEnv = 'apps\web\.env.production'
-    $usingReal = (Test-Path $ApiEnv) -and -not (Select-String -Path $ApiEnv -SimpleMatch $DispoMarker -Quiet)
-    if($usingReal){
+    # A file is a placeholder TEMPLATE (not a real filled env) if it still contains any of these tokens.
+    function Test-IsTemplate([string]$path){
+        if(-not (Test-Path $path)){ return $false }
+        $t = Get-Content $path -Raw
+        foreach($ph in '<','whsec_fake','changeme','your-domain','placeholder'){ if($t -match [regex]::Escape($ph)){ return $true } }
+        return $false
+    }
+    $apiExists = Test-Path $ApiEnv
+    $apiMarker = $apiExists -and (Select-String -Path $ApiEnv -SimpleMatch $DispoMarker -Quiet)
+    # "Real" == exists, no disposable marker, and no placeholder tokens. Real files are NEVER overwritten.
+    $apiRealFilled = $apiExists -and -not $apiMarker -and -not (Test-IsTemplate $ApiEnv)
+    if($apiRealFilled){
         Record 'env: using existing real .env.production' 'PASS' 'left untouched'
-        $pwMatch = Select-String -Path $ApiEnv -Pattern '^DB_PASSWORD=(.*)$' | Select-Object -First 1
-        $DispoDbPw = if($pwMatch){ $pwMatch.Matches.Groups[1].Value } else { 'helbaron' }
-        if(-not $DispoDbPw){ $DispoDbPw = 'helbaron' }
     } else {
+        # Disposable path: absent file, our own disposable marker, or a placeholder template.
+        # Any existing non-marker file (a real-looking or template file) is BACKED UP, never destroyed.
+        $why = if(-not $apiExists){'no env file'} elseif($apiMarker){'disposable marker'} else{'placeholder template'}
+        foreach($p in @($ApiEnv,$WebEnv)){
+            if((Test-Path $p) -and -not (Select-String -Path $p -SimpleMatch $DispoMarker -Quiet)){
+                Move-Item -Force -Path $p -Destination ($p + '.pretest.bak')
+            }
+        }
         $DispoDbPw = 'local_dispo_' + (Get-Random)
         $raw = [byte[]]::new(32); [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($raw)
         $AppKey = 'base64:' + [Convert]::ToBase64String($raw)
@@ -166,7 +181,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:8080
 API_INTERNAL_URL=http://nginx:80/api/v1
 NODE_ENV=production
 "@ | Set-Content -Encoding ASCII $WebEnv
-        Record 'env: wrote disposable local env' 'PASS' 'REPLACE values for a real run'
+        Record 'env: wrote disposable local env' 'PASS' "reason: $why (any prior file kept as *.pretest.bak)"
     }
     # Placeholder-secret + required-name validation. NAMES + PASS/FAIL only - no values.
     $envText = Get-Content $ApiEnv -Raw

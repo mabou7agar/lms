@@ -47,6 +47,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Pin the file-tracing root to THIS app so Next stops inferring the monorepo root from the
+  // sibling root-level package-lock.json (the "inferred your workspace root" build warning).
+  // Correct tracing is what the standalone Docker runtime image (apps/web/Dockerfile) depends on.
+  outputFileTracingRoot: __dirname,
   // Tree-shake named imports from these barrel packages into per-module imports. lucide-react,
   // recharts, @headlessui, @mui/* etc. are ALREADY in Next's built-in default list, so only the
   // packages absent from that default are listed here (verified against next/dist/server/config.js).

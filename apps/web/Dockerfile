@@ -20,6 +20,7 @@ RUN npm run build
 # ---- Stage 3: runtime ----
 FROM node:22-alpine AS runtime
 WORKDIR /app
+# wget is used by the container HEALTHCHECK below (busybox wget ships in alpine).
 # Patch OS packages to their latest security-fixed versions (addresses fixable CRITICAL/HIGH OS
 # CVEs the base image may lag on; Trivy scans the final image with ignore-unfixed).
 # The production server runs `node server.js` and never invokes npm/npx/corepack; the base image's
@@ -47,8 +48,10 @@ RUN find ./node_modules -type d \( -name 'esbuild' -o -name '@esbuild' \) -prune
 USER node
 EXPOSE 3000
 
-# No dedicated /api/health route exists in the web app yet; probe the root page.
+# Dedicated liveness route (src/app/api/health/route.ts): dependency-free, returns 200 JSON.
+# Probes the process itself, not the heavy homepage — a briefly-unavailable backend must never
+# evict the web container from rotation (downstream readiness is /api/v1/health/ready on the API).
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1
+    CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1
 
 CMD ["node", "server.js"]

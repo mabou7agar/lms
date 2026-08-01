@@ -1,58 +1,56 @@
-# CTO HANDOFF
+# CTO HANDOFF — HELBARON / CoreLMS
 
-Primary cross-AI channel. Rewritten after every significant implementation batch.
-Reviewer (ChatGPT CTO): read this first, then `context/project_state.json`.
+The one file another AI needs to continue. Rewritten after every major batch. Compact but complete.
+Last updated: 2026-07-30 (post-W07, installing the `.ai/` collaboration layer).
 
-- handoff_generated_at: 2026-07-30T16:07:47Z
-- generated_by: claude:execution-agent
-- sync: bridge connected; state verified against the live `corelms` git repo (read-only).
+## Repository state
+- Bilingual (EN/AR, RTL) MENA LMS. Backend `apps/api` (Laravel 12, PHP 8.4, Postgres 16, Redis:6380, Filament, DDD). Frontend `apps/web` (Next.js 15 App Router, React 19, TS strict, Tailwind 4, TanStack Query). Device repo root: `D:\Claude_Files\Projects\LMS\CoreLMS Implementation\corelms`. Legacy `corelms-api` = do not touch.
+- **No git commits** (standing instruction "Do not create a git commit yet"). Sync = file-write + SHA-256 byte-identity, verified per wave. Branch/version history: none yet.
+- **All 9 gates green** (last verified 2026-07-30, cloud sandbox against real code): migrate:fresh --seed, PHPUnit **808**, PHPStan **0**, Deptrac **0**, Pint; Typecheck, Lint (0 errors), Vitest **484**, Build. Plus additional QA: Playwright E2E (chromium public) + axe a11y PASS.
 
-## Current Wave
-W05 — Commerce / Entitlements. Phase: planning (re-scoping after a rollback). W04 is complete.
+## Current wave
+- W07 (Independent QA & Verification) COMPLETE. Now: installing `.ai/` (this layer). No product code changes in this step.
 
-## Repository status
-- repo: `corelms` (Laravel 12 monorepo: `apps/api` + `apps/web`)
-- branch: `main` · HEAD: `ed960b1` ("chore: stop tracking generated exports, cache, and temp archives")
-- last wave milestone: `e494c6d` "W04 complete: Media, Learning Runtime, Assignments, Gradebook, Frontend integration"
-- version: `1.0.0-rc.1` · latest tag: `v0.4.0`
-- working tree: tracked files clean (git status -uno empty at capture). Untracked scan skipped (slow NTFS mount).
+## What changed most recently (W07) & why
+Fixed all reproducible launch-critical defects from adversarial audits (details in `../reports/W07.md`). Highest-impact:
+- **Admin console crash**: 5 commerce controllers used `success(collection)` on a paginator, dropping `meta/links` → frontend TypeError. → `ApiResponse::paginated()`.
+- **Dunning crashed on Postgres**: `PaymentRecoveryService::record()` did `lockForUpdate()->max()` (illegal on PG). → locked ordered `value()`. (Was untested — added a test.)
+- **Money/ledger**: partial refund via webhook no longer marks the whole order Refunded; `payment.succeeded` settles one charge not all; invoice lines apportion the coupon discount so they reconcile; invoice numbers locked (no count()+1); coupon redemption reconciled on dunning-paid orders.
+- **Learning**: completed-enrollment learners can take/retake course assessments (`hasCourseAccess`); legacy `/progress` completion now enforces `LessonCompletionPolicy` (was a certificate-forgery bypass); video completion is server-authoritative (no client-duration trust).
+- **Frontend**: mobile drawer closes on nav; instructor nav no longer leaks on `/teach/apply`; sidebar single `aria-current`; coupon `plans` scope removed (backend rejects it).
 
-## Modified modules (this batch)
-None in application code. This batch created the `.ai/` collaboration layer only (no `apps/` changes).
+## Files modified (W07)
+See `../context/project_state.json` → `modified_files_last_wave_W07` (30 code/test files + `docs/verification/W07_LOCAL_WINDOWS_VERIFICATION.md`). All byte-identical on device (31/31).
 
-## Modified files (this batch)
-Added `corelms/.ai/**` (context, handoff, reports, verification, prompts, schema). No source files touched.
-
-## Architectural changes
-None. Boundaries unchanged (Deptrac + PHPStan arch rules still in force; ADR-01..20 unchanged).
+## Architecture changes
+- New port method `CourseEnrollmentPort::hasCourseAccess(courseId,userId)` (active OR completed) + adapter + 2 test doubles.
+- New listener `ReconcileCouponRedemptionOnOrderPaid` (registered on OrderPaid).
+- No layer/boundary changes; Deptrac still 0. Full map in `../context/architecture.md`.
 
 ## Security changes
-None this batch. Standing posture: token-only Sanctum, signed/expiring media & certificate URLs,
-secrets only in adapters. Open low item: CSP `script-src 'unsafe-inline'` in prod (documented).
+- Closed: quiz IDOR (W06), certificate forgery via legacy progress, forced video completion, partial-refund-as-full, OTP guess ceiling, coupon-scope 422, unclamped per_page.
+- **Open (product decision):** login user-enumeration + email-only lockout DoS (MED). Uniform-401 fix vs current UX — awaiting user choice.
 
 ## Performance changes
-None this batch. Open: Lighthouse mobile Perf 72 (LCP-bound client shell); no production-preset run captured.
+- Invoice-number and dunning-attempt allocation are locked/correct on Postgres. (Pagination + gradebook streaming were W06.)
 
-## Current blockers
-None hard. Soft: W05 scope must be reconfirmed before re-implementation (see below).
+## New tests
+- +5 backend (808 total): idempotency-key-advances (fixed tautology, exposed the dunning bug), gradebook chunk-boundary (>200), PartialRefundWebhookTest, InvoiceReconciliationTest, completed-enrollment attempt.
+
+## Remaining blockers
+- None launch-critical. (See product decision below.)
 
 ## Remaining technical debt
-Full list: `corelms/KNOWN_LIMITATIONS.md`. Highest-value items:
-- Synchronous, unbounded course-announcement fan-out (should be queued/chunked) — KI-01, high.
-- N+1 speaker lookup on public Events listing — KI-02.
-- Synchronous first certificate-PDF render in request — KI-03.
+- No git/version history. Sandbox-only composer hacks not for the device. Filament admin lacks HTTP contract tests. Minor a11y polish deferred. Full list: `../verification/pending_items.md`.
 
-## Required product decisions
-- W05 fate: re-apply the rolled-back `_w05_removed/` backend cleanly, or rebuild from backlog?
-- Whether to schedule the deferred Automation/Digest engine and Live-session reminders (H9),
-  or keep them formally deferred.
+## Next recommended wave
+- First: resolve the login-hardening product decision + (recommended) bootstrap git. Then W08 (proposed) — see `../prompts/next_wave.md`.
 
-## Recommended next work
-1. Reconfirm W05 (Commerce/Entitlements) scope vs `docs/redesign/100_EXECUTION_BACKLOG.md` (Sprint 5 / B1).
-2. Re-introduce `EntitlementPort` + single adapter; wire Learning access checks through it (Deptrac clean).
-3. Put the new subsystem behind a capability/flag (default-off, ADR-06); add unit/integration/architecture tests.
-4. Run full gates; capture the result into `verification/gate_history.json`.
+## Requires manual Windows verification
+- Authenticated Playwright journeys + live-service security spot-checks. Guide: `docs/verification/W07_LOCAL_WINDOWS_VERIFICATION.md`; index: `../verification/local_checks.md`.
 
-## Requires local verification
-- A full CI/local gate run has not been captured into this layer yet (see `verification/pending_items.md`).
-- W01-W03 wave boundaries are inferred; confirm against git tags/history and set `verified: true`.
+## Requires a product decision
+- Login enumeration/lockout-DoS: harden (uniform response + decaying lockout) or keep the current per-status UX? Nothing else is blocked on it.
+
+## How to work here (rules for the next AI)
+- Edit the REAL repo. Never weaken/regenerate PHPStan or Deptrac baselines; never skip/delete tests; no fake green. Money = integer minor units. Idempotency mandatory on payments/orders/refunds/subscriptions/webhooks; verify webhook signatures in the adapter; no gateway SDK calls outside adapters; no client-trusted price/tax. Paginated endpoints return `{data,meta,links}` via `ApiResponse::paginated`. Keep all 9 gates green after every batch and re-verify byte-identity on sync. Update this `.ai/` layer continuously.

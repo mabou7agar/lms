@@ -37,3 +37,10 @@ apps/api/storage/app/i18n_splice.cjs
 apps/web/.spdtest
 
 apps/api/.deptrac.cache
+
+# W09: real production secrets + local UAT evidence (never commit)
+apps/api/.env.production
+apps/web/.env.production
+apps/api/.env.production.*
+apps/web/.env.production.*
+docs/verification/w09/evidence/

@@ -1,33 +1,35 @@
-# Local Checks (Gate Definition)
+# Local Windows Verification — pending checks (append-only)
 
-The gates every wave must pass before it is "done". Run from `corelms/`. Confirm exact
-script names against `apps/api/composer.json` and `apps/web/package.json` (config files that
-back these are present in the repo, noted per line). Windows note: the repo lives on an NTFS
-`D:\` path bind-mounted into containers — running gates inside the dev container is faster.
+Anything that requires the user's Windows machine goes here. **Append; never delete.** Full
+copy-paste commands live in `docs/verification/W07_LOCAL_WINDOWS_VERIFICATION.md`; this file is the
+index of what is still outstanding and why.
 
-## Backend — `apps/api`
-- Format:        `vendor/bin/pint --test`            (config: `pint.json`)
-- Static (Larastan/PHPStan): `vendor/bin/phpstan analyse`  (config: `phpstan.neon` + `phpstan-baseline.neon`, `phpstan-architecture.neon`) — do NOT lower level or grow baseline
-- Architecture:  `vendor/bin/deptrac analyse`         (config: `deptrac.yaml` + `deptrac.baseline.yaml`) — no new violation
-- Tests (Pest/PHPUnit): `php artisan test` or `vendor/bin/pest`  (config: `phpunit.xml`)
-- ADR link check: `scripts/adr-link-check.sh`         (also enforced by `.github/workflows/adr-validation.yml`)
-- OpenAPI: regenerate + assert no breaking diff (per canonical PR checklist)
+Local repo (per user): `D:\Claude_Files\Projects\LMS` (actual repo root: `...\CoreLMS Implementation\corelms`).
+The cloud sandbox has no access to PowerShell or the user's local services; nothing below has been
+verified by the AI — it is LOCAL VERIFICATION REQUIRED.
 
-## Frontend — `apps/web`
-- Lint:      `npm run lint`     (config: `eslint.config.mjs`; Prettier)
-- Types:     `npx tsc --noEmit`
-- Unit:      `npm run test` / `vitest run`   (config: `vitest.config.ts`)
-- E2E:       `npx playwright test`           (config: `playwright.config.ts`)
-- A11y:      axe checks (run within the E2E/story suite)
-- Build:     `npm run build`
-- Storybook: build must succeed
-- Lighthouse: `apps/web/lighthouse.report.json` is the last captured run (mobile-throttled)
+---
 
-## Security / CI
-- Trivy container scan on the web image (CVE gate; `.trivyignore` documents accepted exceptions)
-- Secret scan (no secret committed)
-- GitHub Actions: seven mandatory jobs must be green (last recorded full green: CI run #13, commit 89e57e7)
+## [W07] Authenticated browser journeys (Playwright)
+- **Reason:** The sandbox ran the public E2E + axe (PASS) but the authenticated legs are skipped without a running seeded API + credentials.
+- **Working directory:** `apps\web` (API from `apps\api` must be running).
+- **Commands:** guide §7 — set `PLAYWRIGHT_BASE_URL`, `E2E_EMAIL`, `E2E_PASSWORD`, then `npx playwright test --project=chromium e2e/smoke.spec.ts`.
+- **Expected:** `3 passed` incl. `authenticated journey: login -> dashboard -> logout`.
+- **Failure symptoms:** hangs at `waitForURL(/dashboard|my-learning/)` → API not reachable or creds wrong.
+- **Send back:** `apps\web\playwright-report\index.html` + console output.
 
-## Recording results
-After a run, append an entry to `gate_history.json` (newest last). Only record runs actually
-executed/observed — never fabricate a green.
+## [W07] Live-service security spot-checks
+- **Reason:** Rate-limit trip (429), unauthenticated 401 envelope, and the production-only absence of the fake media webhook can only be observed against a running API.
+- **Working directory:** any (API running on :8000).
+- **Commands:** guide §9 (curl loops).
+- **Expected:** (a) 401 JSON envelope; (b) ~10×422/404 then 429; (c) fake webhook → 404 when `APP_ENV=production`.
+- **Send back:** the printed status codes; `apps\api\storage\logs\laravel.log` on anomaly.
+
+## [post-W07] Materialize the .ai/ collaboration layer into the repo — DONE
+- The `.ai/` tree (15 files) was written directly to `...\CoreLMS Implementation\corelms\.ai\` via the desktop bridge and verified byte-identical (SHA-256, 15/15). No manual action needed.
+
+## [W07] Full local gate reproduction (optional confidence)
+- **Reason:** All 9 gates passed in the sandbox against the real code; reproducing locally confirms parity with the user's exact toolchain/services.
+- **Commands:** guide §2–§5.
+- **Expected:** backend `Tests: 808 passed`, PHPStan `[OK]`, Deptrac `0/0`, Pint passed; frontend typecheck/lint(0 errors)/vitest(484)/build all exit 0.
+- **Send back:** the failing command's full output + relevant log if any gate differs.

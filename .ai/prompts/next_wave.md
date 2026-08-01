@@ -1,48 +1,35 @@
-# Next Wave — Executable Prompt
+# Proposed next wave prompt
 
-Directly executable by the execution agent. Read `../context/project_state.json` and
-`../handoff/CTO_HANDOFF.md` first. Do not assume chat history.
+Two gating items should be settled first (neither is a large wave):
+
+1. **Login hardening — product decision.** Reply with one of: (a) HARDEN — uniform 401 auth
+   responses + decaying/backing-off lockout keyed on (email+IP), updating the auth tests to assert
+   the corrected behavior; or (b) KEEP — leave the current per-status UX and mark the item accepted.
+2. **Version control bootstrap (recommended).** Establish git: first commit of the current
+   byte-verified tree, a branch strategy, and CI wiring that runs the 9 gates + Playwright/axe. This
+   ends the "no history" technical debt before more features land.
 
 ---
 
-## Task: Implement W05 — Commerce / Entitlements
+## W08 (proposed) — pick ONE track
 
-You are the senior Laravel + Next.js engineer on CoreLMS (Laravel 12 modular monolith
-`apps/api` + Next.js `apps/web`). Branch `main`, HEAD `ed960b1`, tree clean.
+### Track A — Engagement & Social (the explicit W05 carve-outs)
+Search/Discovery, Discussions/Q&A, Reviews & Ratings, Wishlist, Gamification. New bounded
+context(s); reuse EntitlementPort for gating; keep money/idempotency rules where relevant.
 
-### 0. Pre-flight
-1. Reconfirm scope in `docs/redesign/100_EXECUTION_BACKLOG.md` (Sprint 5 / epic B1) and read
-   ADR-06 (capability vs permission vs flag) and ADR-11 (Authoring owns definitions; Learning owns attempts).
-2. Inspect `_w05_removed/` (rolled-back attempt): `EntitlementPort.php`, `w05_backend.tgz`,
-   `w05src.tgz`. Diff against `main`. Decide re-apply-cleanly vs rebuild. Record the decision in
-   `.ai/context/decisions.md` (new AID-xx) and `.ai/context/project_state.json`.
+### Track B — DevOps / Production Readiness (master-roadmap Groups G/H)
+CD pipeline (push image + deploy + rollback), automated backup/restore, monitoring/alerting,
+staging environment, and CI that enforces all gates. Turns "gates pass locally" into "gates gate
+merges."
 
-### 1. Implement
-- Define `App\Contexts\Commerce\Contracts\EntitlementPort`:
-  - `hasCourseEntitlement(int $userId, int $courseId): bool`
-  - `entitledCourseIds(int $userId): array` (list<int>)
-- One adapter backs it: union of paid one-off grants (`OrderCourseGrant`) and active subscriptions.
-- Learning (and other consumers) depend on the port only — no Commerce Eloquent models across the boundary.
-- Put the subsystem behind a capability/flag, default-off (ADR-06).
-- Migrations: expand-and-contract only (no destructive single step).
-
-### 2. Test (per canonical story taxonomy)
-- Unit: entitlement union logic (grant only / subscription only / both / neither / expired).
-- Integration: port + adapter against the DB.
-- Architecture: Deptrac + PHPStan rule — Learning must not import Commerce models.
-- E2E (if a user-facing gate changes): Playwright access-gate happy/blocked paths.
-
-### 3. Gates (must pass — see ../verification/local_checks.md)
-Pint, PHPStan (no baseline growth), Deptrac (no new violation), Pest, ESLint, tsc, Vitest,
-Playwright, axe, Trivy. Coverage not decreased. OpenAPI regenerated, no breaking diff.
-
-### 4. Update the AI layer (mandatory)
-- Rewrite `.ai/reports/W05.md` to the completed template.
-- Append the gate run to `.ai/verification/gate_history.json`.
-- Update `.ai/context/project_state.json` (wave.current -> W06 planning; move W05 into completed, verified:true).
-- Rewrite `.ai/handoff/CTO_HANDOFF.md`.
-- Generate the next `.ai/prompts/next_wave.md` for W06 (derive from the backlog).
-- Clear the relevant items in `.ai/verification/pending_items.md`.
-
-### Return contract (per project instructions)
-1. Files changed  2. Code  3. Migrations  4. Tests  5. Commands to run  6. Risks/blockers.
+## Standard execution rules for the wave (reuse)
+- Independent read-only auditors first → dedupe → reproducible defects only → fix continuously.
+- Keep all 9 gates green after every meaningful batch; re-run only affected gates during work.
+- No fake green; no baseline weakening; no test deletion; money in integer minor units; idempotency
+  on payments/orders/refunds/subscriptions/webhooks.
+- Update `.ai/` continuously (project_state.json, current_wave.md, decisions.md, gate_history.json,
+  byte_identity.json, CTO_HANDOFF.md). Add a `reports/W08.md` at close.
+- Sync changed files to the device and verify byte-identity. Record anything needing the local
+  Windows machine in `.ai/verification/local_checks.md`.
+- Final response: the `W08 FINAL VERIFICATION` block (resolved items, gate PASS lines, byte-identity,
+  local-verification status).

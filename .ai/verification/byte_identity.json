@@ -1,0 +1,42 @@
+{
+  "note": "Record of every device-sync byte-identity verification. Hash method = SHA-256. 'Tested tree' = the cloud-sandbox working copy that passed the gates; 'device' = the user's Windows repo at D:\\Claude_Files\\Projects\\LMS\\CoreLMS Implementation\\corelms. Do not fabricate: entries marked LOCAL VERIFICATION REQUIRED were not performed.",
+  "hash_method": "SHA-256 per file",
+  "transfer_method": "file-write (Node fs.writeFileSync of a base64 JSON payload on the device VM); overwrites in place. NOT git.",
+  "syncs": [
+    {
+      "wave": "W05-verification",
+      "date": "2026-07-29",
+      "compared_paths": "263 backend files (apps/api) + 3 frontend files (apps/web) = the W05 changeset",
+      "files_compared": 266,
+      "files_changed_written": 266,
+      "result": "BYTE-IDENTICAL (266/266)",
+      "orphans_or_missing": 0
+    },
+    {
+      "wave": "W06",
+      "date": "2026-07-30",
+      "compared_paths": "W06 changed files across apps/api + apps/web",
+      "files_compared": 39,
+      "files_changed_written": 39,
+      "result": "BYTE-IDENTICAL (39/39)",
+      "orphans_or_missing": 0
+    },
+    {
+      "wave": "W07",
+      "date": "2026-07-30",
+      "compared_paths": "30 code/test files + docs/verification/W07_LOCAL_WINDOWS_VERIFICATION.md",
+      "files_compared": 31,
+      "files_changed_written": 31,
+      "result": "BYTE-IDENTICAL (31/31)",
+      "orphans_or_missing": 0
+    },
+    {
+      "wave": "post-W07-ai-layer",
+      "date": "2026-07-30",
+      "compared_paths": ".ai/** (this AI collaboration layer, 15 files)",
+      "files_compared": 15,
+      "files_changed_written": 15,
+      "result": "BYTE-IDENTICAL (15/15) — written directly to the device repo via the bridge and re-hashed on the device; SHA-256 matched the sandbox manifest."
+    }
+  ]
+}
