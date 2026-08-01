@@ -67,37 +67,37 @@ export interface ForkInput {
 /** Paginated version history, newest first. `course` is the course public id. */
 export function listVersions(course: string, page = 1, perPage = 20): Promise<VersionHistoryPage> {
   const query = `page=${encodeURIComponent(page)}&per_page=${encodeURIComponent(perPage)}`;
-  return api.get<VersionHistoryPage>(`v1/admin/courses/${course}/versions?${query}`);
+  return api.get<VersionHistoryPage>(`admin/courses/${course}/versions?${query}`);
 }
 
 export function getVersion(version: string): Promise<ContentVersion> {
-  return api.data<ContentVersion>(`v1/admin/versions/${version}`);
+  return api.data<ContentVersion>(`admin/versions/${version}`);
 }
 
 export function createSnapshot(course: string, input: CreateSnapshotInput = {}): Promise<ContentVersion> {
-  return api.data<ContentVersion>(`v1/admin/courses/${course}/versions`, {
+  return api.data<ContentVersion>(`admin/courses/${course}/versions`, {
     method: "POST",
     body: { label: input.label ?? null, force: input.force ?? false },
   });
 }
 
 export function restoreVersion(version: string): Promise<RestoreResult> {
-  return api.data<RestoreResult>(`v1/admin/versions/${version}/restore`, { method: "POST" });
+  return api.data<RestoreResult>(`admin/versions/${version}/restore`, { method: "POST" });
 }
 
 export function rollbackVersion(version: string): Promise<ContentVersion> {
-  return api.data<ContentVersion>(`v1/admin/versions/${version}/rollback`, { method: "POST" });
+  return api.data<ContentVersion>(`admin/versions/${version}/rollback`, { method: "POST" });
 }
 
 export function cloneVersion(version: string, label?: string | null): Promise<ContentVersion> {
-  return api.data<ContentVersion>(`v1/admin/versions/${version}/clone`, {
+  return api.data<ContentVersion>(`admin/versions/${version}/clone`, {
     method: "POST",
     body: { label: label ?? null },
   });
 }
 
 export function forkVersion(version: string, input: ForkInput): Promise<ContentVersion> {
-  return api.data<ContentVersion>(`v1/admin/versions/${version}/fork`, {
+  return api.data<ContentVersion>(`admin/versions/${version}/fork`, {
     method: "POST",
     body: { destination_course_id: input.destination_course_id, label: input.label ?? null },
   });

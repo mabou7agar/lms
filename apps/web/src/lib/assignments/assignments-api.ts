@@ -13,7 +13,7 @@
  *   app/Domains/Assessment/Http/Requests/**   (SaveAssignmentRequest, BuildRubricRequest, …)
  *   app/Domains/Assessment/Enums/**           (SubmissionType, LatePolicy, SubmissionStatus, …)
  *
- * Instructor/authoring + grading routes live under `v1/admin`; learner routes under `v1`.
+ * Instructor/authoring + grading routes live under `admin`; learner routes under `v1`.
  * Single-resource endpoints use the `{ data }` success envelope (unwrapped via `api.data`);
  * index/gradebook endpoints use the paginated `{ data, meta, links }` envelope (via `api.get`).
  */
@@ -293,42 +293,42 @@ export interface RequestChangesInput {
 /** GET v1/admin/courses/{course}/assignments — paginated, newest first. */
 export function listAssignments(course: string, page = 1, perPage = 25): Promise<Paginated<Assignment>> {
   const query = `page=${encodeURIComponent(page)}&per_page=${encodeURIComponent(perPage)}`;
-  return api.get<Paginated<Assignment>>(`v1/admin/courses/${course}/assignments?${query}`);
+  return api.get<Paginated<Assignment>>(`admin/courses/${course}/assignments?${query}`);
 }
 
 /** GET v1/admin/assignments/{assignment}. */
 export function getAssignment(assignment: string): Promise<Assignment> {
-  return api.data<Assignment>(`v1/admin/assignments/${assignment}`);
+  return api.data<Assignment>(`admin/assignments/${assignment}`);
 }
 
 /** POST v1/admin/courses/{course}/assignments. */
 export function createAssignment(course: string, input: CreateAssignmentInput): Promise<Assignment> {
-  return api.data<Assignment>(`v1/admin/courses/${course}/assignments`, { method: "POST", body: input });
+  return api.data<Assignment>(`admin/courses/${course}/assignments`, { method: "POST", body: input });
 }
 
 /** PUT v1/admin/assignments/{assignment}. */
 export function updateAssignment(assignment: string, input: AssignmentInput): Promise<Assignment> {
-  return api.data<Assignment>(`v1/admin/assignments/${assignment}`, { method: "PUT", body: input });
+  return api.data<Assignment>(`admin/assignments/${assignment}`, { method: "PUT", body: input });
 }
 
 /** DELETE v1/admin/assignments/{assignment}. */
 export function deleteAssignment(assignment: string): Promise<void> {
-  return api.del<void>(`v1/admin/assignments/${assignment}`);
+  return api.del<void>(`admin/assignments/${assignment}`);
 }
 
 /** POST v1/admin/assignments/{assignment}/publish. */
 export function publishAssignment(assignment: string): Promise<Assignment> {
-  return api.data<Assignment>(`v1/admin/assignments/${assignment}/publish`, { method: "POST" });
+  return api.data<Assignment>(`admin/assignments/${assignment}/publish`, { method: "POST" });
 }
 
 /** POST v1/admin/assignments/{assignment}/unpublish. */
 export function unpublishAssignment(assignment: string): Promise<Assignment> {
-  return api.data<Assignment>(`v1/admin/assignments/${assignment}/unpublish`, { method: "POST" });
+  return api.data<Assignment>(`admin/assignments/${assignment}/unpublish`, { method: "POST" });
 }
 
 /** PUT v1/admin/assignments/{assignment}/rubric — replaces the rubric wholesale, returns it. */
 export function buildRubric(assignment: string, input: RubricInput): Promise<Rubric> {
-  return api.data<Rubric>(`v1/admin/assignments/${assignment}/rubric`, { method: "PUT", body: input });
+  return api.data<Rubric>(`admin/assignments/${assignment}/rubric`, { method: "PUT", body: input });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -342,22 +342,22 @@ export function listSubmissions(
   perPage = 25,
 ): Promise<Paginated<SubmissionListRow>> {
   const query = `page=${encodeURIComponent(page)}&per_page=${encodeURIComponent(perPage)}`;
-  return api.get<Paginated<SubmissionListRow>>(`v1/admin/assignments/${assignment}/submissions?${query}`);
+  return api.get<Paginated<SubmissionListRow>>(`admin/assignments/${assignment}/submissions?${query}`);
 }
 
 /** GET v1/admin/submissions/{submission} — full grader view (private notes + unreleased score). */
 export function getSubmission(submission: string): Promise<Submission> {
-  return api.data<Submission>(`v1/admin/submissions/${submission}`);
+  return api.data<Submission>(`admin/submissions/${submission}`);
 }
 
 /** POST v1/admin/submissions/{submission}/grade. */
 export function gradeSubmission(submission: string, input: GradeInput): Promise<Submission> {
-  return api.data<Submission>(`v1/admin/submissions/${submission}/grade`, { method: "POST", body: input });
+  return api.data<Submission>(`admin/submissions/${submission}/grade`, { method: "POST", body: input });
 }
 
 /** POST v1/admin/submissions/{submission}/request-changes. */
 export function requestChanges(submission: string, input: RequestChangesInput = {}): Promise<Submission> {
-  return api.data<Submission>(`v1/admin/submissions/${submission}/request-changes`, {
+  return api.data<Submission>(`admin/submissions/${submission}/request-changes`, {
     method: "POST",
     body: input,
   });
@@ -365,12 +365,12 @@ export function requestChanges(submission: string, input: RequestChangesInput = 
 
 /** POST v1/admin/submissions/{submission}/release. */
 export function releaseGrade(submission: string): Promise<Submission> {
-  return api.data<Submission>(`v1/admin/submissions/${submission}/release`, { method: "POST" });
+  return api.data<Submission>(`admin/submissions/${submission}/release`, { method: "POST" });
 }
 
 /** POST v1/admin/submissions/{submission}/unrelease. */
 export function unreleaseGrade(submission: string): Promise<Submission> {
-  return api.data<Submission>(`v1/admin/submissions/${submission}/unrelease`, { method: "POST" });
+  return api.data<Submission>(`admin/submissions/${submission}/unrelease`, { method: "POST" });
 }
 
 // ── Gradebook (D3): REMOVED — the canonical gradebook data layer is `@/lib/gradebook` (D5), which
@@ -382,27 +382,27 @@ export function unreleaseGrade(submission: string): Promise<Submission> {
 
 /** GET v1/assignments/{assignment} — LEARNER view. */
 export function getLearnerAssignment(assignment: string): Promise<LearnerAssignment> {
-  return api.data<LearnerAssignment>(`v1/assignments/${assignment}`);
+  return api.data<LearnerAssignment>(`assignments/${assignment}`);
 }
 
 /** GET v1/assignments/{assignment}/submissions — the learner's own attempt history. */
 export function getSubmissionHistory(assignment: string): Promise<LearnerSubmission[]> {
-  return api.data<LearnerSubmission[]>(`v1/assignments/${assignment}/submissions`);
+  return api.data<LearnerSubmission[]>(`assignments/${assignment}/submissions`);
 }
 
 /** GET v1/submissions/{submission} — LEARNER view of one submission. */
 export function getLearnerSubmission(submission: string): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/submissions/${submission}`);
+  return api.data<LearnerSubmission>(`submissions/${submission}`);
 }
 
 /** POST v1/assignments/{assignment}/draft — create/update the learner's draft. */
 export function saveDraft(assignment: string, input: SaveDraftInput): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/assignments/${assignment}/draft`, { method: "POST", body: input });
+  return api.data<LearnerSubmission>(`assignments/${assignment}/draft`, { method: "POST", body: input });
 }
 
 /** POST v1/assignments/{assignment}/draft/files — attach an uploaded media asset to the draft. */
 export function attachFile(assignment: string, input: AttachFileInput): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/assignments/${assignment}/draft/files`, {
+  return api.data<LearnerSubmission>(`assignments/${assignment}/draft/files`, {
     method: "POST",
     body: input,
   });
@@ -410,15 +410,15 @@ export function attachFile(assignment: string, input: AttachFileInput): Promise<
 
 /** DELETE v1/submissions/{submission}/files/{file} — detach a file from the draft. */
 export function detachFile(submission: string, file: string): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/submissions/${submission}/files/${file}`, { method: "DELETE" });
+  return api.data<LearnerSubmission>(`submissions/${submission}/files/${file}`, { method: "DELETE" });
 }
 
 /** POST v1/assignments/{assignment}/submit — hand in the current draft. */
 export function submitAssignment(assignment: string): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/assignments/${assignment}/submit`, { method: "POST" });
+  return api.data<LearnerSubmission>(`assignments/${assignment}/submit`, { method: "POST" });
 }
 
 /** POST v1/assignments/{assignment}/resubmit — open a fresh attempt after changes requested/returned. */
 export function resubmitAssignment(assignment: string): Promise<LearnerSubmission> {
-  return api.data<LearnerSubmission>(`v1/assignments/${assignment}/resubmit`, { method: "POST" });
+  return api.data<LearnerSubmission>(`assignments/${assignment}/resubmit`, { method: "POST" });
 }

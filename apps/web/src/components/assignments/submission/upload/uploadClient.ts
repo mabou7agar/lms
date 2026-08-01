@@ -4,9 +4,9 @@ import { apiClient } from '@/lib/api/client';
  * Direct-upload transport + media ticket client for learner submission files.
  *
  * Mirrors the Media platform's direct-upload pipeline (DirectUploadTicketResource):
- *   1. createTicket  -> POST /api/v1/media/assets            (returns provider instructions)
+ *   1. createTicket  -> POST /api/media/assets            (returns provider instructions)
  *   2. transport     -> browser PUT/POSTs bytes STRAIGHT to the provider (never through our API)
- *   3. finalize      -> POST /api/v1/media/assets/{id}/finalize  (with the single-use upload token)
+ *   3. finalize      -> POST /api/media/assets/{id}/finalize  (with the single-use upload token)
  * The resulting media public id is then attached to the draft through D3's assignments hook.
  *
  * Everything here is injectable so tests can supply a deterministic fake transport + client.
@@ -115,12 +115,12 @@ export const xhrUploadTransport: UploadTransport = ({ instructions, file, onProg
 export function createDefaultUploadClient(): SubmissionUploadClient {
   return {
     async createTicket(input) {
-      const { data } = await apiClient.post<UploadTicket>('/v1/media/assets', input);
+      const { data } = await apiClient.post<UploadTicket>('/media/assets', input);
       return data;
     },
     async finalize(mediaId, uploadToken) {
       const { data } = await apiClient.post<{ data?: MediaAssetView } | MediaAssetView>(
-        `/v1/media/assets/${mediaId}/finalize`,
+        `/media/assets/${mediaId}/finalize`,
         { upload_token: uploadToken },
       );
       // Tolerate both `{ data: {...} }` envelopes and bare resources.

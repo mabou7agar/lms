@@ -208,10 +208,10 @@ export interface LessonContent {
 // ---------------------------------------------------------------------------
 
 // Base is un-prefixed (the api client prepends the `/api/backend` BFF origin),
-// matching the media/gradebook lib convention (e.g. `BASE = "v1/media"`).
+// matching the media/gradebook lib convention: bare paths (base already includes /api/v1).
 const enc = encodeURIComponent;
-const courseBase = (id: string) => `v1/courses/${enc(id)}`;
-const lessonBase = (id: string) => `v1/lessons/${enc(id)}`;
+const courseBase = (id: string) => `courses/${enc(id)}`;
+const lessonBase = (id: string) => `lessons/${enc(id)}`;
 
 export function launchCourse(coursePublicId: string): Promise<CourseLaunch> {
   return api.data<CourseLaunch>(`${courseBase(coursePublicId)}/launch`, { method: 'POST' });

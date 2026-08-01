@@ -15,7 +15,7 @@ export type FileUrlResolver = (mediaId: string) => Promise<string>;
  */
 export const defaultFileUrlResolver: FileUrlResolver = async (mediaId) => {
   const { data } = await apiClient.get<{ url?: string; data?: { url: string } }>(
-    `/v1/media/assets/${mediaId}/signed-url`,
+    `/media/assets/${mediaId}/signed-url`,
   );
   const url = data.url ?? data.data?.url;
   if (!url) throw new Error('No signed URL returned');

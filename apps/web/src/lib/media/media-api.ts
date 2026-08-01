@@ -140,7 +140,7 @@ export interface AddCaptionInput {
   provider_ref?: string | null;
 }
 
-const BASE = "v1/media";
+const BASE = "media";
 
 /** Paginated library of the actor's own media, newest first. */
 export function listMedia(filters: MediaListFilters = {}): Promise<Paginated<MediaAsset>> {

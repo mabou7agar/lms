@@ -98,10 +98,10 @@ const BFF_BASE = '/api/backend';
 
 /**
  * Backend-relative gradebook path — NO leading slash, matching the house
- * convention (`api.get('v1/admin/...')` in lib/assignments/assignments-api.ts).
+ * convention: bare paths (base already includes /api/v1). See lib/assignments/assignments-api.ts.
  */
 export function gradebookPath(publicId: string): string {
-  return `v1/admin/courses/${encodeURIComponent(publicId)}/gradebook`;
+  return `admin/courses/${encodeURIComponent(publicId)}/gradebook`;
 }
 
 /** Absolute BFF export URL (used for a direct blob fetch / download). */

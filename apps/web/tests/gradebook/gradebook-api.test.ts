@@ -36,11 +36,11 @@ function cell(overrides: Partial<GradebookCell>): GradebookCell {
 
 describe('gradebook-api paths & query', () => {
   it('builds the backend-relative gradebook path with encoded id (no leading slash)', () => {
-    expect(gradebookPath('crs 1')).toBe('v1/admin/courses/crs%201/gradebook');
+    expect(gradebookPath('crs 1')).toBe('admin/courses/crs%201/gradebook');
   });
 
   it('builds the absolute BFF export path', () => {
-    expect(gradebookExportPath('crs_1')).toBe('/api/backend/v1/admin/courses/crs_1/gradebook/export');
+    expect(gradebookExportPath('crs_1')).toBe('/api/backend/admin/courses/crs_1/gradebook/export');
   });
 
   it('names the csv download file after the course', () => {
