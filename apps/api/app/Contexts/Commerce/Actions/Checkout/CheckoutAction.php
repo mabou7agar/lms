@@ -10,6 +10,7 @@ use App\Contexts\Commerce\Enums\TransactionStatus;
 use App\Contexts\Commerce\Enums\TransactionType;
 use App\Contexts\Commerce\Events\OrderPlaced;
 use App\Contexts\Commerce\Exceptions\CartEmptyException;
+use App\Contexts\Commerce\Exceptions\CheckoutInProgressException;
 use App\Contexts\Commerce\Exceptions\CouponExhaustedException;
 use App\Contexts\Commerce\Models\Coupon;
 use App\Contexts\Commerce\Models\CouponRedemption;
@@ -23,6 +24,8 @@ use App\Contexts\Commerce\Services\ContractService;
 use App\Contexts\Commerce\Services\CouponService;
 use App\Contexts\Commerce\Services\InvoiceNumberService;
 use App\Platform\Shared\Actions\BaseAction;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -52,8 +55,29 @@ class CheckoutAction extends BaseAction
         private readonly CouponService $coupons,
     ) {}
 
-    /** @return array{order: Order, contract: mixed, charge: mixed} */
+    /**
+     * Serialize checkout per user so a duplicate submit (double-click or concurrent request)
+     * cannot create a second order plus a second gateway charge from the same cart. The lock is
+     * held across the whole flow — including the gateway call — and the first request empties the
+     * cart before releasing, so a queued duplicate re-reads an empty cart and is rejected with
+     * CartEmptyException (never a second charge). A caller that cannot acquire the lock within the
+     * block window gets a 409 CheckoutInProgressException instead of proceeding.
+     *
+     * @return array{order: Order, contract: mixed, charge: mixed}
+     */
     public function executeByUserId(int $userId): array
+    {
+        $lock = Cache::lock("commerce:checkout:user:{$userId}", 30);
+
+        try {
+            return $lock->block(5, fn (): array => $this->run($userId));
+        } catch (LockTimeoutException) {
+            throw new CheckoutInProgressException;
+        }
+    }
+
+    /** @return array{order: Order, contract: mixed, charge: mixed} */
+    private function run(int $userId): array
     {
         $cart = $this->carts->currentByUserId($userId)->load(['items.product', 'coupon']);
 
