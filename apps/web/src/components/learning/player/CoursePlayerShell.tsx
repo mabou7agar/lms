@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Menu } from 'lucide-react';
 import { Button, Drawer, Spinner } from '@/components/ui';
@@ -47,19 +47,18 @@ function CoursePlayerShellInner({
   const lessons = useMemo(() => flattenLessons(curriculum.data), [curriculum.data]);
   const firstNavigable = useMemo(() => lessons.find(isLessonNavigable)?.id ?? null, [lessons]);
 
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(initialLessonId ?? null);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(initialLessonId ?? null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Default the active lesson to server resume, then first navigable lesson.
-  useEffect(() => {
-    if (activeLessonId) return;
-    const resume = summary.data?.resume_lesson_id ?? null;
-    const next = resume && lessons.some((l) => l.id === resume) ? resume : firstNavigable;
-    if (next) setActiveLessonId(next);
-  }, [activeLessonId, summary.data?.resume_lesson_id, firstNavigable, lessons]);
+  // Derive the active lesson during render: an explicit user selection wins; otherwise fall back to
+  // the server resume point, then the first navigable lesson. (Previously a post-mount effect.)
+  const resumeLessonId = summary.data?.resume_lesson_id ?? null;
+  const defaultLessonId =
+    resumeLessonId && lessons.some((l) => l.id === resumeLessonId) ? resumeLessonId : firstNavigable;
+  const activeLessonId = selectedLessonId ?? defaultLessonId;
 
   const navigate = (lessonId: string) => {
-    setActiveLessonId(lessonId);
+    setSelectedLessonId(lessonId);
     setDrawerOpen(false);
   };
 

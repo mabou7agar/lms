@@ -60,7 +60,10 @@ export function AssignmentSubmissionPanel({
   const detach = useDetachDraftFile();
 
   const assignment = assignmentQuery.data as LearnerAssignment | undefined;
-  const submissions = (historyQuery.data as LearnerSubmission[] | undefined) ?? [];
+  const submissions = useMemo<LearnerSubmission[]>(
+    () => (historyQuery.data as LearnerSubmission[] | undefined) ?? [],
+    [historyQuery.data],
+  );
 
   const active = useMemo(() => pickActive(submissions), [submissions]);
   const attemptsUsed = submissions.filter((s) => s.status !== 'draft').length;

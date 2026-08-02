@@ -1,27 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 import { GradebookView } from '@/components/gradebook';
 import { GradebookI18nProvider, type GradebookLocale } from '@/lib/gradebook/gradebook-i18n';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 /**
  * Instructor gradebook page: /teach/courses/{public_id}/gradebook
  *
  * Client component so it can read the route param and hydrate the module-local
- * i18n provider. Locale is read from the document lang (set by the app shell),
- * defaulting to 'en'; wiring the app-wide locale here is a shared-infra concern.
+ * i18n provider. Locale is derived from the app-wide i18n context (driven by the same
+ * locale cookie that sets <html lang>), so it is correct on the first render — no post-mount
+ * effect and no en→ar flash.
  */
 export default function CourseGradebookPage() {
   const params = useParams<{ public_id: string }>();
   const publicId = Array.isArray(params.public_id) ? params.public_id[0] : params.public_id;
 
-  const [locale, setLocale] = useState<GradebookLocale>('en');
-  useEffect(() => {
-    const lang = document.documentElement.getAttribute('lang');
-    setLocale(lang === 'ar' ? 'ar' : 'en');
-  }, []);
+  const { locale: appLocale } = useI18n();
+  const locale: GradebookLocale = appLocale === 'ar' ? 'ar' : 'en';
 
   return (
     <GradebookI18nProvider locale={locale}>

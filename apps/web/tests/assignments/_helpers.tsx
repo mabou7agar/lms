@@ -125,10 +125,8 @@ export function makeQueueRow(overrides: Partial<QueueRow> = {}): QueueRow {
 /** A minimal React Query-shaped mutation stub. */
 export function mockMutation(impl?: (vars: unknown) => Promise<unknown>) {
   const mutateAsync = impl
-    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((vars: unknown) => impl(vars)) as any
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (async () => undefined) as any;
+    ? ((vars: unknown) => impl(vars)) as any
+    : (async () => undefined) as any;
   return { mutateAsync, mutate: mutateAsync, isPending: false, isError: false, error: null, reset: () => {} };
 }
 

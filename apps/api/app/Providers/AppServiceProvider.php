@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Console\Commands\ValidateProductionConfigCommand;
 use App\Platform\Shared\Config\ProductionConfigValidator;
+use Filament\Tables\Columns\IconColumn;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -22,6 +23,22 @@ class AppServiceProvider extends ServiceProvider
         $this->registerQueueFailureLogging();
         $this->commands([ValidateProductionConfigCommand::class]);
         $this->guardProductionConfig();
+        $this->configureFilamentAccessibility();
+    }
+
+    /**
+     * Accessibility: a Filament clickable table row wraps EVERY cell in a record-URL `<a>`. An
+     * icon-only column (no text node) therefore renders a link with no discernible name — a serious
+     * axe `link-name` violation. Icon columns here are decorative status glyphs, so disable their
+     * per-cell click globally: the row stays navigable via its text columns and no nameless link is
+     * emitted. Applied as a default before each resource's own column chain, so any resource that
+     * genuinely needs a clickable icon can still re-enable it with `->disableClick(false)`.
+     */
+    private function configureFilamentAccessibility(): void
+    {
+        IconColumn::configureUsing(function (IconColumn $column): void {
+            $column->disableClick();
+        });
     }
 
     /**

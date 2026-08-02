@@ -11,7 +11,7 @@
  * courtesy, never the security boundary.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,14 +73,15 @@ export function AssignmentBuilder({ assignmentId, canManage }: AssignmentBuilder
   const [rubricDraft, setRubricDraft] = useState<RubricInput | null>(null);
   const [errors, setErrors] = useState<SettingsErrors>({});
   const [rubricError, setRubricError] = useState<string | undefined>();
+  const [seededFrom, setSeededFrom] = useState<unknown>(null);
 
-  // Seed local drafts once the assignment loads (and whenever it is refetched fresh).
-  useEffect(() => {
-    if (query.data) {
-      setDraft(assignmentToDraft(query.data));
-      setRubricDraft(rubricToInput(query.data.rubric));
-    }
-  }, [query.data]);
+  // Seed local drafts from the loaded assignment during render — re-seeds when a fresh fetch
+  // returns a new object — instead of in a post-render effect.
+  if (query.data && query.data !== seededFrom) {
+    setSeededFrom(query.data);
+    setDraft(assignmentToDraft(query.data));
+    setRubricDraft(rubricToInput(query.data.rubric));
+  }
 
   if (!allowed) {
     return (

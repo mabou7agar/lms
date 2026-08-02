@@ -60,7 +60,6 @@ export function collectEnvIssues(env: NodeJS.ProcessEnv = process.env): EnvIssue
     const val = env[key];
     if (val && val.trim() !== "") {
       try {
-        // eslint-disable-next-line no-new
         new URL(val);
       } catch {
         issues.push({ key, problem: "must be a valid absolute URL" });
@@ -112,7 +111,6 @@ export function validateWebEnv(
     if (throwOnError) {
       throw new Error(msg);
     }
-    // eslint-disable-next-line no-console
     console.warn(`[env] ${msg}`);
   }
   return issues;

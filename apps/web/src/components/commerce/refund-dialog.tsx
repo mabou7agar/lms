@@ -39,14 +39,18 @@ export function RefundDialog({ order, open, onClose }: RefundDialogProps) {
 
   const refundableMinor = Math.max(0, order.total_minor - (order.refunded_minor ?? 0));
 
-  // Reset the form each time the dialog is opened for a (possibly different) order.
-  useEffect(() => {
+  // Reset the form whenever the dialog opens for a (possibly different) order. Tracked during
+  // render via an open-key sentinel rather than a post-paint effect (no cascading render).
+  const openKey = open ? order.id : null;
+  const [lastOpenKey, setLastOpenKey] = useState<string | null>(null);
+  if (openKey !== lastOpenKey) {
+    setLastOpenKey(openKey);
     if (open) {
       setAmount("");
       setReason("requested_by_customer");
       setError(null);
     }
-  }, [open, order.id]);
+  }
 
   useEffect(() => {
     if (!open) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import type { NavItem } from "@/config/nav";
 import { pickLocale } from "@/config/theme";
@@ -34,11 +34,13 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
   const { t, locale } = useI18n();
   const pathname = usePathname();
 
-  // Close the mobile nav drawer on navigation — the drawer links are plain <Link>s, so without
-  // this the drawer stays open covering the page after every tap.
-  useEffect(() => {
+  // Close the mobile nav drawer on navigation — tracked during render via a pathname sentinel
+  // (the drawer links are plain <Link>s, so without this it would stay open after every tap).
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   const cms = useNavigation(location);
   const flags = useFeatureFlags();
