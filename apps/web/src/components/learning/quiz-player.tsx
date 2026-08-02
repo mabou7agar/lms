@@ -290,24 +290,32 @@ function ResultScreen({ attempt }: { attempt: Attempt }) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
-      <div className="rounded-lg border border-border p-6 text-center" role="status">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-8 text-center" role="status">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
         {attempt.status === "expired" ? (
-          <p className="mb-2 text-sm font-medium text-warning-foreground">{t("player.expired")}</p>
+          <p className="mb-3 inline-block rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-medium text-foreground">{t("player.expired")}</p>
         ) : null}
 
-        <CheckCircle2 className="mx-auto size-8 text-muted-foreground" aria-hidden />
-        <h2 className="mt-3 text-sm font-semibold">{t("player.result.title")}</h2>
+        <span
+          className={cn(
+            "mx-auto grid size-14 place-items-center rounded-2xl",
+            result?.passed === true ? "bg-primary/10 text-primary" : result?.passed === false ? "bg-destructive/10 text-destructive" : "bg-copper/10 text-copper",
+          )}
+        >
+          <CheckCircle2 className="size-7" aria-hidden />
+        </span>
+        <h2 className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("player.result.title")}</h2>
 
         {result ? (
           <>
-            <p className="mt-2 text-3xl font-semibold tabular-nums">
+            <p className="mt-2 font-serif text-5xl font-bold tabular-nums">
               {result.percentage === null ? "—" : `${result.percentage}%`}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("preview.result.score", { score: result.score ?? 0, max: result.max_score ?? 0 })}
             </p>
             {result.passed !== null ? (
-              <p className={cn("mt-2 text-sm font-medium", result.passed ? "text-success" : "text-destructive")}>
+              <p className={cn("mt-3 inline-block rounded-full px-3 py-1 text-sm font-semibold", result.passed ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>
                 {result.passed ? t("player.result.passed") : t("player.result.failed")}
               </p>
             ) : null}
@@ -319,7 +327,7 @@ function ResultScreen({ attempt }: { attempt: Attempt }) {
 
       {revealed ? (
         <section className="space-y-4" aria-label={t("player.result.review")}>
-          <h3 className="text-sm font-semibold">{t("player.result.review")}</h3>
+          <h3 className="font-serif text-lg font-semibold">{t("player.result.review")}</h3>
           {attempt.questions.map((item, i) => (
             <ReviewCard key={item.question.id} item={item} number={i + 1} />
           ))}
@@ -388,17 +396,23 @@ function StartPanel({
   const { t } = useAuthoringI18n();
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-8 text-center">
-      <p className="text-sm text-muted-foreground">{t("player.startHint")}</p>
-      <Button loading={starting} onClick={onStart}>
-        {t("player.start")}
-      </Button>
-      {error ? (
-        // Attempt limits and unpublished assessments both surface here, verbatim from the server.
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
+    <div className="mx-auto max-w-md p-4">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-8 text-center">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
+        <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-copper/10 text-copper">
+          <Flag className="size-6" aria-hidden />
+        </span>
+        <p className="text-muted-foreground">{t("player.startHint")}</p>
+        <Button className="mt-6 shine relative overflow-hidden" loading={starting} onClick={onStart}>
+          {t("player.start")}
+        </Button>
+        {error ? (
+          // Attempt limits and unpublished assessments both surface here, verbatim from the server.
+          <p role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/[0.06] px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
