@@ -17,19 +17,20 @@ export interface AuthCardProps {
 /** Centered, branded card used by all authentication pages. RTL/LTR + dark/light aware. */
 export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
   return (
-    <Card className="w-full">
-      <CardHeader className="space-y-4">
+    <Card className="w-full border-border/70 shadow-lg shadow-primary/5">
+      <CardHeader className="space-y-5">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            {siteConfig.name}
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="grid size-9 place-items-center rounded-xl bg-primary font-serif text-base font-bold text-primary-foreground shadow-sm shadow-primary/20">H</span>
+            <span className="font-serif text-lg font-semibold tracking-tight">{siteConfig.name}</span>
           </Link>
           <div className="flex items-center gap-1">
             <LangToggle />
             <ThemeToggle />
           </div>
         </div>
-        <div className="space-y-1">
-          <CardTitle>{title}</CardTitle>
+        <div className="space-y-1.5">
+          <CardTitle className="font-serif text-2xl">{title}</CardTitle>
           {subtitle ? <CardDescription>{subtitle}</CardDescription> : null}
         </div>
       </CardHeader>
