@@ -11,6 +11,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -61,6 +62,13 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->authGuard('web')
             ->brandName('HElbaron')
+            // HELBARON identity: teal primary + gold accent so the admin panel reads as the same
+            // brand as the marketing/app frontend rather than stock Filament amber.
+            ->colors([
+                'primary' => Color::hex('#2f6f66'),
+                'gray' => Color::Slate,
+            ])
+            ->sidebarCollapsibleOnDesktop()
             ->login()
             ->navigationGroups([
                 'Identity',
