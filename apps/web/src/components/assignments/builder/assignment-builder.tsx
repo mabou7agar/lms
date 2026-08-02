@@ -62,7 +62,7 @@ export function AssignmentBuilder({ assignmentId, canManage }: AssignmentBuilder
 
   const allowed = useMemo(() => {
     if (canManage !== undefined) return canManage;
-    return Boolean(user?.roles.some((r) => (ASSIGNMENT_AUTHOR_ROLES as readonly string[]).includes(r)));
+    return Boolean(user?.roles?.some((r) => (ASSIGNMENT_AUTHOR_ROLES as readonly string[]).includes(r)));
   }, [canManage, user]);
 
   const query = useAssignment(allowed ? assignmentId : null);

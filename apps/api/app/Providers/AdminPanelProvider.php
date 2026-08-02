@@ -56,16 +56,24 @@ class AdminPanelProvider extends PanelProvider
 
     public function panel(Panel $panel): Panel
     {
+        // Brand deep-teal primary. Filament pins each generated shade's lightness, so its default
+        // primary-600/700 (used for the active sidebar-item label and links) render only ~4.4:1 on
+        // the light surface — just under WCAG AA. Override those two text-facing shades with darker,
+        // in-gamut teals (≥5.3:1) so the panel is AA-clean. Provider-level; no compiled theme needed.
+        $primary = Color::hex('#275d55');
+        $primary[600] = 'oklch(0.50 0.085 183)';
+        $primary[700] = 'oklch(0.44 0.075 183)';
+
         $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->authGuard('web')
             ->brandName('HElbaron')
-            // HELBARON identity: teal primary + gold accent so the admin panel reads as the same
-            // brand as the marketing/app frontend rather than stock Filament amber.
+            // HELBARON identity: deep-teal primary (AA-tuned above) + Slate gray so the admin panel
+            // reads as the same brand as the marketing/app frontend rather than stock Filament amber.
             ->colors([
-                'primary' => Color::hex('#2f6f66'),
+                'primary' => $primary,
                 'gray' => Color::Slate,
             ])
             ->sidebarCollapsibleOnDesktop()

@@ -119,7 +119,7 @@ export function PlatformPreview({ className }: { className?: string }) {
                     <span className={`flex-1 truncate text-[0.72rem] ${active ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
                       {t(l.title, locale)}
                     </span>
-                    <span className="text-[0.6rem] tabular-nums text-muted-foreground/70">{t(l.meta, locale)}</span>
+                    <span className="text-[0.6rem] tabular-nums text-muted-foreground">{t(l.meta, locale)}</span>
                   </li>
                 );
               })}

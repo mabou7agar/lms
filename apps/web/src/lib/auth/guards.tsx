@@ -33,7 +33,7 @@ function RequireAuthInner({ children, redirectTo = "/login", roles }: { children
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const authorized = status === "authenticated" && (!roles || roles.some((r) => user?.roles.includes(r)));
+  const authorized = status === "authenticated" && (!roles || roles.some((r) => user?.roles?.includes(r)));
 
   useEffect(() => {
     if (status !== "guest") return;
