@@ -28,9 +28,19 @@ export function Hero({ content }: { content?: HeroContent }) {
 
   return (
     <section className="relative overflow-hidden border-b border-border/60">
-      {/* Layered editorial background — controlled, not a generic gradient wash */}
+      {/* Layered editorial background — controlled depth, not a generic gradient wash */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_80%_at_82%_-10%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%),radial-gradient(70%_60%_at_0%_0%,oklch(0.985_0.012_88)_0%,var(--background)_60%)]"
+        className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(90%_80%_at_82%_-10%,oklch(0.42_0.05_185/0.12)_0%,transparent_55%),radial-gradient(70%_60%_at_0%_0%,oklch(0.985_0.012_88)_0%,var(--background)_60%)]"
+        aria-hidden
+      />
+      {/* Fine dot grid, faded toward the edges */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-50 [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(70%_60%_at_50%_0%,#000_0%,transparent_75%)]"
+        aria-hidden
+      />
+      {/* Warm glow behind the product preview */}
+      <div
+        className="pointer-events-none absolute end-[-6rem] top-8 -z-10 hidden size-[34rem] rounded-full bg-copper/[0.07] blur-3xl lg:block"
         aria-hidden
       />
       <div
@@ -104,10 +114,14 @@ export function Hero({ content }: { content?: HeroContent }) {
           </dl>
         </Reveal>
 
-        {/* Right: composed real-product preview */}
+        {/* Right: composed real-product preview, in a subtle gradient frame for depth */}
         <Reveal delay={120}>
           <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-            <PlatformPreview />
+            <div className="rounded-[1.4rem] bg-gradient-to-br from-copper/25 via-border/40 to-primary/20 p-px shadow-2xl shadow-primary/10">
+              <div className="rounded-[1.35rem] bg-background/40 p-1.5 backdrop-blur-sm">
+                <PlatformPreview />
+              </div>
+            </div>
           </div>
         </Reveal>
       </div>

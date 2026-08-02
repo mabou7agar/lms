@@ -15,6 +15,15 @@ import { Hero } from "@/components/landing/hero";
 import { TrustedBy } from "@/components/landing/trusted-by";
 import { ProductModes } from "@/components/landing/product-modes";
 import { FinalCta } from "@/components/landing/final-cta";
+import {
+  ProofBand,
+  WhyHelbaron,
+  LearningExperience,
+  LearningJourney,
+  Testimonials,
+  Instructors,
+  EnterpriseTrust,
+} from "@/components/landing/home-sections";
 import { FeaturedCourses } from "@/components/marketing/featured-courses";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { BlockRenderer } from "@/components/homepage/registry";
@@ -84,9 +93,16 @@ export default async function LandingPage({
       // Built-in premium brand homepage (rendered when the CMS has no published blocks).
       <>
         <Hero />
+        <ProofBand />
         <TrustedBy />
         <ProductModes />
+        <WhyHelbaron />
+        <LearningExperience />
+        <LearningJourney />
         <FeaturedCourses />
+        <Testimonials />
+        <Instructors />
+        <EnterpriseTrust />
         <FinalCta />
       </>
     );

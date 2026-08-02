@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -9,6 +10,7 @@ import { brandTheme, pickLocale } from "@/config/theme";
 import { useBranding } from "@/lib/branding/context";
 import { useNavigation } from "@/lib/navigation/hooks";
 import { safeRel } from "@/lib/navigation/api";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { LangToggle } from "@/components/layout/lang-toggle";
@@ -18,13 +20,22 @@ export function LandingHeader() {
   const { t, locale } = useI18n();
   const { status } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
   const branding = useBranding();
   const authed = status === "authenticated";
-  // Brand name comes from the admin Branding settings; falls back to the built-in brand.
   const brandName = pickLocale(branding.identity.brand_name, locale) || brandTheme.name;
   const logo = branding.logos.logo_light;
 
-  // Prefer the admin-managed CMS header nav; fall back to the built-in brandTheme.nav.
+  // Scroll-aware elevation: the header stays airy over the hero and condenses into a solid,
+  // bordered bar once the page scrolls — a premium, less-intrusive chrome.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const cmsNav = useNavigation("public-header");
   const navLinks = cmsNav
     ? cmsNav.map((n) => ({
@@ -44,56 +55,69 @@ export function LandingHeader() {
         rel: undefined as string | undefined,
       }));
 
+  const isActive = (href: string) =>
+    !href.startsWith("http") && (pathname === href || (href !== "/" && pathname.startsWith(href)));
+
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
+    <header
+      className={cn(
+        "sticky top-0 z-40 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300",
+        scrolled
+          ? "border-b border-border/70 bg-background/80 shadow-[0_1px_0_0_var(--border)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70"
+          : "border-b border-transparent bg-background/40 backdrop-blur-sm",
+      )}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="group flex items-center gap-2.5" aria-label={brandName}>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt={brandName} width={120} height={32} className="h-8 w-auto" decoding="async" />
           ) : (
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-serif text-sm font-bold text-primary-foreground">
+            <span className="relative flex size-9 items-center justify-center rounded-xl bg-primary font-serif text-sm font-bold text-primary-foreground shadow-sm ring-1 ring-inset ring-white/10 transition-transform duration-300 group-hover:scale-105">
+              <span className="pointer-events-none absolute inset-x-1 top-1 h-1/3 rounded-t-lg bg-white/10" aria-hidden />
               {brandName.charAt(0)}
             </span>
           )}
           <span className="font-serif text-lg font-semibold tracking-tight">{brandName}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label={t("nav.primary")}>
-          {navLinks.map((l) =>
-            l.external ? (
-              <a
-                key={l.key}
-                href={l.href}
-                target={l.target ?? "_blank"}
-                rel={l.rel ?? "noopener noreferrer"}
-                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label={t("nav.primary")}>
+          {navLinks.map((l) => {
+            const active = isActive(l.href);
+            const cls = cn(
+              "relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
+              active ? "text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+            );
+            const dot = active ? (
+              <span className="pointer-events-none absolute inset-x-3.5 -bottom-px h-0.5 rounded-full bg-copper" aria-hidden />
+            ) : null;
+            return l.external ? (
+              <a key={l.key} href={l.href} target={l.target ?? "_blank"} rel={l.rel ?? "noopener noreferrer"} className={cls}>
                 {l.label}
+                {dot}
               </a>
             ) : (
-              <Link
-                key={l.key}
-                href={l.href}
-                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <Link key={l.key} href={l.href} className={cls} aria-current={active ? "page" : undefined}>
                 {l.label}
+                {dot}
               </Link>
-            ),
-          )}
+            );
+          })}
         </nav>
 
-        <div className="ms-auto flex items-center gap-1">
-          <LangToggle />
-          <ThemeToggle />
-          <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">
+        <div className="ms-auto flex items-center gap-1.5">
+          <div className="hidden items-center gap-0.5 sm:flex">
+            <LangToggle />
+            <ThemeToggle />
+          </div>
+          <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
+          <Button asChild size="sm" variant="ghost" className="hidden font-medium sm:inline-flex">
             <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
           </Button>
-          <Button asChild size="sm" className="hidden sm:inline-flex">
+          <Button asChild size="sm" className="shine relative hidden overflow-hidden shadow-sm sm:inline-flex">
             <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
           </Button>
 
-          {/* Mobile: the primary nav is hidden below lg, so surface it (and the CTAs) in a drawer. */}
           <Button
             type="button"
             size="icon"
@@ -113,7 +137,7 @@ export function LandingHeader() {
         <DrawerContent id="landing-mobile-nav" className="p-6">
           <DrawerTitle className="sr-only">{t("nav.menu")}</DrawerTitle>
           <DrawerDescription className="sr-only">{t("nav.primary")}</DrawerDescription>
-          <nav className="flex flex-col gap-1" aria-label={t("nav.primary")}>
+          <nav className="flex flex-col gap-0.5" aria-label={t("nav.primary")}>
             {navLinks.map((l) =>
               l.external ? (
                 <a
@@ -121,7 +145,7 @@ export function LandingHeader() {
                   href={l.href}
                   target={l.target ?? "_blank"}
                   rel={l.rel ?? "noopener noreferrer"}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   onClick={() => setMenuOpen(false)}
                 >
                   {l.label}
@@ -130,7 +154,7 @@ export function LandingHeader() {
                 <Link
                   key={l.key}
                   href={l.href}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   onClick={() => setMenuOpen(false)}
                 >
                   {l.label}
@@ -138,11 +162,16 @@ export function LandingHeader() {
               ),
             )}
           </nav>
+          <div className="my-4 h-px bg-border" aria-hidden />
+          <div className="flex items-center gap-2">
+            <LangToggle />
+            <ThemeToggle />
+          </div>
           <div className="mt-4 flex flex-col gap-2">
-            <Button asChild variant="ghost" onClick={() => setMenuOpen(false)}>
+            <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
               <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
             </Button>
-            <Button asChild onClick={() => setMenuOpen(false)}>
+            <Button asChild className="shine relative overflow-hidden" onClick={() => setMenuOpen(false)}>
               <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
             </Button>
           </div>
