@@ -52,19 +52,21 @@ export function LessonContent({
   if (lesson.type === "video") {
     return (
       <div className="space-y-2">
-        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-          {url ? (
-            <video
-              ref={videoRef}
-              src={url}
-              controls
-              className="size-full"
-              onLoadedMetadata={(e) => onVideoLoaded?.(e.currentTarget)}
-              onPause={(e) => onVideoPause?.(Math.floor(e.currentTarget.currentTime))}
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center text-sm text-white/70">{t("learn.lesson.noContent")}</div>
-          )}
+        <div className="rounded-2xl border border-border/70 bg-black p-1.5 shadow-xl shadow-primary/10">
+          <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+            {url ? (
+              <video
+                ref={videoRef}
+                src={url}
+                controls
+                className="size-full"
+                onLoadedMetadata={(e) => onVideoLoaded?.(e.currentTarget)}
+                onPause={(e) => onVideoPause?.(Math.floor(e.currentTarget.currentTime))}
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center text-sm text-white/70">{t("learn.lesson.noContent")}</div>
+            )}
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">{t("learn.lesson.videoNote")}</p>
       </div>

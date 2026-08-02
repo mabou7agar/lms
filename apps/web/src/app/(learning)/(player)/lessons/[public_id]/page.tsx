@@ -98,7 +98,7 @@ function LessonInner() {
         onVideoPause={(seconds) => progress.mutate({ status: "in_progress", position_seconds: seconds })}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
         <div className="flex gap-2">
           {lesson.navigation.previous ? (
             <Button asChild variant="outline">
@@ -115,14 +115,16 @@ function LessonInner() {
             </Button>
           ) : null}
         </div>
-        <Button onClick={markComplete} loading={progress.isPending} disabled={done} variant={done ? "outline" : "default"}>
+        <Button onClick={markComplete} loading={progress.isPending} disabled={done} variant={done ? "outline" : "default"} className={done ? undefined : "shine relative overflow-hidden"}>
           <Check className="size-4" aria-hidden /> {done ? t("learn.lesson.completed") : t("learn.lesson.markComplete")}
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-border/70">
         <CardHeader>
-          <CardTitle className="text-base">{t("learn.lesson.notes")}</CardTitle>
+          <CardTitle className="flex items-center gap-2 font-serif text-lg">
+            <Bookmark className="size-4 text-copper" aria-hidden /> {t("learn.lesson.notes")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Textarea
