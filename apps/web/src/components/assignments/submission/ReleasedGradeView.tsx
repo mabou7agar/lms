@@ -45,7 +45,7 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
   const grade = submission.grade;
   if (!grade) {
     return (
-      <p data-testid="grade-pending" className="text-sm text-slate-500">
+      <p data-testid="grade-pending" className="text-sm text-muted-foreground">
         {t('assignments.submission.grade.pending', 'Your grade has not been released yet.')}
       </p>
     );
@@ -55,16 +55,16 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
   const passed = grade.passed;
 
   return (
-    <section data-testid="released-grade" className="space-y-4 rounded-lg border border-slate-200 p-4">
+    <section data-testid="released-grade" className="space-y-4 rounded-2xl border border-border/70 bg-card p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="font-serif text-lg font-semibold">
           {t('assignments.submission.grade.title', 'Your grade')}
         </h3>
         {passed != null && (
           <span
             data-testid="grade-passed"
             data-passed={passed}
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${passed ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}
           >
             {passed
               ? t('assignments.submission.grade.passed', 'Passed')
@@ -74,11 +74,11 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
       </div>
 
       {grade.score != null && (
-        <p data-testid="grade-score" className="text-2xl font-bold text-slate-900">
+        <p data-testid="grade-score" className="font-serif text-4xl font-bold tabular-nums">
           {grade.score}
-          {maxGrade != null && <span className="text-base font-normal text-slate-500"> / {maxGrade}</span>}
+          {maxGrade != null && <span className="text-lg font-normal text-muted-foreground"> / {maxGrade}</span>}
           {passingGrade != null && (
-            <span className="ms-2 text-xs font-normal text-slate-400">
+            <span className="ms-2 text-xs font-normal text-muted-foreground">
               {t('assignments.submission.grade.passMark', `Pass mark ${passingGrade}`)}
             </span>
           )}
@@ -88,30 +88,30 @@ export function ReleasedGradeView({ submission, maxGrade, passingGrade }: Releas
       {rows.length > 0 && (
         <div data-testid="grade-rubric" className="space-y-2">
           {rows.map((row, i) => (
-            <div key={i} className="rounded-md border border-slate-100 bg-slate-50 p-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-700">{row.criterionTitle}</span>
-                <span className="text-slate-600">
+            <div key={i} className="rounded-xl border border-border/60 bg-surface/40 p-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">{row.criterionTitle}</span>
+                <span className="text-muted-foreground">
                   {row.levelTitle ?? '—'}
                   {row.points != null && (
-                    <span className="ms-1 font-semibold">
+                    <span className="ms-1 font-semibold text-copper">
                       ({row.points}/{row.maxPoints})
                     </span>
                   )}
                 </span>
               </div>
-              {row.comment && <p className="mt-1 text-xs text-slate-500">{row.comment}</p>}
+              {row.comment && <p className="mt-1 text-xs text-muted-foreground">{row.comment}</p>}
             </div>
           ))}
         </div>
       )}
 
       {grade.feedback && (
-        <div data-testid="grade-feedback">
-          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div data-testid="grade-feedback" className="rounded-xl border border-border/60 bg-surface/40 p-3">
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-copper">
             {t('assignments.submission.grade.feedback', 'Feedback')}
           </h4>
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{grade.feedback}</p>
+          <p className="whitespace-pre-wrap text-sm text-foreground">{grade.feedback}</p>
         </div>
       )}
     </section>

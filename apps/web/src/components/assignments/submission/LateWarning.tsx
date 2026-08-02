@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { useAssignmentsI18n } from '@/lib/assignments/assignments-i18n';
 import type { LatePolicy } from './types';
 import { isPastDue } from './utils';
@@ -42,11 +43,9 @@ export function LateWarning({
       role="alert"
       data-testid="late-warning"
       data-late-policy={latePolicy}
-      className={`flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 ${className ?? ''}`}
+      className={`flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/[0.08] p-4 text-sm text-foreground ${className ?? ''}`}
     >
-      <span aria-hidden className="mt-0.5">
-        ⚠️
-      </span>
+      <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-gold" />
       <span>{message}</span>
     </div>
   );

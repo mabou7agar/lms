@@ -4,12 +4,12 @@ import { useAssignmentsI18n } from '@/lib/assignments/assignments-i18n';
 import type { SubmissionStatus } from './types';
 
 const STYLES: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700',
-  submitted: 'bg-blue-100 text-blue-700',
-  under_review: 'bg-indigo-100 text-indigo-700',
-  changes_requested: 'bg-amber-100 text-amber-800',
-  graded: 'bg-violet-100 text-violet-700',
-  released: 'bg-green-100 text-green-700',
+  draft: 'bg-muted text-muted-foreground',
+  submitted: 'bg-primary/10 text-primary',
+  under_review: 'bg-primary/10 text-primary',
+  changes_requested: 'bg-gold/15 text-foreground',
+  graded: 'bg-copper/10 text-copper',
+  released: 'bg-primary/10 text-primary',
 };
 
 const DEFAULT_LABELS: Record<string, string> = {
@@ -23,7 +23,7 @@ const DEFAULT_LABELS: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: SubmissionStatus }) {
   const { t } = useAssignmentsI18n();
-  const cls = STYLES[status] ?? 'bg-slate-100 text-slate-700';
+  const cls = STYLES[status] ?? 'bg-muted text-muted-foreground';
   const label = t(`assignments.status.${status}`, DEFAULT_LABELS[status] ?? status);
   return (
     <span
