@@ -13,9 +13,10 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { Hero } from "@/components/landing/hero";
 import { TrustedBy } from "@/components/landing/trusted-by";
+import { ProductModes } from "@/components/landing/product-modes";
+import { FinalCta } from "@/components/landing/final-cta";
 import { FeaturedCourses } from "@/components/marketing/featured-courses";
 import { LandingFooter } from "@/components/landing/landing-footer";
-import { FeaturesSection } from "@/components/homepage/features-section";
 import { BlockRenderer } from "@/components/homepage/registry";
 
 // The homepage is content-driven (CMS) and locale-aware (cookie), so it is rendered per-request.
@@ -75,12 +76,18 @@ export default async function LandingPage({
   // per-section switch. Unknown/unsupported block types render nothing (BlockRenderer returns null).
   const body =
     bodyBlocks.length > 0 ? (
-      bodyBlocks.map((section) => <BlockRenderer key={section.key} section={section} />)
+      <>
+        {bodyBlocks.map((section) => <BlockRenderer key={section.key} section={section} />)}
+        <FeaturedCourses />
+      </>
     ) : (
+      // Built-in premium brand homepage (rendered when the CMS has no published blocks).
       <>
         <Hero />
-        <FeaturesSection />
         <TrustedBy />
+        <ProductModes />
+        <FeaturedCourses />
+        <FinalCta />
       </>
     );
 
@@ -88,10 +95,7 @@ export default async function LandingPage({
     <>
       <AnnouncementBar />
       <LandingHeader />
-      <main id="main-content" className="flex-1">
-        {body}
-        <FeaturedCourses />
-      </main>
+      <main id="main-content" className="flex-1">{body}</main>
       <LandingFooter content={footerContent} />
     </>
   );
