@@ -140,10 +140,13 @@ function ProfileForm({ data }: { data: UserProfile }) {
     );
   });
 
+  const L = (en: string, ar: string) => (locale === "ar" ? ar : en);
+
   return (
-    <Card>
+    <Card className="border-border/70">
       <CardContent className="p-6">
         <form onSubmit={onSubmit} className="space-y-4">
+          <h2 className="font-serif text-lg font-semibold">{L("Personal details", "البيانات الشخصية")}</h2>
           <Field id="name" label={t("student.profile.name")}>
             <Input id="name" {...register("name")} />
           </Field>
@@ -186,13 +189,16 @@ function ProfileForm({ data }: { data: UserProfile }) {
               <Input id="city" {...register("city")} />
             </Field>
           </div>
-          <Field id="locale" label={t("student.profile.language")}>
-            <select id="locale" className={controlClass} {...register("locale")}>
-              <option value="en">English</option>
-              <option value="ar">العربية</option>
-            </select>
-          </Field>
-          <Button type="submit" loading={update.isPending}>
+          <div className="border-t border-border/60 pt-4">
+            <h2 className="mb-4 font-serif text-lg font-semibold">{L("Preferences", "التفضيلات")}</h2>
+            <Field id="locale" label={t("student.profile.language")}>
+              <select id="locale" className={controlClass} {...register("locale")}>
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+              </select>
+            </Field>
+          </div>
+          <Button type="submit" loading={update.isPending} className="shine relative overflow-hidden">
             {t("student.profile.save")}
           </Button>
         </form>
