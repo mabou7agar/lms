@@ -3,7 +3,11 @@ import { screen } from "@testing-library/react";
 import { renderWithI18n } from "../render";
 
 const { useCourses, useCategories } = vi.hoisted(() => ({ useCourses: vi.fn(), useCategories: vi.fn() }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), prefetch: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/courses",
+}));
 vi.mock("@/lib/catalog/hooks", () => ({ useCourses, useCategories }));
 
 import CoursesPage from "@/app/(marketing)/(site)/courses/page";
