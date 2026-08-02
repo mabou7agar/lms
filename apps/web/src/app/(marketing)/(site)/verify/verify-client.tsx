@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { BadgeCheck, Search, ShieldX } from "lucide-react";
+import { BadgeCheck, Search, ShieldX, ShieldCheck, FileCheck2, Clock } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { ApiRequestError } from "@/lib/api/client";
 import { errorMessage } from "@/lib/api/errors";
@@ -116,39 +116,63 @@ export function VerifyClient() {
     if (next) router.push(`/verify/${encodeURIComponent(next)}`);
   };
 
+  const L = (en: string, ar: string) => (locale === "ar" ? ar : en);
+  const trust = [
+    { icon: ShieldCheck, label: L("Tamper-proof record", "سجل غير قابل للتلاعب") },
+    { icon: FileCheck2, label: L("Official issuer of record", "جهة إصدار رسمية") },
+    { icon: Clock, label: L("Instant confirmation", "تأكيد فوري") },
+  ];
+
   return (
-    <Reveal className="mx-auto max-w-2xl py-6">
-      <div className="mb-3 inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-copper">
-        <span className="h-px w-8 bg-copper/50" aria-hidden />
-        {t("verify.eyebrow")}
-      </div>
-      <h1 className="font-serif text-3xl font-semibold leading-[1.05] tracking-tight sm:text-4xl">
-        {t("verify.title")} <span className="italic text-copper">{t("verify.emphasis")}</span>
-      </h1>
-      <p className="mt-4 text-muted-foreground">{t("verify.subtitle")}</p>
+    <div className="mx-auto max-w-2xl py-6">
+      <Reveal as="section" className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-8 sm:p-10">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_120%_at_100%_-15%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(80%_80%_at_100%_0%,#000_0%,transparent_75%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
+
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-copper/25 bg-copper/[0.06] ps-2 pe-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-copper">
+          <span className="grid size-4 place-items-center rounded-full bg-copper/15">
+            <BadgeCheck className="size-2.5" aria-hidden />
+          </span>
+          {t("verify.eyebrow")}
+        </div>
+        <h1 className="text-h1 font-serif leading-[1.05] tracking-tight">
+          {t("verify.title")} <span className="italic text-copper">{t("verify.emphasis")}</span>
+        </h1>
+        <p className="mt-4 text-muted-foreground">{t("verify.subtitle")}</p>
+
+        <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-muted-foreground" aria-hidden />
+            <Input
+              className="ps-9"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t("verify.codePlaceholder")}
+              aria-label={t("verify.codeLabel")}
+              dir={locale === "ar" ? "rtl" : "ltr"}
+            />
+          </div>
+          <Button type="submit" disabled={!input.trim()} className="shine relative overflow-hidden">
+            {code ? t("verify.verifyAnother") : t("verify.submit")}
+          </Button>
+        </form>
+
+        <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 border-t border-border/60 pt-5 text-sm text-muted-foreground">
+          {trust.map((item) => (
+            <li key={item.label} className="flex items-center gap-2">
+              <item.icon className="size-4 text-copper" aria-hidden />
+              {item.label}
+            </li>
+          ))}
+        </ul>
+      </Reveal>
 
       {code ? (
         <div className="mt-8">
           <VerifyResult code={code} />
         </div>
       ) : null}
-
-      <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-muted-foreground" aria-hidden />
-          <Input
-            className="ps-9"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t("verify.codePlaceholder")}
-            aria-label={t("verify.codeLabel")}
-            dir={locale === "ar" ? "rtl" : "ltr"}
-          />
-        </div>
-        <Button type="submit" disabled={!input.trim()}>
-          {code ? t("verify.verifyAnother") : t("verify.submit")}
-        </Button>
-      </form>
-    </Reveal>
+    </div>
   );
 }

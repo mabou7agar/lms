@@ -51,20 +51,24 @@ export function ContentPage({ eyebrow, title, emphasis, subtitle, ctas, cards, s
       {/* Hero */}
       <Reveal
         as="section"
-        className="overflow-hidden rounded-3xl border bg-[radial-gradient(130%_150%_at_100%_0%,oklch(0.985_0.012_88)_0%,var(--card)_58%)] p-8 sm:p-10"
+        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-8 sm:p-12"
       >
-        <div className="mb-3 inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-copper">
-          <span className="h-px w-8 bg-copper/50" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_120%_at_100%_-15%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(80%_80%_at_100%_0%,#000_0%,transparent_75%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
+
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-copper/25 bg-copper/[0.06] ps-2 pe-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-copper">
+          <span className="size-1.5 rounded-full bg-copper" aria-hidden />
           {pickLocale(eyebrow, locale)}
         </div>
-        <h1 className="max-w-3xl font-serif text-3xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+        <h1 className="max-w-3xl text-display font-serif leading-[1.05] tracking-tight">
           {pickLocale(title, locale)} <span className="italic text-copper">{pickLocale(emphasis, locale)}</span>
         </h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground sm:text-lg">{pickLocale(subtitle, locale)}</p>
+        <p className="mt-5 max-w-2xl text-muted-foreground sm:text-lg">{pickLocale(subtitle, locale)}</p>
         {ctas && ctas.length > 0 ? (
           <div className="mt-8 flex flex-wrap gap-3">
             {ctas.map((c, i) => (
-              <Button key={c.href} asChild size="lg" variant={i === 0 ? "default" : "outline"}>
+              <Button key={c.href} asChild size="lg" variant={i === 0 ? "default" : "outline"} className={i === 0 ? "shine relative overflow-hidden" : undefined}>
                 <Link href={c.href}>
                   {pickLocale(c.label, locale)}
                   {i === 0 ? <ArrowRight className="size-4 rtl:rotate-180" aria-hidden /> : null}

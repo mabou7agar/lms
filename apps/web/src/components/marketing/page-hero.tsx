@@ -13,6 +13,11 @@ const ICONS: Record<string, LucideIcon> = {
   GraduationCap, LayoutGrid, Users, Tag, ShoppingCart, Receipt, FileSignature,
 };
 
+/**
+ * Shared premium hero for public marketing/utility pages (categories, trainers, events, pricing,
+ * about, contact, …). Matches the V2 visual system: dot-grid depth, copper eyebrow, serif display,
+ * optional stat. RTL-safe (logical properties), reduced-motion safe.
+ */
 export function PageHero({ page }: { page: keyof typeof pageHeroes }) {
   const { locale } = useI18n();
   const h = pageHeroes[page];
@@ -21,32 +26,35 @@ export function PageHero({ page }: { page: keyof typeof pageHeroes }) {
   return (
     <Reveal
       as="section"
-      className="mb-10 overflow-hidden rounded-3xl border bg-[radial-gradient(130%_150%_at_100%_0%,oklch(0.985_0.012_88)_0%,var(--card)_58%)] p-8 sm:p-10"
+      className="relative mb-10 overflow-hidden rounded-3xl border border-border/70 bg-card"
     >
-      <div className="relative grid items-center gap-6 lg:grid-cols-[1.7fr_1fr]">
-        <div className="pointer-events-none absolute -end-10 -top-14 -z-0 size-56 rounded-full bg-primary/[0.06] blur-2xl" aria-hidden />
-        <div className="relative">
-          <div className="mb-3 inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-copper">
-            <span className="h-px w-8 bg-copper/50" aria-hidden />
+      {/* Layered editorial depth */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_120%_at_100%_-20%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%)]" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(80%_80%_at_100%_0%,#000_0%,transparent_75%)]" aria-hidden />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
+
+      <div className="relative grid items-center gap-6 p-8 sm:p-10 lg:grid-cols-[1.7fr_1fr]">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-copper/25 bg-copper/[0.06] ps-2 pe-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-copper">
+            <span className="grid size-4 place-items-center rounded-full bg-copper/15">
+              <Icon className="size-2.5" aria-hidden />
+            </span>
             {pickLocale(h.eyebrow, locale)}
           </div>
-          <h1 className="font-serif text-3xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+          <h1 className="text-h1 font-serif tracking-tight">
             {pickLocale(h.title, locale)} <span className="italic text-copper">{pickLocale(h.emphasis, locale)}</span>
           </h1>
           <p className="mt-4 max-w-xl text-muted-foreground">{pickLocale(h.subtitle, locale)}</p>
         </div>
 
-        <div className="hidden min-w-0 shrink-0 items-center justify-self-end gap-4 lg:flex">
-          {h.stat ? (
-            <div className="whitespace-nowrap rounded-2xl border bg-background/70 px-5 py-4 text-center shadow-sm backdrop-blur">
-              <div className="font-serif text-3xl font-semibold text-primary">{h.stat.value}</div>
-              <div className="text-xs text-muted-foreground">{pickLocale(h.stat.label, locale)}</div>
+        {h.stat ? (
+          <div className="hidden justify-self-end lg:block">
+            <div className="rounded-2xl border border-border/70 bg-surface/60 px-6 py-5 text-center shadow-sm">
+              <div className="font-serif text-4xl font-bold text-primary">{h.stat.value}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{pickLocale(h.stat.label, locale)}</div>
             </div>
-          ) : null}
-          <span className="flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-[oklch(0.30_0.04_190)] text-primary-foreground shadow-lg shadow-primary/20 animate-float-slow">
-            <Icon className="size-9" aria-hidden />
-          </span>
-        </div>
+          </div>
+        ) : null}
       </div>
     </Reveal>
   );

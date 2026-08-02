@@ -21,6 +21,7 @@ describe("CourseDetailsPage", () => {
     });
     renderWithI18n(<CourseDetailsPage />);
     expect(screen.getByRole("heading", { name: "Deep Dive" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sign in to enroll" })).toBeInTheDocument();
+    // Redesign exposes the guest CTA in both the desktop sticky panel and the mobile bottom bar.
+    expect(screen.getAllByRole("link", { name: "Sign in to enroll" }).length).toBeGreaterThan(0);
   });
 });
