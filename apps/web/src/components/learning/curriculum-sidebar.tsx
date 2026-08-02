@@ -20,13 +20,13 @@ export function CurriculumSidebar({ sections, activeLessonId }: { sections: Lear
               const body = (
                 <span
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-2 text-sm",
-                    active && "bg-accent text-accent-foreground",
-                    lesson.locked ? "text-muted-foreground" : "hover:bg-accent hover:text-accent-foreground",
-                    lesson.completed && !active && "text-muted-foreground",
+                    "relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors",
+                    active ? "bg-copper/[0.08] font-medium text-foreground" : "text-muted-foreground",
+                    lesson.locked ? "" : "hover:bg-accent/60 hover:text-foreground",
                   )}
                 >
-                  <Icon className={cn("size-4 shrink-0", lesson.completed && "text-success")} aria-hidden />
+                  {active ? <span className="absolute inset-y-2 start-0 w-[3px] rounded-full bg-copper" aria-hidden /> : null}
+                  <Icon className={cn("size-4 shrink-0", lesson.completed ? "text-primary" : active ? "text-copper" : "text-muted-foreground")} aria-hidden />
                   <span className="line-clamp-1 flex-1">{lesson.title}</span>
                   {lesson.is_preview && lesson.locked ? (
                     <span className="text-[10px] uppercase text-muted-foreground">{t("learn.preview")}</span>

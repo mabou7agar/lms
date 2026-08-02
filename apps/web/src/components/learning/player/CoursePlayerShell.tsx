@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { Menu } from 'lucide-react';
 import { Button, Drawer, Spinner } from '@/components/ui';
 import { flattenLessons, isLessonNavigable } from '@/lib/learning/player-api';
 import { useCurriculum, useProgressSummary } from '@/lib/learning/player-hooks';
@@ -99,9 +100,10 @@ function CoursePlayerShellInner({
 
   return (
     <div dir={dir} className="mx-auto max-w-6xl" data-testid="course-player">
-      <header className="flex items-center justify-between gap-4 border-b border-neutral-200 p-4">
+      <header className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-card px-5 py-4">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold">{curriculum.data.course.title}</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-copper">{t('player.curriculum')}</p>
+          <h1 className="mt-0.5 truncate font-serif text-2xl font-semibold tracking-tight">{curriculum.data.course.title}</h1>
         </div>
         <Button
           variant="ghost"
@@ -110,11 +112,11 @@ function CoursePlayerShellInner({
           aria-label={t('player.openMenu')}
           data-testid="open-curriculum"
         >
-          ☰
+          <Menu aria-hidden className="size-5" />
         </Button>
       </header>
 
-      <div className="p-4">
+      <div className="pt-4">
         <ProgressDisplay
           progressPercentage={progressPercentage}
           completedLessons={summary.data?.completed_lessons}
@@ -125,7 +127,7 @@ function CoursePlayerShellInner({
         />
       </div>
 
-      <div className="grid gap-6 p-4 lg:grid-cols-[18rem_1fr]">
+      <div className="grid gap-6 pt-6 lg:grid-cols-[19rem_1fr]">
         {/* Persistent sidebar on large screens */}
         <aside className="hidden lg:block" data-testid="sidebar-desktop">
           {sidebar}
@@ -141,7 +143,7 @@ function CoursePlayerShellInner({
           {sidebar}
         </Drawer>
 
-        <main data-testid="lesson-panel">
+        <main data-testid="lesson-panel" className="min-w-0 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
           {activeLessonId ? (
             <LessonView
               courseId={courseId}

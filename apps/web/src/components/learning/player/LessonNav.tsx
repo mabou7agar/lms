@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui';
 import {
   flattenLessons,
@@ -40,9 +41,7 @@ export function LessonNav({
         onClick={() => prev && onNavigate(prev.id)}
         data-testid="nav-previous"
       >
-        <span aria-hidden className="rtl:rotate-180">
-          ←
-        </span>{' '}
+        <ArrowLeft aria-hidden className="size-4 rtl:rotate-180" />
         {t('player.previous')}
       </Button>
       <Button
@@ -51,10 +50,8 @@ export function LessonNav({
         onClick={() => next && onNavigate(next.id)}
         data-testid="nav-next"
       >
-        {t('player.next')}{' '}
-        <span aria-hidden className="rtl:rotate-180">
-          →
-        </span>
+        {t('player.next')}
+        <ArrowRight aria-hidden className="size-4 rtl:rotate-180" />
       </Button>
     </nav>
   );

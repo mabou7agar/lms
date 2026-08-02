@@ -62,11 +62,11 @@ export function CompletionControls({
 
   return (
     <div className="space-y-2" data-testid="completion-controls">
-      <Button variant="primary" onClick={onClick} disabled={mutation.isPending}>
+      <Button variant="primary" onClick={onClick} disabled={mutation.isPending} className="shine relative overflow-hidden">
         {mutation.isPending ? t('player.markingComplete') : t('player.markComplete')}
       </Button>
       {blocked ? (
-        <p role="alert" className="text-sm text-amber-700" data-testid="completion-blocked">
+        <p role="alert" className="rounded-lg border border-gold/30 bg-gold/10 px-3 py-2 text-sm text-foreground" data-testid="completion-blocked">
           {t('player.completionBlocked')}
         </p>
       ) : null}

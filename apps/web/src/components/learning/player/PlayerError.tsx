@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useLearningPlayerI18n } from '@/lib/learning/player-i18n';
 
@@ -20,12 +21,17 @@ export function PlayerError({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-900"
+      className="flex flex-col items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/[0.06] p-6 text-sm text-foreground"
       data-testid="player-error"
     >
-      <div>
-        <p className="font-semibold">{t('player.error.title')}</p>
-        <p className="mt-1">{message ?? t('player.error.curriculum')}</p>
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
+          <AlertTriangle aria-hidden className="size-5" />
+        </span>
+        <div>
+          <p className="font-serif text-base font-semibold">{t('player.error.title')}</p>
+          <p className="mt-1 text-muted-foreground">{message ?? t('player.error.curriculum')}</p>
+        </div>
       </div>
       {onRetry ? (
         <Button variant="secondary" onClick={onRetry} disabled={isRetrying}>

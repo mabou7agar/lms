@@ -1,5 +1,6 @@
 'use client';
 
+import { Lock } from 'lucide-react';
 import type { LessonLockReason, RuntimeLesson } from '@/lib/learning/player-api';
 import { useLearningPlayerI18n, type TranslateFn } from '@/lib/learning/player-i18n';
 
@@ -44,11 +45,16 @@ export function LockedLessonNotice({ lesson }: { lesson: RuntimeLesson }): React
   return (
     <div
       role="note"
-      className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900"
+      className="flex items-start gap-3 rounded-2xl border border-gold/30 bg-gold/[0.08] p-6 text-sm text-foreground"
       data-testid="locked-lesson-notice"
     >
-      <p className="font-medium">{t('player.locked')}</p>
-      <p className="mt-1">{lockReasonText(t, lesson.lock_reason, lesson.available_at, locale)}</p>
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
+        <Lock aria-hidden className="size-5" />
+      </span>
+      <div>
+        <p className="font-serif text-base font-medium">{t('player.locked')}</p>
+        <p className="mt-1 text-muted-foreground">{lockReasonText(t, lesson.lock_reason, lesson.available_at, locale)}</p>
+      </div>
     </div>
   );
 }

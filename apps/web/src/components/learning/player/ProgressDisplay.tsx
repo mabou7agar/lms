@@ -1,5 +1,6 @@
 'use client';
 
+import { CheckCircle2, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useLearningPlayerI18n } from '@/lib/learning/player-i18n';
 
@@ -31,37 +32,52 @@ export function ProgressDisplay({
   const percent = clampPercent(progressPercentage);
 
   return (
-    <section aria-label={t('player.progress', { percent })} data-testid="progress-display">
+    <section
+      aria-label={t('player.progress', { percent })}
+      data-testid="progress-display"
+      className="rounded-2xl border border-border/70 bg-card p-5"
+    >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium">
-            {courseCompleted ? t('player.courseComplete') : t('player.progress', { percent })}
+          <p className="flex items-center gap-2 text-sm font-medium">
+            {courseCompleted ? (
+              <>
+                <CheckCircle2 aria-hidden className="size-4 text-primary" />
+                {t('player.courseComplete')}
+              </>
+            ) : (
+              t('player.progress', { percent })
+            )}
           </p>
           {typeof completedLessons === 'number' && typeof totalLessons === 'number' ? (
-            <p className="text-xs text-neutral-500">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {t('player.progressLessons', { completed: completedLessons, total: totalLessons })}
             </p>
           ) : null}
         </div>
-        {resumeLessonId && onResume ? (
-          <Button
-            variant="primary"
-            onClick={() => onResume(resumeLessonId)}
-            data-testid="resume-button"
-          >
-            {resumeTitle ? t('player.resumeTo', { title: resumeTitle }) : t('player.resume')}
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-3">
+          <span className="font-serif text-2xl font-bold tabular-nums text-copper">{percent}%</span>
+          {resumeLessonId && onResume ? (
+            <Button
+              variant="primary"
+              onClick={() => onResume(resumeLessonId)}
+              data-testid="resume-button"
+            >
+              <PlayCircle aria-hidden className="size-4" />
+              {resumeTitle ? t('player.resumeTo', { title: resumeTitle }) : t('player.resume')}
+            </Button>
+          ) : null}
+        </div>
       </div>
       <div
-        className="mt-2 h-2 w-full overflow-hidden rounded-full bg-neutral-200"
+        className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-surface"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
       >
         <div
-          className="h-full rounded-full bg-emerald-500 transition-[width] motion-reduce:transition-none"
+          className="h-full rounded-full bg-gradient-to-r from-copper to-primary transition-[width] duration-500 motion-reduce:transition-none"
           style={{ width: `${percent}%` }}
         />
       </div>

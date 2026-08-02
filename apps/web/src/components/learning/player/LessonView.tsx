@@ -62,7 +62,7 @@ export function LessonView({
   if (lesson && locked) {
     return (
       <div className="space-y-6" data-testid="lesson-view-locked">
-        <h2 className="text-lg font-semibold">{lesson.title}</h2>
+        <h2 className="font-serif text-xl font-semibold tracking-tight">{lesson.title}</h2>
         <LockedLessonNotice lesson={lesson} />
         <LessonNav curriculum={curriculum} currentLessonId={lessonId} onNavigate={onNavigate} />
       </div>
@@ -71,7 +71,7 @@ export function LessonView({
 
   return (
     <article className="space-y-6" data-testid="lesson-view">
-      <h2 className="text-lg font-semibold">{lesson?.title ?? content.data?.title ?? ''}</h2>
+      <h2 className="font-serif text-xl font-semibold tracking-tight">{lesson?.title ?? content.data?.title ?? ''}</h2>
 
       {content.isLoading ? (
         <div className="space-y-3" data-testid="lesson-loading">
@@ -123,7 +123,9 @@ export function LessonView({
         />
       ) : null}
 
-      <LessonNav curriculum={curriculum} currentLessonId={lessonId} onNavigate={onNavigate} />
+      <div className="border-t border-border/60 pt-5">
+        <LessonNav curriculum={curriculum} currentLessonId={lessonId} onNavigate={onNavigate} />
+      </div>
     </article>
   );
 }
