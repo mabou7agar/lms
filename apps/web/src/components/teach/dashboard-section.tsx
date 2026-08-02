@@ -29,7 +29,7 @@ export function DashboardSection({ title, id, action, children }: DashboardSecti
   return (
     <section aria-labelledby={headingId} className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={headingId} className="text-lg font-semibold">
+        <h2 id={headingId} className="font-serif text-xl font-semibold tracking-tight">
           {title}
         </h2>
         {action}

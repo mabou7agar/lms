@@ -22,14 +22,14 @@ export function GradebookTable({ rows, onOpenLearner }: GradebookTableProps) {
   const columns = deriveColumns(rows);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200" data-testid="gb-table-scroll">
+    <div className="overflow-x-auto rounded-lg border border-border" data-testid="gb-table-scroll">
       <table className="min-w-full border-collapse text-start" data-testid="gb-table">
         <caption className="sr-only">{t('page.title')}</caption>
         <thead>
-          <tr className="bg-gray-50">
+          <tr className="bg-surface/40">
             <th
               scope="col"
-              className="sticky start-0 z-20 bg-gray-50 px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-gray-600"
+              className="sticky start-0 z-20 bg-surface/40 px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
               {t('column.learner')}
             </th>
@@ -37,10 +37,10 @@ export function GradebookTable({ rows, onOpenLearner }: GradebookTableProps) {
               <th
                 key={`${col.type}:${col.ref}`}
                 scope="col"
-                className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold text-gray-600"
+                className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold text-muted-foreground"
                 data-testid={`gb-col-${col.ref}`}
               >
-                <span className="block text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   {t(`colType.${col.type}`)}
                 </span>
                 {col.title}
@@ -48,7 +48,7 @@ export function GradebookTable({ rows, onOpenLearner }: GradebookTableProps) {
             ))}
             <th
               scope="col"
-              className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-gray-600"
+              className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
               {t('column.overall')}
             </th>
@@ -56,7 +56,7 @@ export function GradebookTable({ rows, onOpenLearner }: GradebookTableProps) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.user_id} className="border-t border-gray-100 hover:bg-gray-50" data-testid={`gb-row-${row.user_id}`}>
+            <tr key={row.user_id} className="border-t border-border/60 hover:bg-surface/40" data-testid={`gb-row-${row.user_id}`}>
               <th
                 scope="row"
                 className="sticky start-0 z-10 bg-white px-4 py-3 text-start align-top font-normal"
@@ -64,7 +64,7 @@ export function GradebookTable({ rows, onOpenLearner }: GradebookTableProps) {
                 <button
                   type="button"
                   onClick={() => onOpenLearner(row)}
-                  className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline"
+                  className="text-sm font-medium text-primary underline-offset-2 hover:underline"
                   aria-label={t('drawer.open')}
                   data-testid={`gb-open-${row.user_id}`}
                 >

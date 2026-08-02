@@ -154,7 +154,7 @@ function CoursePlayerShellInner({
               onLaunchAssignment={onLaunchAssignment}
             />
           ) : (
-            <p className="text-sm text-neutral-500">{t('player.loading')}</p>
+            <p className="text-sm text-muted-foreground">{t('player.loading')}</p>
           )}
         </main>
       </div>

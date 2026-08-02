@@ -14,7 +14,7 @@ export function RowSummary({ summary }: RowSummaryProps) {
   const { t } = useGradebookI18n();
   return (
     <div className="flex flex-col gap-1" data-testid="gb-row-summary">
-      <span className="text-sm font-semibold tabular-nums text-gray-900">
+      <span className="text-sm font-semibold tabular-nums text-foreground">
         {summary.average_percent === null
           ? t('summary.noAverage')
           : t('summary.average', { percent: summary.average_percent })}

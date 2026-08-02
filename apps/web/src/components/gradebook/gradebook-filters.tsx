@@ -18,10 +18,10 @@ export function GradebookFilters({ only, perPage, onOnlyChange, onPerPageChange 
 
   return (
     <div className="flex flex-wrap items-end gap-4" data-testid="gb-filters">
-      <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+      <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
         {t('filter.label')}
         <select
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-md border border-border px-3 py-2 text-sm"
           value={only ?? 'all'}
           onChange={(event) => {
             const value = event.target.value;
@@ -35,10 +35,10 @@ export function GradebookFilters({ only, perPage, onOnlyChange, onPerPageChange 
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+      <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
         {t('perPage.label')}
         <select
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-md border border-border px-3 py-2 text-sm"
           value={perPage || GRADEBOOK_DEFAULT_PER_PAGE}
           onChange={(event) => onPerPageChange(Number(event.target.value))}
           data-testid="gb-filter-per-page"

@@ -26,7 +26,7 @@ export function GradebookPagination({ meta, onPageChange }: GradebookPaginationP
       aria-label={t('page.title')}
       data-testid="gb-pagination"
     >
-      <p className="text-sm text-gray-600" data-testid="gb-pagination-summary">
+      <p className="text-sm text-muted-foreground" data-testid="gb-pagination-summary">
         {t('pagination.summary', {
           from: meta.from ?? 0,
           to: meta.to ?? 0,

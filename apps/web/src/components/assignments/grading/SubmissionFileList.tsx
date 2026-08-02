@@ -51,22 +51,22 @@ export function SubmissionFileList({ files, resolveUrl = defaultFileUrlResolver 
 
   if (files.length === 0) {
     return (
-      <p data-testid="grader-files-empty" className="text-sm text-slate-500">
+      <p data-testid="grader-files-empty" className="text-sm text-muted-foreground">
         {t('assignments.grading.files.empty', 'No files attached.')}
       </p>
     );
   }
 
   return (
-    <ul data-testid="grader-files" className="divide-y rounded-md border border-slate-200">
+    <ul data-testid="grader-files" className="divide-y rounded-md border border-border">
       {files.map((file) => {
         const state = states[file.id] ?? 'idle';
         return (
           <li key={file.id} className="flex items-center justify-between px-3 py-2 text-sm">
-            <span className="truncate text-slate-700">{file.filename}</span>
+            <span className="truncate text-foreground">{file.filename}</span>
             <span className="flex items-center gap-2">
               {state === 'error' && (
-                <span role="alert" className="text-xs text-red-600" data-testid={`file-error-${file.id}`}>
+                <span role="alert" className="text-xs text-destructive" data-testid={`file-error-${file.id}`}>
                   {t('assignments.grading.files.error', 'Access denied')}
                 </span>
               )}
@@ -75,7 +75,7 @@ export function SubmissionFileList({ files, resolveUrl = defaultFileUrlResolver 
                 data-testid={`file-open-${file.id}`}
                 disabled={state === 'loading'}
                 onClick={() => void open(file)}
-                className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
               >
                 {state === 'loading'
                   ? t('assignments.grading.files.opening', 'Opening…')

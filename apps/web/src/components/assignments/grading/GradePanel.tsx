@@ -134,14 +134,14 @@ export function GradePanel({
 
   if (query.isLoading) {
     return (
-      <p data-testid="grade-loading" className="text-sm text-slate-500">
+      <p data-testid="grade-loading" className="text-sm text-muted-foreground">
         {t('common.loading', 'Loading…')}
       </p>
     );
   }
   if (query.isError || !submission) {
     return (
-      <p role="alert" data-testid="grade-load-error" className="text-sm text-red-600">
+      <p role="alert" data-testid="grade-load-error" className="text-sm text-destructive">
         {t('assignments.grading.loadError', 'Could not load this submission.')}
       </p>
     );
@@ -160,7 +160,7 @@ export function GradePanel({
           <div
             role="alert"
             data-testid="conflict-warning"
-            className="space-y-1 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+            className="space-y-1 rounded-md border border-destructive/30 bg-destructive/[0.06] p-3 text-sm text-destructive"
           >
             <p className="font-semibold">
               {t('assignments.grading.conflict.title', 'This submission changed elsewhere')}
@@ -177,7 +177,7 @@ export function GradePanel({
         {released && (
           <div
             data-testid="already-released"
-            className="rounded-md border border-green-300 bg-green-50 p-2 text-xs font-medium text-green-800"
+            className="rounded-md border border-primary/30 bg-primary/[0.06] p-2 text-xs font-medium text-primary"
           >
             {t('assignments.grading.released', 'This grade has been released to the learner.')}
           </div>
@@ -193,7 +193,7 @@ export function GradePanel({
           />
         ) : (
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-slate-800">
+            <span className="mb-1 block text-sm font-semibold text-foreground">
               {t('assignments.grading.score.label', 'Score')}
             </span>
             <span className="flex items-center gap-2">
@@ -205,15 +205,15 @@ export function GradePanel({
                 max={maxGrade ?? undefined}
                 disabled={busy}
                 onChange={(e) => setScore(e.target.value)}
-                className="w-28 rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-28 rounded-md border border-border p-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
               />
-              {maxGrade != null && <span className="text-sm text-slate-500">/ {maxGrade}</span>}
+              {maxGrade != null && <span className="text-sm text-muted-foreground">/ {maxGrade}</span>}
             </span>
           </label>
         )}
 
         {usesRubric && (
-          <p className="text-xs text-slate-500" data-testid="computed-score">
+          <p className="text-xs text-muted-foreground" data-testid="computed-score">
             {t(
               'assignments.grading.computedScore',
               `Computed score: ${maxGrade != null ? breakdown.scaled : breakdown.raw} / ${maxGrade ?? breakdown.outOf}`,
@@ -232,7 +232,7 @@ export function GradePanel({
         />
 
         {grade.isError && !conflict && (
-          <p role="alert" data-testid="save-error" className="text-sm text-red-600">
+          <p role="alert" data-testid="save-error" className="text-sm text-destructive">
             {t('assignments.grading.saveError', 'Could not save the grade.')}
           </p>
         )}
@@ -274,8 +274,8 @@ export function GradePanel({
         </div>
 
         {noteOpen && (
-          <div data-testid="request-changes-form" className="space-y-2 rounded-md border border-slate-200 p-3">
-            <label className="block text-sm font-medium text-slate-700">
+          <div data-testid="request-changes-form" className="space-y-2 rounded-md border border-border p-3">
+            <label className="block text-sm font-medium text-foreground">
               {t('assignments.grading.requestChanges.noteLabel', 'Note to the learner (optional)')}
             </label>
             <textarea
@@ -284,7 +284,7 @@ export function GradePanel({
               rows={3}
               maxLength={20000}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-border p-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex justify-end gap-2">
               <Button

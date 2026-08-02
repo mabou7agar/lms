@@ -67,7 +67,7 @@ export function BlockRenderer({
     <section className="space-y-2" data-testid={`block-${block.id}`} data-block-kind={block.kind}>
       {body}
       {block.required && block.completed ? (
-        <p className="text-xs text-emerald-600" data-testid={`block-done-${block.id}`}>
+        <p className="text-xs text-primary" data-testid={`block-done-${block.id}`}>
           {t('player.blockCompleted')}
         </p>
       ) : null}

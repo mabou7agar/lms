@@ -19,11 +19,11 @@ export function AssessmentLaunch({
   const { t } = useLearningPlayerI18n();
   return (
     <div
-      className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4"
+      className="flex items-center justify-between gap-4 rounded-lg border border-border p-4"
       data-testid="assessment-launch"
     >
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t('player.assessment.title')}
         </p>
         <p className="truncate font-medium">{assessment.title}</p>

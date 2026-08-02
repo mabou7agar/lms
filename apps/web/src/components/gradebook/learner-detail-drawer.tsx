@@ -37,20 +37,20 @@ export function LearnerDetailDrawer({ row, open, onOpenChange }: LearnerDetailDr
         {row ? (
           <div className="flex flex-col gap-4 px-4 pb-4" data-testid="gb-drawer-body">
             <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('drawer.overall')}</h3>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('drawer.overall')}</h3>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
                 {row.summary.average_percent === null
                   ? t('summary.noAverage')
                   : t('summary.average', { percent: row.summary.average_percent })}
               </p>
-              <div className="mt-1 flex flex-wrap gap-3 text-sm text-gray-600">
+              <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span>{t('summary.passed', { count: row.summary.passed_count })}</span>
                 <span>{t('summary.missing', { count: row.summary.missing_count })}</span>
               </div>
             </section>
 
             <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('drawer.columns')}</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('drawer.columns')}</h3>
               <ul className="mt-2 flex flex-col divide-y divide-gray-100">
                 {row.cells.map((cell, index) => (
                   <li
@@ -59,13 +59,13 @@ export function LearnerDetailDrawer({ row, open, onOpenChange }: LearnerDetailDr
                     data-testid={`gb-drawer-item-${cell.ref}`}
                   >
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                         {t(`colType.${cell.type}`)}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{cell.title}</span>
+                      <span className="text-sm font-medium text-foreground">{cell.title}</span>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-sm tabular-nums text-gray-700">
+                      <span className="text-sm tabular-nums text-foreground">
                         {cell.missing
                           ? t('cell.noScore')
                           : cell.percent !== null

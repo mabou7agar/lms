@@ -12,7 +12,7 @@ export function AudioBlock({ block }: { block: LessonBlock }): React.ReactElemen
   const { t } = useLearningPlayerI18n();
   if (!block.url) {
     return (
-      <p className="text-sm text-neutral-500" data-testid="audio-unavailable">
+      <p className="text-sm text-muted-foreground" data-testid="audio-unavailable">
         {t('player.audio.unavailable')}
       </p>
     );

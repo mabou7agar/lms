@@ -65,31 +65,31 @@ export function GradingQueue({
               aria-selected={only === f.value}
               data-testid={`queue-filter-${f.value ?? 'all'}`}
               onClick={() => changeFilter(f.value)}
-              className={`rounded-md px-3 py-1 text-sm font-medium ${only === f.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              className={`rounded-md px-3 py-1 text-sm font-medium ${only === f.value ? 'bg-primary text-white' : 'bg-muted text-foreground hover:bg-muted'}`}
             >
               {t(f.labelKey, f.fallback)}
             </button>
           ))}
         </div>
-        <span className="text-xs text-slate-500" data-testid="queue-total">
+        <span className="text-xs text-muted-foreground" data-testid="queue-total">
           {t('assignments.grading.queue.total', `${total} submission(s)`)}
         </span>
       </div>
 
       {query.isLoading ? (
-        <p data-testid="queue-loading" className="text-sm text-slate-500">
+        <p data-testid="queue-loading" className="text-sm text-muted-foreground">
           {t('common.loading', 'Loading…')}
         </p>
       ) : query.isError ? (
-        <p role="alert" data-testid="queue-error" className="text-sm text-red-600">
+        <p role="alert" data-testid="queue-error" className="text-sm text-destructive">
           {t('assignments.grading.queue.error', 'Could not load the grading queue.')}
         </p>
       ) : rows.length === 0 ? (
-        <p data-testid="queue-empty" className="text-sm text-slate-500">
+        <p data-testid="queue-empty" className="text-sm text-muted-foreground">
           {t('assignments.grading.queue.empty', 'Nothing to grade here.')}
         </p>
       ) : (
-        <ul className="divide-y rounded-md border border-slate-200" data-testid="queue-rows">
+        <ul className="divide-y rounded-md border border-border" data-testid="queue-rows">
           {rows.map((row) => {
             const selected = row.id === activeSubmissionId;
             return (
@@ -99,28 +99,28 @@ export function GradingQueue({
                   data-testid={`queue-row-${row.id}`}
                   aria-current={selected ? 'true' : undefined}
                   onClick={() => onSelect?.(row.id, row)}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-sm hover:bg-slate-50 ${selected ? 'bg-slate-50' : ''}`}
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-sm hover:bg-surface/40 ${selected ? 'bg-surface/40' : ''}`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-foreground">
                       {t('assignments.grading.queue.learner', `Learner ${row.learner_id}`)}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       #{row.attempt_no}
                     </span>
                     <StatusBadge status={row.status} />
                     {row.is_late && (
                       <span
                         data-testid={`queue-late-${row.id}`}
-                        className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800"
+                        className="rounded bg-gold/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-foreground"
                       >
                         {t('assignments.grading.queue.late', 'Late')}
                       </span>
                     )}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {row.released && row.score != null ? (
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold text-foreground">
                         {row.score}
                         {maxGrade != null ? ` / ${maxGrade}` : ''}
                       </span>
@@ -148,7 +148,7 @@ export function GradingQueue({
           >
             {t('common.prev', 'Previous')}
           </Button>
-          <span className="text-xs text-slate-500" data-testid="queue-page-indicator">
+          <span className="text-xs text-muted-foreground" data-testid="queue-page-indicator">
             {t('assignments.grading.queue.page', `Page ${current} of ${last}`)}
           </span>
           <Button

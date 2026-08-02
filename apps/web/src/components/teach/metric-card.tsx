@@ -31,10 +31,10 @@ export function MetricCard({ label, metric, format = "number", icon: Icon }: Met
   const reason = metric?.reason;
 
   return (
-    <Card className="card-hover h-full hover:border-primary/30 hover:elevation-3">
+    <Card className="group h-full border-border/70 transition-all duration-300 hover:-translate-y-0.5 hover:border-copper/30 hover:shadow-lg">
       <CardContent className="flex h-full items-start gap-4 p-5">
         {Icon ? (
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-copper/10 text-copper transition-transform duration-300 group-hover:scale-105">
             <Icon className="size-5" aria-hidden />
           </div>
         ) : null}
@@ -45,7 +45,7 @@ export function MetricCard({ label, metric, format = "number", icon: Icon }: Met
               {t("teach.metric.unavailable")}
             </p>
           ) : (
-            <p className="text-2xl font-bold tabular-nums">{formatted}</p>
+            <p className="font-serif text-3xl font-bold tabular-nums leading-none">{formatted}</p>
           )}
 
           <div className="flex items-center gap-1.5">

@@ -78,10 +78,10 @@ export function SubmissionFileUploader({
   return (
     <section data-testid="file-uploader" className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-foreground">
           {t('assignments.submission.files.title', 'Files')}
         </h3>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-muted-foreground">
           {(assignment.allowed_file_types ?? []).length > 0
             ? t(
                 'assignments.submission.files.allowed',
@@ -95,15 +95,15 @@ export function SubmissionFileUploader({
 
       {/* Already-attached draft files */}
       {attachedFiles.length > 0 && (
-        <ul data-testid="attached-files" className="divide-y rounded-md border border-slate-200">
+        <ul data-testid="attached-files" className="divide-y rounded-md border border-border">
           {attachedFiles.map((f) => (
             <li key={fileKey(f)} className="flex items-center justify-between px-3 py-2 text-sm">
-              <span className="truncate text-slate-700">{f.filename}</span>
+              <span className="truncate text-foreground">{f.filename}</span>
               <button
                 type="button"
                 disabled={disabled}
                 onClick={() => void onDetach(f)}
-                className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                className="text-xs font-medium text-destructive hover:underline disabled:opacity-50"
                 aria-label={t('assignments.submission.files.remove', 'Remove file')}
               >
                 {t('assignments.submission.files.remove', 'Remove')}
@@ -121,11 +121,11 @@ export function SubmissionFileUploader({
               key={it.localId}
               data-testid={`upload-item-${it.localId}`}
               data-stage={it.stage}
-              className="rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="rounded-md border border-border px-3 py-2 text-sm"
             >
               <div className="flex items-center justify-between">
-                <span className="truncate text-slate-700">{it.name}</span>
-                <span className="ms-2 shrink-0 text-xs text-slate-500">
+                <span className="truncate text-foreground">{it.name}</span>
+                <span className="ms-2 shrink-0 text-xs text-muted-foreground">
                   {STAGE_LABEL[it.stage]}
                 </span>
               </div>
@@ -136,31 +136,31 @@ export function SubmissionFileUploader({
                   aria-valuemax={100}
                   aria-valuenow={Math.round(it.progress * 100)}
                   data-testid={`upload-progress-${it.localId}`}
-                  className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-100"
+                  className="mt-1 h-1.5 w-full overflow-hidden rounded bg-muted"
                 >
                   <div
-                    className="h-full bg-blue-500 transition-[width]"
+                    className="h-full bg-primary transition-[width]"
                     style={{ width: `${Math.round(it.progress * 100)}%` }}
                   />
                 </div>
               )}
               {it.stage === 'error' && (
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <span role="alert" className="text-xs text-red-600">
+                  <span role="alert" className="text-xs text-destructive">
                     {it.error}
                   </span>
                   <span className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => retry(it.localId)}
-                      className="text-xs font-medium text-blue-600 hover:underline"
+                      className="text-xs font-medium text-primary hover:underline"
                     >
                       {t('assignments.submission.files.retry', 'Retry')}
                     </button>
                     <button
                       type="button"
                       onClick={() => dismiss(it.localId)}
-                      className="text-xs font-medium text-slate-500 hover:underline"
+                      className="text-xs font-medium text-muted-foreground hover:underline"
                     >
                       {t('assignments.submission.files.dismiss', 'Dismiss')}
                     </button>
@@ -195,7 +195,7 @@ export function SubmissionFileUploader({
           {t('assignments.submission.files.add', 'Add file')}
         </Button>
         {atLimit && (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             {t('assignments.submission.files.limitReached', 'Maximum number of files reached.')}
           </p>
         )}

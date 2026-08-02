@@ -73,7 +73,7 @@ export function SubmitConfirmation({
       </Button>
 
       {noAttempts && (
-        <p className="mt-1 text-xs text-slate-500" data-testid="no-attempts">
+        <p className="mt-1 text-xs text-muted-foreground" data-testid="no-attempts">
           {t('assignments.submission.noAttempts', 'You have no attempts remaining.')}
         </p>
       )}
@@ -87,10 +87,10 @@ export function SubmitConfirmation({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
         >
           <div className="w-full max-w-md space-y-4 rounded-lg bg-white p-5 shadow-xl">
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-foreground">
               {t('assignments.submission.confirm.title', 'Confirm submission')}
             </h2>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               {t(
                 'assignments.submission.confirm.body',
                 'Once submitted, your work will be sent for grading. Make sure everything is ready.',
@@ -105,7 +105,7 @@ export function SubmitConfirmation({
             />
 
             {mutation.isError && (
-              <p role="alert" className="text-sm text-red-600" data-testid="submit-error">
+              <p role="alert" className="text-sm text-destructive" data-testid="submit-error">
                 {t('assignments.submission.confirm.error', 'Submission failed. Please try again.')}
               </p>
             )}

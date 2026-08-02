@@ -59,9 +59,9 @@ export function GradebookView({ publicId }: GradebookViewProps) {
 
   if (!authorized) {
     return (
-      <section className="rounded-lg border border-gray-200 bg-white p-8 text-center" data-testid="gb-gate">
-        <h2 className="text-lg font-semibold text-gray-900">{t('gate.title')}</h2>
-        <p className="mt-1 text-sm text-gray-600">{t('gate.body')}</p>
+      <section className="rounded-lg border border-border bg-white p-8 text-center" data-testid="gb-gate">
+        <h2 className="text-lg font-semibold text-foreground">{t('gate.title')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('gate.body')}</p>
       </section>
     );
   }
@@ -83,8 +83,8 @@ export function GradebookView({ publicId }: GradebookViewProps) {
     <div className="flex flex-col gap-6" data-testid="gb-view">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">{t('page.title')}</h1>
-          <p className="mt-1 text-sm text-gray-600">{t('page.subtitle')}</p>
+          <h1 className="text-2xl font-semibold text-foreground">{t('page.title')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('page.subtitle')}</p>
         </div>
         <GradebookExportButton publicId={publicId} />
       </header>
@@ -104,22 +104,22 @@ export function GradebookView({ publicId }: GradebookViewProps) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : isError ? (
-        <section className="rounded-lg border border-red-200 bg-red-50 p-8 text-center" data-testid="gb-error">
-          <h2 className="text-lg font-semibold text-red-800">{t('state.error.title')}</h2>
-          <p className="mt-1 text-sm text-red-700">{t('state.error.body')}</p>
+        <section className="rounded-lg border border-destructive/30 bg-destructive/[0.06] p-8 text-center" data-testid="gb-error">
+          <h2 className="text-lg font-semibold text-destructive">{t('state.error.title')}</h2>
+          <p className="mt-1 text-sm text-destructive">{t('state.error.body')}</p>
           <button
             type="button"
             onClick={() => refetch()}
-            className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white"
+            className="mt-4 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white"
             data-testid="gb-retry"
           >
             {t('state.retry')}
           </button>
         </section>
       ) : !data || data.data.length === 0 ? (
-        <section className="rounded-lg border border-gray-200 bg-white p-8 text-center" data-testid="gb-empty">
-          <h2 className="text-lg font-semibold text-gray-900">{t('state.empty.title')}</h2>
-          <p className="mt-1 text-sm text-gray-600">{t('state.empty.body')}</p>
+        <section className="rounded-lg border border-border bg-white p-8 text-center" data-testid="gb-empty">
+          <h2 className="text-lg font-semibold text-foreground">{t('state.empty.title')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('state.empty.body')}</p>
         </section>
       ) : (
         <div className="flex flex-col gap-4" aria-busy={isFetching}>

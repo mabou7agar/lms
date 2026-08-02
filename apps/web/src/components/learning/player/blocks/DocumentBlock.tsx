@@ -14,7 +14,7 @@ export function DocumentBlock({ block }: { block: LessonBlock }): React.ReactEle
 
   if (!block.url) {
     return (
-      <p className="text-sm text-neutral-500" data-testid="document-unavailable">
+      <p className="text-sm text-muted-foreground" data-testid="document-unavailable">
         {label}
       </p>
     );

@@ -24,7 +24,7 @@ export function RubricGrader({ rubric, selection, onSelect, maxGrade, disabled }
   return (
     <section data-testid="rubric-grader" className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-foreground">
           {rubric.title || t('assignments.grading.rubric.title', 'Rubric')}
         </h3>
         <div
@@ -34,14 +34,14 @@ export function RubricGrader({ rubric, selection, onSelect, maxGrade, disabled }
           data-complete={breakdown.complete}
           className="text-right"
         >
-          <span className="text-lg font-bold text-slate-900">
+          <span className="text-lg font-bold text-foreground">
             {maxGrade != null ? breakdown.scaled : breakdown.raw}
           </span>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted-foreground">
             {' '}
             / {maxGrade ?? breakdown.outOf}
           </span>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-muted-foreground">
             {t(
               'assignments.grading.rubric.progress',
               `${breakdown.selectedCount}/${breakdown.criterionCount} scored`,
@@ -57,16 +57,16 @@ export function RubricGrader({ rubric, selection, onSelect, maxGrade, disabled }
             <fieldset
               key={criterion.id}
               data-testid={`criterion-${criterion.id}`}
-              className="rounded-md border border-slate-200 p-3"
+              className="rounded-md border border-border p-3"
             >
-              <legend className="flex items-center gap-2 px-1 text-sm font-medium text-slate-700">
+              <legend className="flex items-center gap-2 px-1 text-sm font-medium text-foreground">
                 {criterion.title}
-                <span className="text-xs font-normal text-slate-400">
+                <span className="text-xs font-normal text-muted-foreground">
                   ({t('assignments.grading.rubric.maxPoints', `max ${criterion.max_points}`)})
                 </span>
               </legend>
               {criterion.description && (
-                <p className="mb-2 text-xs text-slate-500">{criterion.description}</p>
+                <p className="mb-2 text-xs text-muted-foreground">{criterion.description}</p>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
                 {criterion.levels.map((level) => {
@@ -76,7 +76,7 @@ export function RubricGrader({ rubric, selection, onSelect, maxGrade, disabled }
                       key={level.id}
                       data-testid={`level-${level.id}`}
                       data-selected={active}
-                      className={`flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm ${active ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                      className={`flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm ${active ? 'border-primary bg-primary/[0.06]' : 'border-border hover:border-border'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
                     >
                       <input
                         type="radio"
@@ -88,14 +88,14 @@ export function RubricGrader({ rubric, selection, onSelect, maxGrade, disabled }
                         className="mt-0.5"
                       />
                       <span>
-                        <span className="flex items-center gap-1 font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-medium text-foreground">
                           {level.title}
-                          <span className="text-xs font-semibold text-slate-500">
+                          <span className="text-xs font-semibold text-muted-foreground">
                             {level.points}
                           </span>
                         </span>
                         {level.description && (
-                          <span className="block text-xs text-slate-500">{level.description}</span>
+                          <span className="block text-xs text-muted-foreground">{level.description}</span>
                         )}
                       </span>
                     </label>

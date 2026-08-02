@@ -77,14 +77,14 @@ export function AssignmentSubmissionPanel({
 
   if (assignmentQuery.isLoading) {
     return (
-      <p data-testid="assignment-loading" className="text-sm text-slate-500">
+      <p data-testid="assignment-loading" className="text-sm text-muted-foreground">
         {t('common.loading', 'Loading…')}
       </p>
     );
   }
   if (assignmentQuery.isError || !assignment) {
     return (
-      <p role="alert" data-testid="assignment-error" className="text-sm text-red-600">
+      <p role="alert" data-testid="assignment-error" className="text-sm text-destructive">
         {t('assignments.submission.loadError', 'Could not load this assignment.')}
       </p>
     );
@@ -100,15 +100,15 @@ export function AssignmentSubmissionPanel({
     <div data-testid="assignment-submission-panel" className="space-y-6">
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-lg font-semibold text-slate-900">{assignment.title}</h1>
+          <h1 className="text-lg font-semibold text-foreground">{assignment.title}</h1>
           <AttemptCounter attemptLimit={assignment.attempt_limit} attemptsUsed={attemptsUsed} />
-          {active && <span className="text-xs text-slate-400">·</span>}
+          {active && <span className="text-xs text-muted-foreground">·</span>}
         </div>
         {assignment.instructions && (
-          <p className="whitespace-pre-wrap text-sm text-slate-600">{assignment.instructions}</p>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assignment.instructions}</p>
         )}
         {assignment.due_at && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             {t('assignments.submission.due', `Due ${new Date(assignment.due_at).toLocaleString()}`)}
           </p>
         )}
@@ -159,14 +159,14 @@ export function AssignmentSubmissionPanel({
               now={now}
             />
             {!hasContent && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {t('assignments.submission.needContent', 'Add a response or a file before submitting.')}
               </span>
             )}
           </div>
         </div>
       ) : (
-        <p data-testid="submission-locked" className="text-sm text-slate-600">
+        <p data-testid="submission-locked" className="text-sm text-muted-foreground">
           {t('assignments.submission.locked', 'Your submission is being reviewed.')}
         </p>
       )}

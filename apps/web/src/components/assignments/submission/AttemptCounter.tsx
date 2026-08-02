@@ -28,7 +28,7 @@ export function AttemptCounter({ attemptLimit, attemptsUsed, className }: Attemp
       data-attempts-used={attemptsUsed}
       data-attempt-limit={attemptLimit ?? 'unlimited'}
       data-attempts-remaining={remaining ?? 'unlimited'}
-      className={`inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 ${className ?? ''}`}
+      className={`inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground ${className ?? ''}`}
     >
       {label}
     </span>

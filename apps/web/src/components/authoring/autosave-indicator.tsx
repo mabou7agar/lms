@@ -12,7 +12,7 @@ export function AutosaveIndicator({ status }: { status: SaveStatus }) {
     idle: { Icon: Check, text: t("builder.idle"), cls: "text-muted-foreground" },
     dirty: { Icon: CloudOff, text: t("builder.dirty"), cls: "text-muted-foreground" },
     saving: { Icon: Loader2, text: t("builder.saving"), cls: "text-muted-foreground", spin: true },
-    saved: { Icon: Check, text: t("builder.saved"), cls: "text-emerald-600 dark:text-emerald-400" },
+    saved: { Icon: Check, text: t("builder.saved"), cls: "text-primary" },
     error: { Icon: TriangleAlert, text: t("builder.error"), cls: "text-destructive" },
   };
   const { Icon, text, cls, spin } = config[status];

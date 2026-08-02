@@ -28,9 +28,9 @@ export function GradebookCellContent({ cell }: GradebookCellProps) {
   const { t } = useGradebookI18n();
   return (
     <div className="flex flex-col gap-1" data-testid={`gb-cell-${cell.ref}`}>
-      <span className="text-sm font-medium tabular-nums text-gray-900">{formatScore(cell, t)}</span>
+      <span className="text-sm font-medium tabular-nums text-foreground">{formatScore(cell, t)}</span>
       {cell.percent !== null && cell.score !== null ? (
-        <span className="text-xs text-gray-500 tabular-nums">{t('cell.percent', { percent: cell.percent })}</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{t('cell.percent', { percent: cell.percent })}</span>
       ) : null}
       <CellBadges cell={cell} />
     </div>

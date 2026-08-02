@@ -142,7 +142,7 @@ export function SignedVideoPlayer({
     <div className={className} data-testid="signed-video-player">
       {!src || playback.isLoading ? (
         <div
-          className="flex aspect-video w-full items-center justify-center rounded-lg bg-neutral-900/90"
+          className="flex aspect-video w-full items-center justify-center rounded-lg bg-black/80"
           data-testid="video-loading"
         >
           <Spinner aria-label={t('player.loading')} />

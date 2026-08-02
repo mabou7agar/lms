@@ -26,10 +26,10 @@ export function FeedbackEditor({
   return (
     <section data-testid="feedback-editor" className="space-y-4">
       <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-slate-800">
+        <span className="mb-1 block text-sm font-semibold text-foreground">
           {t('assignments.grading.feedback.label', 'Feedback for the learner')}
         </span>
-        <span className="mb-1 block text-xs text-slate-500">
+        <span className="mb-1 block text-xs text-muted-foreground">
           {t('assignments.grading.feedback.hint', 'Shared with the learner when the grade is released.')}
         </span>
         <textarea
@@ -39,21 +39,21 @@ export function FeedbackEditor({
           rows={5}
           maxLength={20000}
           onChange={(e) => onFeedbackChange(e.target.value)}
-          className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50"
+          className="w-full rounded-md border border-border p-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring disabled:bg-surface/40"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <span className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
           {t('assignments.grading.privateNotes.label', 'Private notes')}
           <span
             data-testid="private-notes-badge"
-            className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold uppercase text-white"
+            className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-white"
           >
             {t('assignments.grading.privateNotes.badge', 'Instructor only')}
           </span>
         </span>
-        <span className="mb-1 block text-xs text-slate-500">
+        <span className="mb-1 block text-xs text-muted-foreground">
           {t('assignments.grading.privateNotes.hint', 'Never shown to the learner.')}
         </span>
         <textarea
@@ -63,7 +63,7 @@ export function FeedbackEditor({
           rows={4}
           maxLength={20000}
           onChange={(e) => onPrivateNotesChange(e.target.value)}
-          className="w-full rounded-md border border-amber-300 bg-amber-50/40 p-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-slate-50"
+          className="w-full rounded-md border border-gold/30 bg-gold/10 p-2 text-sm focus:border-gold/30 focus:outline-none focus:ring-1 focus:ring-gold disabled:bg-surface/40"
         />
       </label>
     </section>

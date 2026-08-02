@@ -75,7 +75,7 @@ export function DraftEditor({
     <section data-testid="draft-editor" className="space-y-3">
       {showsText(submissionType) && (
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-slate-800">
+          <span className="mb-1 block text-sm font-semibold text-foreground">
             {t('assignments.submission.draft.responseLabel', 'Your response')}
           </span>
           <textarea
@@ -87,7 +87,7 @@ export function DraftEditor({
               setText(e.target.value);
               markDirty();
             }}
-            className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50"
+            className="w-full rounded-md border border-border p-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring disabled:bg-surface/40"
             placeholder={t('assignments.submission.draft.responsePlaceholder', 'Write your response…')}
           />
         </label>
@@ -95,7 +95,7 @@ export function DraftEditor({
 
       {showsUrl(submissionType) && (
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-slate-800">
+          <span className="mb-1 block text-sm font-semibold text-foreground">
             {t('assignments.submission.draft.urlLabel', 'Submission URL')}
           </span>
           <input
@@ -107,7 +107,7 @@ export function DraftEditor({
               setUrl(e.target.value);
               markDirty();
             }}
-            className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50"
+            className="w-full rounded-md border border-border p-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring disabled:bg-surface/40"
             placeholder="https://…"
           />
         </label>
@@ -128,12 +128,12 @@ export function DraftEditor({
             : t('assignments.submission.draft.save', 'Save draft')}
         </Button>
         {save.isError && (
-          <span role="alert" className="text-xs text-red-600" data-testid="draft-save-error">
+          <span role="alert" className="text-xs text-destructive" data-testid="draft-save-error">
             {t('assignments.submission.draft.saveError', 'Could not save draft.')}
           </span>
         )}
         {savedAt && !save.isPending && !save.isError && (
-          <span className="text-xs text-green-600" data-testid="draft-saved">
+          <span className="text-xs text-primary" data-testid="draft-saved">
             {t('assignments.submission.draft.saved', 'Draft saved')}
           </span>
         )}
