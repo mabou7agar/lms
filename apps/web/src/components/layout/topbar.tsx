@@ -21,7 +21,7 @@ export function Topbar({ onMenuClick, start, menuExpanded, menuControlsId }: Top
   const { t } = useI18n();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6" aria-label={t("nav.topbar")}>
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/70 bg-background/80 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 md:px-6" aria-label={t("nav.topbar")}>
       <div className="flex items-center gap-2">
         {onMenuClick ? (
           <Button

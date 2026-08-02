@@ -66,7 +66,7 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
           menuExpanded={open}
           menuControlsId="mobile-nav"
         />
-        <main id="main-content" className="flex-1 overflow-auto p-4 md:p-6"><PageTransition>{children}</PageTransition></main>
+        <main id="main-content" className="flex-1 overflow-auto bg-[radial-gradient(120%_80%_at_100%_0%,oklch(0.42_0.05_185/0.04)_0%,transparent_45%)] p-4 md:p-6"><PageTransition><div className="mx-auto w-full max-w-[1400px]">{children}</div></PageTransition></main>
       </div>
       {!isDesktop ? (
         <Drawer open={open} onOpenChange={setOpen}>

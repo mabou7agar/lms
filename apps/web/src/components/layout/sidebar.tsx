@@ -35,23 +35,49 @@ export function Sidebar({ items, brand = "HElbaron", className, navLabel = "Prim
       .filter((i) => !i.external && (pathname === i.href || pathname.startsWith(`${i.href}/`)))
       .reduce<string | null>((best, i) => (i.href.length > (best?.length ?? -1) ? i.href : best), null);
 
+  const mark = brand.trim().charAt(0).toUpperCase() || "H";
+
   return (
-    <aside className={cn("flex h-full w-64 flex-col border-e bg-card", className)}>
-      <div className="flex h-16 items-center px-6 text-lg font-semibold">{brand}</div>
-      <nav className="flex-1 space-y-1 px-3 py-2" aria-label={navLabel}>
+    <aside className={cn("flex h-full w-64 flex-col border-e border-border/70 bg-card", className)}>
+      {/* Brand */}
+      <div className="flex h-16 items-center gap-3 px-5">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary font-serif text-lg font-bold text-primary-foreground shadow-sm shadow-primary/20">
+          {mark}
+        </span>
+        <span className="truncate font-serif text-lg font-semibold tracking-tight">{brand}</span>
+      </div>
+      <div className="mx-5 h-px bg-gradient-to-r from-border/70 to-transparent" aria-hidden />
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label={navLabel}>
         {items.map((item) => {
           const active = !item.external && item.href === activeHref;
           const Icon = item.icon;
-          const className = cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+          const linkClass = cn(
+            "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
             active
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              ? "bg-copper/[0.08] text-foreground"
+              : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
           );
           const content = (
             <>
-              {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
-              <span>{item.label}</span>
+              {/* Active start-indicator bar (logical inset-start, RTL-safe) */}
+              <span
+                className={cn(
+                  "absolute inset-y-2 start-0 w-[3px] rounded-full bg-copper transition-opacity duration-200",
+                  active ? "opacity-100" : "opacity-0",
+                )}
+                aria-hidden
+              />
+              {Icon ? (
+                <Icon
+                  className={cn(
+                    "size-[1.15rem] shrink-0 transition-colors",
+                    active ? "text-copper" : "text-muted-foreground group-hover:text-foreground",
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              <span className="truncate">{item.label}</span>
             </>
           );
 
@@ -62,7 +88,7 @@ export function Sidebar({ items, brand = "HElbaron", className, navLabel = "Prim
               href={item.href}
               target={item.target ?? "_blank"}
               rel={item.rel ?? "noopener noreferrer"}
-              className={className}
+              className={linkClass}
             >
               {content}
             </a>
@@ -71,7 +97,7 @@ export function Sidebar({ items, brand = "HElbaron", className, navLabel = "Prim
               key={`${item.href}-${item.label}`}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={className}
+              className={linkClass}
             >
               {content}
             </Link>
