@@ -49,18 +49,19 @@ export default function CertificatesPage() {
         {(items) => (
           <div className="stagger-in grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((c) => (
-              <Card key={c.id}>
-                <CardContent className="space-y-4 p-5">
+              <Card key={c.id} className="group relative overflow-hidden border-border/70 transition-all duration-300 hover:-translate-y-0.5 hover:border-copper/30 hover:shadow-lg">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-copper via-gold to-copper" aria-hidden />
+                <CardContent className="space-y-4 p-5 pt-6">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Award className="size-5" aria-hidden />
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-copper/10 text-copper ring-1 ring-copper/20 transition-transform duration-300 group-hover:scale-105">
+                      <Award className="size-6" aria-hidden />
                     </div>
                     <Badge variant={c.status === "issued" ? "success" : "secondary"}>{c.status}</Badge>
                   </div>
                   <div className="space-y-1">
-                    <h3 className="line-clamp-2 font-semibold leading-tight">{c.course_title ?? "—"}</h3>
+                    <h3 className="line-clamp-2 font-serif text-lg font-semibold leading-tight">{c.course_title ?? "—"}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {t("student.certificates.number")} {c.number}
+                      {t("student.certificates.number")} <span className="font-medium text-foreground">{c.number}</span>
                     </p>
                     {c.issued_at ? (
                       <p className="text-xs text-muted-foreground">

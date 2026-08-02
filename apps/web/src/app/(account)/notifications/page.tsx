@@ -42,9 +42,9 @@ function PreferencesForm() {
   );
 
   return (
-    <Card>
+    <Card className="border-border/70">
       <CardHeader>
-        <CardTitle>{t("student.notifications.preferences")}</CardTitle>
+        <CardTitle className="font-serif text-lg">{t("student.notifications.preferences")}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-3">
@@ -99,9 +99,9 @@ export default function NotificationsPage() {
         {(data) => (
           <div className="space-y-3">
             {data.data.map((n) => (
-              <Card key={n.id} className={cn(!n.read && "border-primary/40")}>
+              <Card key={n.id} className={cn("border-border/70 transition-colors hover:border-copper/30", !n.read && "border-copper/30 bg-copper/[0.03]")}>
                 <CardContent className="flex items-start gap-3 p-4">
-                  {!n.read ? <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden /> : null}
+                  <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", !n.read ? "bg-copper" : "bg-border")} aria-hidden />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium">{n.title}</p>
