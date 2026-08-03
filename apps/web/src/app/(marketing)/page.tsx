@@ -27,6 +27,8 @@ import {
 import { FeaturedCourses } from "@/components/marketing/featured-courses";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { BlockRenderer } from "@/components/homepage/registry";
+import { PersonaPaths } from "@/components/landing/persona-paths";
+import { HomeAnalytics } from "@/components/landing/home-analytics";
 
 // The homepage is content-driven (CMS) and locale-aware (cookie), so it is rendered per-request.
 export const dynamic = "force-dynamic";
@@ -111,7 +113,12 @@ export default async function LandingPage({
     <>
       <AnnouncementBar />
       <LandingHeader />
-      <main id="main-content" className="flex-1">{body}</main>
+      <main id="main-content" className="flex-1">
+        {body}
+        {/* Conversion band: routes visitors to persona journeys, comparison, and pricing. */}
+        <PersonaPaths />
+        <HomeAnalytics />
+      </main>
       <LandingFooter content={footerContent} />
     </>
   );
