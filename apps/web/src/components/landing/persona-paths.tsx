@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, GitCompareArrows, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Reveal } from "@/components/landing/reveal";
-import { messaging, personaById, localized } from "@/config/messaging";
+import { personaById, localized } from "@/config/messaging";
 import { personaOrder, personaSlug } from "@/config/personas-content";
 import { track } from "@/lib/analytics/track";
 
@@ -67,6 +67,3 @@ export function PersonaPaths() {
     </section>
   );
 }
-
-/** Keep messaging referenced so the band stays tied to the source of truth (differentiators surface). */
-export const HOME_PRIMARY_CTA = messaging.cta.primary;
