@@ -116,6 +116,7 @@ export function PricingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-8 sm:p-12">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_120%_at_100%_-10%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-copper">{T.eyebrow[locale]}</p>
           <h1 className="mt-3 max-w-3xl font-serif text-3xl font-semibold tracking-tight sm:text-4xl">{T.title[locale]}</h1>
@@ -154,7 +155,7 @@ export function PricingPage() {
                   <span className="grid size-9 place-items-center rounded-lg bg-copper/10 text-copper"><Icon className="size-5" aria-hidden /></span>
                   <h3 className="mt-3 font-serif text-lg font-semibold">{m.title[locale]}</h3>
                   <p className="mt-1 flex-1 text-sm text-muted-foreground">{m.body[locale]}</p>
-                  <p className="mt-3 text-xs font-medium text-foreground">{m.meta[locale]}</p>
+                  <p className="mt-3 text-sm font-medium text-foreground">{m.meta[locale]}</p>
                   <Button asChild variant={m.highlight ? "default" : "outline"} className="mt-4 w-full">
                     <Link href={m.cta.href} onClick={() => track("plan_selected", { locale, plan: m.slug })}>{m.cta.label[locale]}</Link>
                   </Button>

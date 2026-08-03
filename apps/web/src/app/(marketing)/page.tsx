@@ -60,7 +60,14 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       url: canonical,
+      type: "website",
       ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }

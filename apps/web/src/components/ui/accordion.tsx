@@ -80,7 +80,7 @@ export function AccordionTrigger({ className, children, ...props }: HTMLAttribut
       data-state={open ? "open" : "closed"}
       onClick={() => acc.toggle(item.value)}
       className={cn(
-        "flex w-full items-center justify-between gap-2 py-4 text-start text-sm font-medium transition-colors duration-[--duration-fast] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "flex w-full items-center justify-between gap-2 py-4 text-start text-sm font-medium transition-colors duration-[--duration-fast] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         className,
       )}
       {...props}

@@ -30,7 +30,7 @@
   --accent: oklch(0.90 0.035 70);
   --accent-foreground: oklch(0.32 0.02 190);
 
-  --copper: oklch(0.5 0.13 47); /* darkened for WCAG AA (text-copper ≥4.5:1 on light surfaces) */
+  --copper: oklch(0.57 0.12 47);
   --copper-foreground: oklch(0.98 0.01 88);
   --gold: oklch(0.74 0.10 88);
   --gold-foreground: oklch(0.30 0.02 190);
@@ -230,7 +230,7 @@
   .reveal {
     opacity: 0;
     transform: translateY(28px);
-    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity var(--duration-slower) var(--ease-decelerate), transform var(--duration-slower) var(--ease-decelerate);
     will-change: opacity, transform;
   }
   .reveal.is-visible { opacity: 1; transform: none; }
@@ -247,14 +247,14 @@
     background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, white 28%, transparent) 50%, transparent 70%);
     transform: translateX(-120%);
   }
-  .shine:hover::after { animation: hb-shine 0.9s ease; }
+  .shine:hover::after { animation: hb-shine var(--duration-slower) var(--ease-standard); }
 
-  .card-hover { transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease; }
+  .card-hover { transition: transform var(--duration-normal) var(--ease-standard), box-shadow var(--duration-normal) var(--ease-standard), border-color var(--duration-normal) var(--ease-standard); }
   .card-hover:hover { transform: translateY(-6px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-float, .animate-float-slow, .animate-blob, .marquee-track { animation: none !important; }
+  .animate-float, .animate-float-slow, .animate-blob, .marquee-track, .shine:hover::after { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
   .card-hover:hover { transform: none; }
 }
@@ -269,8 +269,8 @@
   to { opacity: 1; transform: none; }
 }
 @layer utilities {
-  .page-enter { animation: hb-page-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .stagger-in > * { animation: hb-stagger-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .page-enter { animation: hb-page-in var(--duration-slow) var(--ease-decelerate) both; }
+  .stagger-in > * { animation: hb-stagger-in var(--duration-slow) var(--ease-decelerate) both; }
   .stagger-in > *:nth-child(1) { animation-delay: 0.03s; }
   .stagger-in > *:nth-child(2) { animation-delay: 0.08s; }
   .stagger-in > *:nth-child(3) { animation-delay: 0.13s; }

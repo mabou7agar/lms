@@ -19,10 +19,10 @@ const T = {
 export function PersonaPaths() {
   const { locale } = useI18n();
   return (
-    <section aria-labelledby="home-personas" className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-20">
+    <section aria-labelledby="home-personas" className="mx-auto w-full max-w-6xl px-4 py-20 sm:py-24">
       <Reveal>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-copper">{T.eyebrow[locale]}</p>
-        <h2 id="home-personas" className="mt-2 font-serif text-2xl font-semibold tracking-tight sm:text-3xl">{T.title[locale]}</h2>
+        <h2 id="home-personas" className="mt-2 text-h2 font-serif">{T.title[locale]}</h2>
       </Reveal>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

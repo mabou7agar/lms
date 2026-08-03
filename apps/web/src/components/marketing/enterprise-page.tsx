@@ -99,6 +99,7 @@ export function EnterprisePage() {
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-8 sm:p-12">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(90%_120%_at_100%_-10%,oklch(0.42_0.05_185/0.10)_0%,transparent_55%)]" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-copper/40 to-transparent" aria-hidden />
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-copper">{T.eyebrow[locale]}</p>
           <h1 className="mt-3 max-w-3xl font-serif text-3xl font-semibold tracking-tight sm:text-4xl">{T.title[locale]}</h1>
@@ -129,11 +130,9 @@ export function EnterprisePage() {
         <Reveal><h2 id="ent-targets" className="font-serif text-2xl font-semibold">{T.targetsTitle[locale]}</h2></Reveal>
         <ul className="mt-6 grid gap-3 sm:grid-cols-3">
           {TARGETS.map(({ icon: Icon, label }, i) => (
-            <Reveal key={i}>
-              <li className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface/40 p-4">
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-4" aria-hidden /></span>
-                <span className="text-sm font-medium">{label[locale]}</span>
-              </li>
+            <Reveal key={i} as="li" className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface/40 p-4">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-4" aria-hidden /></span>
+              <span className="text-sm font-medium">{label[locale]}</span>
             </Reveal>
           ))}
         </ul>
@@ -147,8 +146,8 @@ export function EnterprisePage() {
             <Reveal key={i}>
               <div className="h-full rounded-2xl border border-border/70 bg-card p-5">
                 <span className="grid size-9 place-items-center rounded-lg bg-copper/10 text-copper"><Icon className="size-5" aria-hidden /></span>
-                <h3 className="mt-3 text-sm font-semibold">{title[locale]}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{body[locale]}</p>
+                <h3 className="mt-3 font-semibold">{title[locale]}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{body[locale]}</p>
               </div>
             </Reveal>
           ))}
@@ -163,11 +162,9 @@ export function EnterprisePage() {
         </Reveal>
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
           {SECURITY.map((s, i) => (
-            <Reveal key={i}>
-              <li className="flex items-start gap-3 text-sm">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                <span>{s[locale]}</span>
-              </li>
+            <Reveal key={i} as="li" className="flex items-start gap-3 text-sm">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+              <span>{s[locale]}</span>
             </Reveal>
           ))}
         </ul>
@@ -178,12 +175,10 @@ export function EnterprisePage() {
         <Reveal><h2 id="ent-how" className="font-serif text-2xl font-semibold">{T.howTitle[locale]}</h2></Reveal>
         <ol className="mt-6 grid gap-4 sm:grid-cols-3">
           {STEPS.map((s, i) => (
-            <Reveal key={i}>
-              <li className="h-full rounded-2xl border border-border/70 bg-card p-6">
-                <span className="grid size-8 place-items-center rounded-full bg-primary/10 font-serif text-sm font-semibold text-primary">{i + 1}</span>
-                <h3 className="mt-3 font-semibold">{s.title[locale]}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.body[locale]}</p>
-              </li>
+            <Reveal key={i} as="li" className="h-full rounded-2xl border border-border/70 bg-card p-6">
+              <span className="grid size-8 place-items-center rounded-full bg-primary/10 font-serif text-sm font-semibold text-primary">{i + 1}</span>
+              <h3 className="mt-3 font-semibold">{s.title[locale]}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{s.body[locale]}</p>
             </Reveal>
           ))}
         </ol>

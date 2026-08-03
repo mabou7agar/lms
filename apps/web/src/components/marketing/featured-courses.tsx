@@ -9,8 +9,12 @@ import { DEMO_ENABLED, demoCourses, featuredHeading } from "@/config/demo";
 import { Section, SectionHeading } from "@/components/landing/section";
 import { Reveal } from "@/components/landing/reveal";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 import { CoursePreviewCard } from "./course-preview-card";
-import { VideoModal } from "./video-modal";
+
+// Below-the-fold, interaction-gated modal (YouTube iframe embed + focus trap) — code-split so its
+// JS loads only when a preview is opened rather than shipping in the homepage's initial chunk.
+const VideoModal = dynamic(() => import("./video-modal").then((m) => m.VideoModal), { ssr: false });
 
 export function FeaturedCourses() {
   const { locale } = useI18n();

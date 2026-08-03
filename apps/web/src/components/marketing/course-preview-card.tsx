@@ -17,8 +17,8 @@ export function CoursePreviewCard({ course, onPlay }: { course: DemoCourse; onPl
         <CourseThumb code={course.code} color={course.color} className="aspect-video w-full" />
         <button
           onClick={() => onPlay(course.youtubeId)}
-          aria-label="Play preview"
-          className="absolute inset-0 flex items-center justify-center bg-primary/0 transition-colors group-hover:bg-primary/20"
+          aria-label={locale === "ar" ? `تشغيل معاينة ${pickLocale(course.title, locale)}` : `Play preview of ${pickLocale(course.title, locale)}`}
+          className="absolute inset-0 flex items-center justify-center bg-primary/0 transition-colors group-hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <span className="flex size-14 items-center justify-center rounded-full bg-background/95 text-primary elevation-3 transition-transform group-hover:scale-110">
             <Play className="size-6 translate-x-0.5 fill-current" aria-hidden />

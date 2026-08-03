@@ -27,7 +27,7 @@ export function SolutionsIndex() {
   }, [locale]);
 
   return (
-    <div className="space-y-10 py-2">
+    <div className="space-y-12 py-2">
       <Reveal>
         <header className="max-w-2xl">
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">{T.title[locale]}</h1>
