@@ -48,6 +48,23 @@ class MediaAttachmentService
         }
 
         return DB::transaction(function () use ($asset, $actorId, $attachableType, $attachableId, $role, $courseId): MediaAttachment {
+            // Serialise with MediaDeletionService::deleteAsset(), which locks this same asset row
+            // inside its own transaction. Whichever acquires the lock first wins: if a delete
+            // committed just before us the asset is now soft-deleted / Deleted and must not receive a
+            // new attachment; if we win, that delete then re-counts usage under the lock and sees the
+            // attachment we insert here. Re-check the freshly-locked row so a stale in-memory $asset
+            // can never let an attachment orphan onto a deleted asset.
+            /** @var MediaAsset $locked */
+            $locked = MediaAsset::query()
+                ->withTrashed()
+                ->whereKey($asset->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->trashed() || ! $locked->status->isPlayable()) {
+                throw new MediaNotReadyException('Only a ready asset can be attached.');
+            }
+
             $attachment = MediaAttachment::query()->firstOrNew([
                 'attachable_type' => $attachableType,
                 'attachable_id' => $attachableId,
