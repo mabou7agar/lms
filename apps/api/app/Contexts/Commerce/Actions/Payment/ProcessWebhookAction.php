@@ -158,44 +158,91 @@ class ProcessWebhookAction extends BaseAction
     }
 
     /**
-     * Confirm an asynchronous refund: settle the refund ledger (the latest refund transaction and
-     * the Refund record) as succeeded and move the order to Refunded — but only when the order is
-     * still Paid or Refunding. A refund already finalized synchronously (RefundOrderAction) leaves
-     * the order Refunded, so this guard prevents a second OrderRefunded (and a second enrollment
-     * revocation). Settling the ledger is itself idempotent (skips rows already succeeded).
+     * Confirm an asynchronous refund and settle the refund ledger, then move the order to Refunded
+     * ONLY when the cumulative succeeded refund reaches the captured total. A partial refund settles
+     * the ledger but leaves the order Paid (mirroring RefundOrderAction phase 3), so enrollments are
+     * never revoked and no credit note is minted for a partial.
+     *
+     * Two ledger shapes are handled:
+     *   - A refund WE initiated (RefundOrderAction) leaves a PENDING refund transaction; this event
+     *     is its async confirmation, so we settle that pending row succeeded.
+     *   - A provider-INITIATED refund has no pending row; we record a NEW succeeded refund
+     *     transaction for the refunded amount the event carries ($event->amountMinor), falling back
+     *     to the full captured total only when the provider supplies no amount AND no refund row
+     *     exists yet (preserving the legacy full-refund-via-webhook behavior).
+     *
+     * Every recorded/settled amount is clamped to the order's remaining refundable balance, so the
+     * cumulative succeeded refund can NEVER exceed the captured total (no double / over-refund).
+     * Settling is idempotent: an amount-less confirmation of an already-settled refund is a no-op.
      *
      * @return array{type: string, order: Order}|null
      */
     private function applyRefund(Order $order, WebhookEvent $event, string $providerName): ?array
     {
         $reference = $event->providerReference;
+        $totalMinor = (int) $order->getAttribute('total_minor');
 
-        // Settle the refund payment-transaction ledger. Update the latest refund row when present;
-        // otherwise record one (a provider-initiated refund may have no prior transaction) so the
-        // order reconciles. Never create a second refund row for the same order.
-        $refundTxn = $order->transactions()
+        // Refunds already settled as succeeded — the ceiling any new/settled refund is clamped to.
+        $alreadyRefundedMinor = (int) $order->transactions()
             ->where('type', TransactionType::Refund->value)
-            ->latest('id')
-            ->first();
+            ->where('status', TransactionStatus::Succeeded->value)
+            ->sum('amount_minor');
 
-        if ($refundTxn !== null) {
-            if ($refundTxn->getAttribute('status') !== TransactionStatus::Succeeded) {
-                $refundTxn->forceFill([
+        $remainingMinor = max(0, $totalMinor - $alreadyRefundedMinor);
+
+        // A merchant-initiated refund awaiting confirmation leaves a PENDING refund transaction.
+        // Prefer the row carrying this provider reference, else the latest pending row.
+        $pendingTxn = $order->transactions()
+            ->where('type', TransactionType::Refund->value)
+            ->where('status', TransactionStatus::Pending->value)
+            ->when($reference !== null, fn ($q) => $q->where('provider_reference', $reference))
+            ->latest('id')
+            ->first()
+            ?? $order->transactions()
+                ->where('type', TransactionType::Refund->value)
+                ->where('status', TransactionStatus::Pending->value)
+                ->latest('id')
+                ->first();
+
+        if ($pendingTxn !== null) {
+            // Settle the refund we were waiting on. Clamp its amount to the remaining balance so a
+            // settled refund can never carry the ledger past the captured total.
+            $settled = min((int) $pendingTxn->getAttribute('amount_minor'), $remainingMinor);
+
+            $pendingTxn->forceFill([
+                'status' => TransactionStatus::Succeeded->value,
+                'amount_minor' => $settled,
+                'provider_reference' => $pendingTxn->getAttribute('provider_reference') ?? $reference,
+            ])->save();
+        } elseif ($event->amountMinor !== null) {
+            // Provider-initiated refund carrying an explicit amount: record a NEW succeeded refund,
+            // clamped to the remaining refundable balance.
+            $amount = min((int) $event->amountMinor, $remainingMinor);
+
+            if ($amount > 0) {
+                PaymentTransaction::create([
+                    'order_id' => $order->id,
+                    'provider' => $providerName,
+                    'provider_reference' => $reference,
+                    'type' => TransactionType::Refund->value,
                     'status' => TransactionStatus::Succeeded->value,
-                    'provider_reference' => $refundTxn->getAttribute('provider_reference') ?? $reference,
-                ])->save();
+                    'amount_minor' => $amount,
+                    'currency' => $order->getAttribute('currency'),
+                ]);
             }
-        } else {
+        } elseif ($this->hasNoRefundTransaction($order)) {
+            // Legacy: a provider-initiated FULL refund with no amount and no prior refund row.
             PaymentTransaction::create([
                 'order_id' => $order->id,
                 'provider' => $providerName,
                 'provider_reference' => $reference,
                 'type' => TransactionType::Refund->value,
                 'status' => TransactionStatus::Succeeded->value,
-                'amount_minor' => $order->getAttribute('total_minor'),
+                'amount_minor' => $remainingMinor,
                 'currency' => $order->getAttribute('currency'),
             ]);
         }
+        // else: an amount-less confirmation of an already-settled refund — ledger untouched (no-op).
 
         // Settle the Refund record (Refunds domain). Locked to serialize with a concurrent
         // synchronous refund; only a non-succeeded record is advanced, keeping it immutable once
@@ -213,16 +260,15 @@ class ProcessWebhookAction extends BaseAction
         }
 
         // Full-vs-partial: only a CUMULATIVELY full refund flips the order to Refunded (and revokes
-        // enrollments / issues a credit note). A partial async refund settles the ledger above but
-        // leaves the order Paid — mirroring RefundOrderAction phase 3. Basing this on the sum of
-        // succeeded refund transactions (not Refund rows) also covers a provider-initiated refund
-        // that has no prior Refund row (its settled transaction carries the amount).
+        // enrollments / issues a credit note). Basing this on the sum of succeeded refund
+        // transactions also covers a provider-initiated refund that has no Refund row. The recorded
+        // amounts are clamped above, so this sum can never exceed the captured total.
         $refundedMinor = (int) $order->transactions()
             ->where('type', TransactionType::Refund->value)
             ->where('status', TransactionStatus::Succeeded->value)
             ->sum('amount_minor');
 
-        if ($refundedMinor < (int) $order->getAttribute('total_minor')) {
+        if ($refundedMinor < $totalMinor) {
             return null;
         }
 
@@ -235,5 +281,13 @@ class ProcessWebhookAction extends BaseAction
         $order->forceFill(['status' => OrderStatus::Refunded->value, 'refunded_at' => now()])->save();
 
         return ['type' => 'refunded', 'order' => $order];
+    }
+
+    /** True when the order has no refund transaction of any status yet. */
+    private function hasNoRefundTransaction(Order $order): bool
+    {
+        return ! $order->transactions()
+            ->where('type', TransactionType::Refund->value)
+            ->exists();
     }
 }

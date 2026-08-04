@@ -138,11 +138,18 @@ class PaymobGateway implements PaymentGateway
 
         $order = is_array($obj['order'] ?? null) ? $obj['order'] : [];
 
+        // A Paymob refund transaction reports the refunded amount in its own amount_cents (integer
+        // minor units). Payment events leave amountMinor null.
+        $amountMinor = $type === 'refund.succeeded' && is_numeric($obj['amount_cents'] ?? null)
+            ? (int) $obj['amount_cents']
+            : null;
+
         return new WebhookEvent(
             id: (string) ($obj['id'] ?? ''),
             type: $type,
             orderReference: (string) ($order['merchant_order_id'] ?? ''),
             providerReference: (string) ($obj['id'] ?? ''),
+            amountMinor: $amountMinor,
             raw: $data,
         );
     }

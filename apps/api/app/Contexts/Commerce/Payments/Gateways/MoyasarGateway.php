@@ -109,11 +109,21 @@ class MoyasarGateway implements PaymentGateway
 
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
 
+        // Moyasar amounts are integer minor units (halalas). A refunded payment reports the amount
+        // refunded so far in `refunded`; fall back to the payment `amount` for a full refund.
+        // Payment events leave amountMinor null.
+        $amountMinor = null;
+        if ($type === 'refund.succeeded') {
+            $refunded = $data['refunded'] ?? $data['amount'] ?? null;
+            $amountMinor = is_numeric($refunded) ? (int) $refunded : null;
+        }
+
         return new WebhookEvent(
             id: (string) ($body['id'] ?? $data['id'] ?? ''),
             type: $type,
             orderReference: (string) ($metadata['order_reference'] ?? ''),
             providerReference: (string) ($data['id'] ?? ''),
+            amountMinor: $amountMinor,
             raw: $body,
         );
     }

@@ -67,15 +67,31 @@ class StripeGateway implements PaymentGateway
         $this->verifySignature($payload, $signature);
 
         $data = json_decode($payload, true) ?: [];
-        $object = $data['data']['object'] ?? [];
+        $object = is_array($data['data']['object'] ?? null) ? $data['data']['object'] : [];
+
+        $type = $this->mapEventType((string) ($data['type'] ?? ''));
 
         return new WebhookEvent(
             id: (string) ($data['id'] ?? ''),
-            type: $this->mapEventType((string) ($data['type'] ?? '')),
+            type: $type,
             orderReference: (string) ($object['metadata']['order_reference'] ?? ''),
             providerReference: $object['id'] ?? null,
+            amountMinor: $type === 'refund.succeeded' ? $this->refundedAmount($object) : null,
             raw: $data,
         );
+    }
+
+    /**
+     * The refunded amount in integer minor units. A charge.refunded event exposes the cumulative
+     * amount_refunded on the charge object; a refund.* event exposes the refund's own amount.
+     *
+     * @param  array<string, mixed>  $object
+     */
+    private function refundedAmount(array $object): ?int
+    {
+        $value = $object['amount_refunded'] ?? $object['amount'] ?? null;
+
+        return is_numeric($value) ? (int) $value : null;
     }
 
     /** Verify Stripe's Signature header: "t=timestamp,v1=hmac". */

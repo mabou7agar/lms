@@ -113,11 +113,18 @@ class TapGateway implements PaymentGateway
 
         $reference = is_array($body['reference'] ?? null) ? $body['reference'] : [];
 
+        // Tap sends amounts as a currency-decimal string on the wire; convert back to integer minor
+        // units for a refund event. Payment events leave amountMinor null.
+        $amountMinor = $type === 'refund.succeeded' && is_scalar($body['amount'] ?? null)
+            ? $this->minorAmount((string) $body['amount'], (string) ($body['currency'] ?? ''))
+            : null;
+
         return new WebhookEvent(
             id: (string) ($body['id'] ?? ''),
             type: $type,
             orderReference: (string) ($reference['order'] ?? ''),
             providerReference: (string) ($body['id'] ?? ''),
+            amountMinor: $amountMinor,
             raw: $body,
         );
     }
@@ -176,6 +183,24 @@ class TapGateway implements PaymentGateway
         $factor = 10 ** $decimals;
 
         return sprintf('%d.%0'.$decimals.'d', intdiv($minor, $factor), abs($minor % $factor));
+    }
+
+    /** Integer-safe decimal string -> minor units (never float). */
+    private function minorAmount(string $amount, string $currency): int
+    {
+        $decimals = $this->currencyDecimals($currency);
+
+        $negative = str_starts_with($amount, '-');
+        $clean = ltrim($amount, '+-');
+
+        $parts = explode('.', $clean, 2);
+        $whole = $parts[0] === '' ? '0' : $parts[0];
+        $fraction = $parts[1] ?? '';
+        $fraction = substr(str_pad($fraction, $decimals, '0'), 0, $decimals);
+
+        $minor = (int) $whole * (10 ** $decimals) + ($decimals > 0 ? (int) $fraction : 0);
+
+        return $negative ? -$minor : $minor;
     }
 
     private function currencyDecimals(string $currency): int

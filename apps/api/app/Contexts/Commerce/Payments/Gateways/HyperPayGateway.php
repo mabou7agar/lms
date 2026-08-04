@@ -125,11 +125,18 @@ class HyperPayGateway implements PaymentGateway
             default => 'payment.failed',
         };
 
+        // HyperPay reports the amount as a currency-decimal string on the wire; convert back to
+        // integer minor units for a refund event. Payment events leave amountMinor null.
+        $amountMinor = $type === 'refund.succeeded' && is_scalar($data['amount'] ?? null)
+            ? $this->minorAmount((string) $data['amount'], (string) ($data['currency'] ?? ''))
+            : null;
+
         return new WebhookEvent(
             id: (string) ($data['id'] ?? ''),
             type: $type,
             orderReference: (string) ($data['merchantTransactionId'] ?? ''),
             providerReference: (string) ($data['id'] ?? ''),
+            amountMinor: $amountMinor,
             raw: $body,
         );
     }
@@ -173,6 +180,24 @@ class HyperPayGateway implements PaymentGateway
         $factor = 10 ** $decimals;
 
         return sprintf('%d.%0'.$decimals.'d', intdiv($minor, $factor), abs($minor % $factor));
+    }
+
+    /** Integer-safe decimal string -> minor units (never float). */
+    private function minorAmount(string $amount, string $currency): int
+    {
+        $decimals = $this->currencyDecimals($currency);
+
+        $negative = str_starts_with($amount, '-');
+        $clean = ltrim($amount, '+-');
+
+        $parts = explode('.', $clean, 2);
+        $whole = $parts[0] === '' ? '0' : $parts[0];
+        $fraction = $parts[1] ?? '';
+        $fraction = substr(str_pad($fraction, $decimals, '0'), 0, $decimals);
+
+        $minor = (int) $whole * (10 ** $decimals) + ($decimals > 0 ? (int) $fraction : 0);
+
+        return $negative ? -$minor : $minor;
     }
 
     private function currencyDecimals(string $currency): int

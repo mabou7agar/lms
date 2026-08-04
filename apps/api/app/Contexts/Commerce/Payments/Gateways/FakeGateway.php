@@ -55,11 +55,20 @@ class FakeGateway implements PaymentGateway
 
         $data = json_decode($payload, true) ?: [];
 
+        $type = (string) ($data['type'] ?? 'payment.succeeded');
+
+        // A refund webhook may carry the refunded amount in integer minor units; payment events
+        // leave amountMinor null.
+        $amountMinor = $type === 'refund.succeeded' && is_numeric($data['amount_minor'] ?? null)
+            ? (int) $data['amount_minor']
+            : null;
+
         return new WebhookEvent(
             id: (string) ($data['id'] ?? Str::uuid()),
-            type: (string) ($data['type'] ?? 'payment.succeeded'),
+            type: $type,
             orderReference: (string) ($data['order_reference'] ?? ''),
             providerReference: $data['provider_reference'] ?? null,
+            amountMinor: $amountMinor,
             raw: $data,
         );
     }

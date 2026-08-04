@@ -127,11 +127,18 @@ class AmazonPaymentServicesGateway implements PaymentGateway
             default => 'payment.failed',
         };
 
+        // APS amounts are already integer minor units (smallest currency unit). Populate the
+        // refunded amount for a refund event; payment events leave amountMinor null.
+        $amountMinor = $type === 'refund.succeeded' && is_numeric($params['amount'] ?? null)
+            ? (int) $params['amount']
+            : null;
+
         return new WebhookEvent(
             id: (string) ($params['fort_id'] ?? $params['merchant_reference'] ?? ''),
             type: $type,
             orderReference: (string) ($params['merchant_reference'] ?? ''),
             providerReference: (string) ($params['fort_id'] ?? ''),
+            amountMinor: $amountMinor,
             raw: $params,
         );
     }
