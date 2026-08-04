@@ -111,7 +111,13 @@ class ProcessWebhookRefundTest extends TestCase
 
     private function action(string $orderReference, string $eventId): ProcessWebhookAction
     {
-        $event = new WebhookEvent($eventId, 'refund.succeeded', $orderReference, 'rf_provider_ref', []);
+        $event = new WebhookEvent(
+            id: $eventId,
+            type: 'refund.succeeded',
+            orderReference: $orderReference,
+            providerReference: 'rf_provider_ref',
+            raw: [],
+        );
 
         $gateway = new class($event) implements PaymentGateway
         {
