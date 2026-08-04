@@ -30,21 +30,49 @@ class NotificationEventSubscriber
     public function onUserEnrolled(UserEnrolled $event): void
     {
         if ($event->enrollment->user_id !== null) {
-            $this->dispatcher->dispatchToUserId($event->enrollment->user_id, NotificationCategory::Learning, 'enrollment_confirmed', []);
+            // Explicit per-enrollment dedup key: without it the auto key hashes only
+            // (user|Learning|enrollment_confirmed|[]) and the UNIQUE dedup_key index would drop every
+            // enrollment confirmation after the user's first (see onSessionReminderDue for the pattern).
+            $this->dispatcher->dispatchToUserId(
+                $event->enrollment->user_id,
+                NotificationCategory::Learning,
+                'enrollment_confirmed',
+                [],
+                null,
+                'enrollment-confirmed:'.$event->enrollment->id,
+            );
         }
     }
 
     public function onCourseCompleted(CourseCompleted $event): void
     {
         if ($event->enrollment->user_id !== null) {
-            $this->dispatcher->dispatchToUserId($event->enrollment->user_id, NotificationCategory::Learning, 'course_completed', []);
+            // Per-enrollment dedup key so a learner's 2nd+ course completion is not collapsed into the
+            // first by the UNIQUE dedup_key index (empty payload => otherwise-constant auto key).
+            $this->dispatcher->dispatchToUserId(
+                $event->enrollment->user_id,
+                NotificationCategory::Learning,
+                'course_completed',
+                [],
+                null,
+                'course-completed:'.$event->enrollment->id,
+            );
         }
     }
 
     public function onOrderPaid(OrderPaid $event): void
     {
         if ($event->order->user_id !== null) {
-            $this->dispatcher->dispatchToUserId($event->order->user_id, NotificationCategory::Commerce, 'order_receipt', ['total' => $event->order->total_minor]);
+            // Per-order dedup key: keying only on total_minor would suppress the receipt for a second
+            // order of the same amount by the same user (UNIQUE dedup_key index).
+            $this->dispatcher->dispatchToUserId(
+                $event->order->user_id,
+                NotificationCategory::Commerce,
+                'order_receipt',
+                ['total' => $event->order->total_minor],
+                null,
+                'order-receipt:'.$event->order->id,
+            );
         }
     }
 
@@ -58,8 +86,17 @@ class NotificationEventSubscriber
     {
         // Announce to registered participants.
         foreach ($event->session->registrations()->where('status', 'registered')->get() as $registration) {
-            // session_registrations.user_id is a non-nullable FK.
-            $this->dispatcher->dispatchToUserId($registration->user_id, NotificationCategory::Live, 'session_scheduled', ['title' => $event->session->title]);
+            // session_registrations.user_id is a non-nullable FK. Explicit per-(session,user) dedup key
+            // so two same-title sessions announced to the same user stay distinct (matches
+            // onSessionReminderDue), rather than collapsing under the UNIQUE dedup_key index.
+            $this->dispatcher->dispatchToUserId(
+                $registration->user_id,
+                NotificationCategory::Live,
+                'session_scheduled',
+                ['title' => $event->session->title],
+                null,
+                'session-scheduled:'.$event->session->id.':user:'.$registration->user_id,
+            );
         }
     }
 
