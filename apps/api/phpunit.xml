@@ -18,8 +18,11 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
+        <!-- force="true": overwrite any ambient value from the shell/Docker/.env so tests run with
+             the declared drivers. Without it, a QUEUE_CONNECTION=redis exported by the dev/CI
+             environment silently wins and event->job->consumer chains never run in-test. -->
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
     </php>
 </phpunit>
