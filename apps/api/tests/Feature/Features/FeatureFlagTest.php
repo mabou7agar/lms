@@ -137,8 +137,12 @@ it('lets an admin toggle a flag via the Filament resource and audits the change'
 
     $flag = FeatureFlag::factory()->key('experimental')->create(['is_enabled' => true]);
 
+    // Drive the toggle through the form's Livewire state exactly as the browser does via wire:model.
+    // fillForm(['is_enabled' => false]) is a no-op on this boolean Toggle under Filament v4 (the
+    // dehydrated state stays true and nothing persists); set('data.is_enabled', ...) is the state the
+    // real save reads. The assertions below (row persisted false + audit written) are unchanged.
     Livewire::test(EditFeatureFlag::class, ['record' => $flag->public_id])
-        ->fillForm(['is_enabled' => false])
+        ->set('data.is_enabled', false)
         ->call('save')
         ->assertHasNoFormErrors();
 
