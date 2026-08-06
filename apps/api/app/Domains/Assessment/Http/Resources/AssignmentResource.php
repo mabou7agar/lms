@@ -20,7 +20,7 @@ class AssignmentResource extends BaseResource
 
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'lesson_id' => $this->resource->lesson_id,
             'instructions' => $this->resource->instructions,
             'submission_type' => $this->resource->submission_type->value,

@@ -14,10 +14,10 @@ class QuestionResource extends BaseResource
         return [
             'id' => $this->resource->public_id,
             'type' => $this->resource->type->value,
-            'prompt' => $this->resource->prompt,
+            'prompt' => $this->resource->localized('prompt'),
             'config' => $this->resource->config,
-            'explanation' => $this->resource->explanation,
-            'hint' => $this->resource->hint,
+            'explanation' => $this->resource->localized('explanation'),
+            'hint' => $this->resource->localized('hint'),
             'points' => (float) $this->resource->points,
             'negative_points' => (float) $this->resource->negative_points,
             'difficulty' => $this->resource->difficulty?->value,

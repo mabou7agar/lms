@@ -21,7 +21,7 @@ class LearnerAssignmentResource extends BaseResource
 
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'instructions' => $this->resource->instructions,
             'submission_type' => $this->resource->submission_type->value,
             'allowed_file_types' => $this->resource->allowed_file_types,

@@ -16,11 +16,11 @@ class QuestionOptionResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'label' => $this->resource->label,
+            'label' => $this->resource->localized('label'),
             'value' => $this->resource->value,
             'is_correct' => $this->resource->is_correct,
             'group_index' => $this->resource->group_index,
-            'feedback' => $this->resource->feedback,
+            'feedback' => $this->resource->localized('feedback'),
             'position' => $this->resource->position,
         ];
     }

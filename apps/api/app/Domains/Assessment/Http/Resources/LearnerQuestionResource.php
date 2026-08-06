@@ -34,14 +34,14 @@ class LearnerQuestionResource extends JsonResource
         return [
             'id' => $question->public_id,
             'type' => $question->type->value,
-            'prompt' => $question->prompt,
+            'prompt' => $question->localized('prompt'),
             'config' => $question->config,
             // A hint is meant to be available during the attempt — that is its whole purpose.
-            'hint' => $question->hint,
+            'hint' => $question->localized('hint'),
             'points' => (float) $question->points,
 
             // Only revealed after grading, and only when feedback mode allows it.
-            'explanation' => $this->revealKey ? $question->explanation : null,
+            'explanation' => $this->revealKey ? $question->localized('explanation') : null,
 
             'options' => $question->options
                 ->map(fn (QuestionOption $option) => $this->option($option))
@@ -54,7 +54,7 @@ class LearnerQuestionResource extends JsonResource
     {
         $payload = [
             'id' => $option->public_id,
-            'label' => $option->label,
+            'label' => $option->localized('label'),
             'group_index' => $option->group_index,
         ];
 
@@ -62,7 +62,7 @@ class LearnerQuestionResource extends JsonResource
         // accepted answer, and the learner has already been told whether they were right.
         if ($this->revealKey) {
             $payload['is_correct'] = $option->is_correct;
-            $payload['feedback'] = $option->feedback;
+            $payload['feedback'] = $option->localized('feedback');
         }
 
         return $payload;

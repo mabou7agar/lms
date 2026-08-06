@@ -6,6 +6,7 @@ use App\Domains\Assessment\Database\Factories\AssessmentQuestionFactory;
 use App\Domains\Assessment\Enums\Difficulty;
 use App\Domains\Assessment\Enums\QuestionType;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -52,13 +53,25 @@ class AssessmentQuestion extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
     use SoftDeletes;
 
     /** @var list<string> */
     protected $fillable = [
-        'assessment_id', 'type', 'prompt', 'config', 'explanation', 'hint',
+        'assessment_id', 'type', 'prompt', 'prompt_i18n', 'config', 'explanation', 'explanation_i18n', 'hint', 'hint_i18n',
         'points', 'negative_points', 'difficulty', 'position',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['prompt_i18n', 'explanation_i18n', 'hint_i18n'];
+
+    /**
+     * Rich-HTML translatable maps sanitized per locale on write (via HasTranslations). Mirrors the
+     * fields SaveQuestionAction runs through the HtmlSanitizer for the legacy scalars.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableHtml = ['prompt_i18n', 'explanation_i18n', 'hint_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -70,6 +83,9 @@ class AssessmentQuestion extends Model
             'points' => 'decimal:2',
             'negative_points' => 'decimal:2',
             'position' => 'integer',
+            'prompt_i18n' => 'array',
+            'explanation_i18n' => 'array',
+            'hint_i18n' => 'array',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Domains\Assessment\Enums\AssignmentState;
 use App\Domains\Assessment\Enums\LatePolicy;
 use App\Domains\Assessment\Enums\SubmissionType;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -52,15 +53,19 @@ class Assignment extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
     use SoftDeletes;
 
     /** @var list<string> */
     protected $fillable = [
-        'course_id', 'lesson_id', 'title', 'instructions', 'submission_type',
+        'course_id', 'lesson_id', 'title', 'title_i18n', 'instructions', 'submission_type',
         'allowed_file_types', 'max_file_size', 'max_files', 'attempt_limit',
         'due_at', 'late_policy', 'late_penalty_percent', 'max_grade', 'passing_grade',
         'rubric_id', 'publish_state', 'required_for_completion', 'created_by',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -80,6 +85,7 @@ class Assignment extends Model
             'rubric_id' => 'integer',
             'due_at' => 'datetime',
             'required_for_completion' => 'boolean',
+            'title_i18n' => 'array',
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Domains\Assessment\Models;
 
 use App\Domains\Assessment\Database\Factories\QuestionOptionFactory;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,13 +33,17 @@ class QuestionOption extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
 
     protected $table = 'assessment_question_options';
 
     /** @var list<string> */
     protected $fillable = [
-        'question_id', 'label', 'value', 'is_correct', 'group_index', 'feedback', 'position',
+        'question_id', 'label', 'label_i18n', 'value', 'is_correct', 'group_index', 'feedback', 'feedback_i18n', 'position',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['label_i18n', 'feedback_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -47,6 +52,8 @@ class QuestionOption extends Model
             'is_correct' => 'boolean',
             'group_index' => 'integer',
             'position' => 'integer',
+            'label_i18n' => 'array',
+            'feedback_i18n' => 'array',
         ];
     }
 

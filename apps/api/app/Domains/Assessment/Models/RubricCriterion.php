@@ -4,6 +4,7 @@ namespace App\Domains\Assessment\Models;
 
 use App\Domains\Assessment\Database\Factories\RubricCriterionFactory;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,14 +33,18 @@ class RubricCriterion extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
 
     /** @var list<string> */
-    protected $fillable = ['rubric_id', 'title', 'description', 'position', 'max_points'];
+    protected $fillable = ['rubric_id', 'title', 'title_i18n', 'description', 'description_i18n', 'position', 'max_points'];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n', 'description_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['position' => 'integer', 'max_points' => 'decimal:2'];
+        return ['position' => 'integer', 'max_points' => 'decimal:2', 'title_i18n' => 'array', 'description_i18n' => 'array'];
     }
 
     /** @return BelongsTo<AssignmentRubric, $this> */

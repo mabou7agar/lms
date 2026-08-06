@@ -7,6 +7,7 @@ use App\Domains\Assessment\Enums\AssessmentScope;
 use App\Domains\Assessment\Enums\AssessmentStatus;
 use App\Domains\Assessment\Enums\FeedbackMode;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -53,16 +54,20 @@ class Assessment extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
     use SoftDeletes;
 
     /** @var list<string> */
     protected $fillable = [
-        'course_id', 'title', 'description', 'scope', 'status',
+        'course_id', 'title', 'title_i18n', 'description', 'description_i18n', 'scope', 'status',
         'passing_score', 'negative_marking',
         'max_attempts', 'time_limit_seconds', 'shuffle_questions', 'shuffle_options',
         'questions_per_attempt', 'feedback_mode',
         'version', 'parent_assessment_id', 'created_by',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n', 'description_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -79,6 +84,8 @@ class Assessment extends Model
             'shuffle_options' => 'boolean',
             'questions_per_attempt' => 'integer',
             'version' => 'integer',
+            'title_i18n' => 'array',
+            'description_i18n' => 'array',
         ];
     }
 

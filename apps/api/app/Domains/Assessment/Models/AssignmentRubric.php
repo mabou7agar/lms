@@ -4,6 +4,7 @@ namespace App\Domains\Assessment\Models;
 
 use App\Domains\Assessment\Database\Factories\AssignmentRubricFactory;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,14 +31,18 @@ class AssignmentRubric extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
 
     /** @var list<string> */
-    protected $fillable = ['assignment_id', 'title', 'total_points'];
+    protected $fillable = ['assignment_id', 'title', 'title_i18n', 'total_points'];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['total_points' => 'decimal:2'];
+        return ['total_points' => 'decimal:2', 'title_i18n' => 'array'];
     }
 
     /** @return BelongsTo<Assignment, $this> */

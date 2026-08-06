@@ -21,18 +21,18 @@ class RubricResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'total_points' => (float) $this->resource->total_points,
             'criteria' => $this->resource->criteria->map(fn (RubricCriterion $c): array => [
                 'id' => $c->public_id,
-                'title' => $c->title,
-                'description' => $c->description,
+                'title' => $c->localized('title'),
+                'description' => $c->localized('description'),
                 'position' => $c->position,
                 'max_points' => (float) $c->max_points,
                 'levels' => $c->levels->map(fn (RubricLevel $l): array => [
                     'id' => $l->public_id,
-                    'title' => $l->title,
-                    'description' => $l->description,
+                    'title' => $l->localized('title'),
+                    'description' => $l->localized('description'),
                     'points' => (float) $l->points,
                     'position' => $l->position,
                 ])->values()->all(),

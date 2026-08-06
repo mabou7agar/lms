@@ -13,8 +13,8 @@ class AssessmentResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
-            'description' => $this->resource->description,
+            'title' => $this->resource->localized('title'),
+            'description' => $this->resource->localized('description'),
             'scope' => $this->resource->scope->value,
             'status' => $this->resource->status->value,
             'version' => $this->resource->version,
