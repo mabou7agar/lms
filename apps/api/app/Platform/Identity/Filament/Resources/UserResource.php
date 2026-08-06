@@ -4,14 +4,19 @@ namespace App\Platform\Identity\Filament\Resources;
 
 use App\Platform\Identity\Filament\Resources\UserResource\Pages;
 use App\Platform\Identity\Models\User;
+use App\Platform\Identity\Services\ImpersonationManager;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 /**
  * Admin resource for users. Read/manage account state (not passwords/MFA secrets).
@@ -56,7 +61,33 @@ class UserResource extends Resource
                 IconColumn::make('mfa_enabled')->boolean()->label('MFA'),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(),
             ])
-            ->defaultSort('id', 'desc');
+            ->defaultSort('id', 'desc')
+            ->recordActions([
+                // Orchestration only: ImpersonationManager owns the guards, the guard switch, and
+                // the audit trail. Visibility mirrors UserPolicy::impersonate (off for self and
+                // super_admin rows); the manager still re-checks below the gate.
+                Action::make('impersonate')
+                    ->label('Impersonate')
+                    ->icon('heroicon-o-identification')
+                    ->requiresConfirmation()
+                    ->modalDescription('Sign in as this user to reproduce their view. This is audited, and a banner will show until you leave.')
+                    ->visible(function (User $record): bool {
+                        $actor = Auth::user();
+
+                        return $actor instanceof User && $actor->can('impersonate', $record);
+                    })
+                    ->action(function (User $record) {
+                        try {
+                            app(ImpersonationManager::class)->start($record);
+
+                            return redirect()->to('/admin');
+                        } catch (Throwable $e) {
+                            Notification::make()->title('Cannot impersonate')->body($e->getMessage())->danger()->send();
+
+                            return null;
+                        }
+                    }),
+            ]);
     }
 
     public static function getPages(): array

@@ -9,6 +9,7 @@ enum Permission: string
 {
     case ViewUsers = 'identity.users.view';
     case ManageUsers = 'identity.users.manage';
+    case ImpersonateUsers = 'identity.users.impersonate';
     case ViewRoles = 'identity.roles.view';
     case ManageRoles = 'identity.roles.manage';
 

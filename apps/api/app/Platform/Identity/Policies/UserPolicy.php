@@ -29,4 +29,18 @@ class UserPolicy extends BasePolicy
     {
         return $user->is($target) || $user->can('identity.users.manage');
     }
+
+    /**
+     * Whether $user may impersonate $target. Gates the panel action; the ImpersonationManager
+     * re-checks the permission and enforces the self/super_admin/nested guards below the gate,
+     * so this only needs to keep the button off self- and super_admin rows.
+     */
+    public function impersonate(User $user, User $target): bool
+    {
+        if ($user->is($target) || $target->hasRole('super_admin')) {
+            return false;
+        }
+
+        return $user->can('identity.users.impersonate');
+    }
 }

@@ -12,6 +12,7 @@ use App\Domains\Catalog\Enums\CatalogPermission;
 use App\Domains\Certification\Enums\CertificationPermission;
 use App\Domains\Crm\Enums\CrmPermission;
 use App\Domains\Live\Enums\LivePermission;
+use App\Platform\Identity\Enums\Permission as IdentityPermission;
 use App\Platform\Notifications\Enums\NotificationsPermission;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -108,6 +109,9 @@ class StaffRoleTemplatesSeeder extends Seeder
             'support_agent' => [
                 CommercePermission::ViewOrders->value,
                 CrmPermission::ViewCrm->value,
+                // Support may impersonate ordinary users to reproduce their view; the
+                // ImpersonationManager still forbids self- and super_admin-targets below the gate.
+                IdentityPermission::ImpersonateUsers->value,
             ],
         ];
     }

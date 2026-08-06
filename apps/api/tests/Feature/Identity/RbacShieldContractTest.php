@@ -34,7 +34,7 @@ uses(RefreshDatabase::class);
 
 /**
  * Every permission declared across all domain enums. Aggregated in the test layer (deptrac
- * analyses app/, not tests/) so the whole 39-permission surface is pinned without adding a
+ * analyses app/, not tests/) so the whole 40-permission surface is pinned without adding a
  * cross-domain aggregator to the application.
  *
  * @return list<string>

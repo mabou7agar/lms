@@ -13,6 +13,7 @@ use App\Platform\Identity\Contracts\UserRolePort;
 use App\Platform\Identity\Events\UserLoggedIn;
 use App\Platform\Identity\Events\UserRegistered;
 use App\Platform\Identity\Exceptions\ProtectedRoleException;
+use App\Platform\Identity\Http\Controllers\LeaveImpersonationController;
 use App\Platform\Identity\Listeners\SendEmailOtpOnRegistration;
 use App\Platform\Identity\Listeners\SendPhoneOtpOnRegistration;
 use App\Platform\Identity\Listeners\UpdateLastLoginTimestamp;
@@ -21,13 +22,18 @@ use App\Platform\Identity\Models\UserDevice;
 use App\Platform\Identity\Policies\DevicePolicy;
 use App\Platform\Identity\Policies\RolePolicy;
 use App\Platform\Identity\Policies\UserPolicy;
+use App\Platform\Identity\Services\ImpersonationManager;
 use App\Platform\Identity\Tenancy\RoleBasedTenancyBypassPolicy;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use App\Platform\Shared\Tenancy\TenancyBypassPolicy;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -71,6 +77,44 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
         $this->registerRateLimiters();
         $this->registerListeners();
         $this->protectSystemRoles();
+        $this->registerImpersonation();
+    }
+
+    /**
+     * Wires impersonation into the admin panel: the "leave" endpoint (web + auth, so the
+     * impersonated session — not the API guard — is what ends it) and the always-visible banner
+     * that renders only while an impersonation session is active.
+     */
+    private function registerImpersonation(): void
+    {
+        Route::middleware(['web', 'auth'])
+            ->post('admin/impersonation/leave', LeaveImpersonationController::class)
+            ->name('identity.impersonation.leave');
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_START,
+            function (): string {
+                $impersonation = app(ImpersonationManager::class);
+
+                if (! $impersonation->isImpersonating()) {
+                    return '';
+                }
+
+                $user = Auth::user();
+                $name = e($user instanceof User ? (string) $user->getAttribute('name') : 'user');
+                $action = e(route('identity.impersonation.leave'));
+                $csrf = (string) csrf_field();
+
+                return '<div style="background:#b45309;color:#fff;padding:.5rem 1rem;display:flex;'
+                    .'justify-content:space-between;align-items:center;gap:1rem;font-size:.875rem;">'
+                    .'<span>You are impersonating <strong>'.$name.'</strong>. Actions you take are '
+                    .'attributed to that account.</span>'
+                    .'<form method="POST" action="'.$action.'" style="margin:0;">'.$csrf
+                    .'<button type="submit" style="background:#fff;color:#b45309;border:0;'
+                    .'border-radius:.25rem;padding:.25rem .75rem;font-weight:600;cursor:pointer;">'
+                    .'Leave impersonation</button></form></div>';
+            },
+        );
     }
 
     private function protectSystemRoles(): void
