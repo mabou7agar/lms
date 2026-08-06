@@ -6,6 +6,7 @@ use App\Domains\Authoring\Database\Factories\LessonFactory;
 use App\Domains\Authoring\Enums\LessonType;
 use App\Domains\Authoring\Enums\PublishState;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,7 @@ class Lesson extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
     use SoftDeletes;
 
     /**
@@ -50,7 +52,10 @@ class Lesson extends Model
      * may be reused. Authoring never imports an Assessment class — it resolves the reference
      * through LessonAssessmentPort.
      */
-    protected $fillable = ['section_id', 'title', 'type', 'content', 'assessment_id', 'position', 'publish_state', 'is_preview'];
+    protected $fillable = ['section_id', 'title', 'title_i18n', 'type', 'content', 'assessment_id', 'position', 'publish_state', 'is_preview'];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n'];
 
     protected function casts(): array
     {
@@ -58,6 +63,7 @@ class Lesson extends Model
             'type' => LessonType::class,
             'publish_state' => PublishState::class,
             'content' => 'array',
+            'title_i18n' => 'array',
             'position' => 'integer',
             'is_preview' => 'boolean',
         ];

@@ -18,10 +18,10 @@ class CourseResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'slug' => $this->resource->slug,
-            'subtitle' => $this->resource->subtitle,
-            'description' => $this->resource->description,
+            'subtitle' => $this->resource->localized('subtitle'),
+            'description' => $this->resource->localized('description'),
             'status' => $this->resource->status->value,
             'visibility' => $this->resource->visibility->value,
             'is_featured' => $this->resource->is_featured,
@@ -29,16 +29,16 @@ class CourseResource extends BaseResource
             'seo' => $this->resource->seo,
             'level' => $this->whenLoaded('level', fn () => $this->resource->level ? [
                 'id' => $this->resource->level->public_id,
-                'name' => $this->resource->level->name,
+                'name' => $this->resource->level->localized('name'),
             ] : null),
             'language' => $this->whenLoaded('language', fn () => $this->resource->language ? [
                 'id' => $this->resource->language->public_id,
-                'name' => $this->resource->language->name,
+                'name' => $this->resource->language->localized('name'),
                 'code' => $this->resource->language->code,
             ] : null),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => $this->whenLoaded('tags', fn () => $this->resource->tags->map(fn ($t) => [
-                'id' => $t->public_id, 'name' => $t->name, 'slug' => $t->slug,
+                'id' => $t->public_id, 'name' => $t->localized('name'), 'slug' => $t->slug,
             ])->values()),
             'trainers' => $this->whenLoaded('trainerLinks', fn () => TrainerResource::collection(
                 array_values(app(UserLookupPort::class)->refsByIds($this->resource->trainerLinks->pluck('user_id')->all()))

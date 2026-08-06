@@ -17,9 +17,9 @@ class CategoryResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'name' => $this->resource->name,
+            'name' => $this->resource->localized('name'),
             'slug' => $this->resource->slug,
-            'description' => $this->resource->description,
+            'description' => $this->resource->localized('description'),
             'position' => $this->resource->position,
             'children' => CategoryResource::collection($this->whenLoaded('children')),
         ];

@@ -8,6 +8,7 @@ use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSeo;
 use App\Platform\Shared\Traits\HasSlug;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,12 +30,17 @@ class Course extends Model
     use HasPublicId;
     use HasSeo;
     use HasSlug;
+    use HasTranslations;
     use SoftDeletes;
 
     protected $fillable = [
-        'title', 'slug', 'subtitle', 'description', 'level_id', 'language_id',
-        'status', 'visibility', 'is_featured', 'thumbnail_path', 'position', 'published_at', 'seo',
+        'title', 'title_i18n', 'slug', 'subtitle', 'subtitle_i18n', 'description', 'description_i18n',
+        'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'thumbnail_path', 'position',
+        'published_at', 'seo',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n', 'subtitle_i18n', 'description_i18n'];
 
     protected function casts(): array
     {
@@ -45,6 +51,9 @@ class Course extends Model
             'position' => 'integer',
             'published_at' => 'datetime',
             'seo' => 'array',
+            'title_i18n' => 'array',
+            'subtitle_i18n' => 'array',
+            'description_i18n' => 'array',
         ];
     }
 

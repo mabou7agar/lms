@@ -8,6 +8,7 @@ use App\Contexts\Commerce\Enums\ProductType;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSlug;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,15 +26,21 @@ class Product extends Model
 
     use HasPublicId;
     use HasSlug;
+    use HasTranslations;
     use SoftDeletes;
 
-    protected $fillable = ['type', 'title', 'slug', 'description', 'status'];
+    protected $fillable = ['type', 'title', 'title_i18n', 'slug', 'description', 'description_i18n', 'status'];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n', 'description_i18n'];
 
     protected function casts(): array
     {
         return [
             'type' => ProductType::class,
             'status' => ProductStatus::class,
+            'title_i18n' => 'array',
+            'description_i18n' => 'array',
         ];
     }
 

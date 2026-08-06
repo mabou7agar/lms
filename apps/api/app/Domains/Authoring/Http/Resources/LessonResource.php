@@ -42,7 +42,7 @@ class LessonResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'type' => $this->resource->type->value,
             'content' => $this->resource->content,
             'position' => $this->resource->position,
@@ -54,7 +54,7 @@ class LessonResource extends BaseResource
             // a stale reference degrades to "no quiz" rather than breaking the curriculum tree.
             'assessment' => $this->assessmentRef(),
             'prerequisites' => $this->whenLoaded('prerequisites', fn () => $this->resource->prerequisites->map(fn ($p) => [
-                'id' => $p->public_id, 'title' => $p->title,
+                'id' => $p->public_id, 'title' => $p->localized('title'),
             ])->values()),
         ];
     }

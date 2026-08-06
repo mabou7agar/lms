@@ -16,9 +16,9 @@ class ProductResource extends BaseResource
         return [
             'id' => $this->resource->public_id,
             'type' => $this->resource->type->value,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'slug' => $this->resource->slug,
-            'description' => $this->resource->description,
+            'description' => $this->resource->localized('description'),
             'prices' => $this->whenLoaded('prices', fn () => $this->resource->prices->map(fn ($p) => [
                 'currency' => $p->currency,
                 'amount_minor' => $p->amount_minor,

@@ -17,13 +17,13 @@ class CourseListResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
+            'title' => $this->resource->localized('title'),
             'slug' => $this->resource->slug,
-            'subtitle' => $this->resource->subtitle,
+            'subtitle' => $this->resource->localized('subtitle'),
             'thumbnail_path' => $this->resource->thumbnail_path,
             'is_featured' => $this->resource->is_featured,
-            'level' => $this->whenLoaded('level', fn () => $this->resource->level?->name),
-            'language' => $this->whenLoaded('language', fn () => $this->resource->language?->name),
+            'level' => $this->whenLoaded('level', fn () => $this->resource->level?->localized('name')),
+            'language' => $this->whenLoaded('language', fn () => $this->resource->language?->localized('name')),
             'published_at' => $this->resource->published_at?->toIso8601String(),
         ];
     }

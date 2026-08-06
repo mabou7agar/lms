@@ -22,7 +22,7 @@ class CartResource extends BaseResource
             'items' => $cart->items->map(fn ($item) => [
                 'id' => $item->public_id,
                 'product_id' => $item->product->public_id,
-                'title' => $item->product->title,
+                'title' => $item->product->localized('title'),
                 'unit_amount_minor' => $item->unit_amount_minor,
             ])->values(),
             'subtotal_minor' => $totals['subtotal_minor'],

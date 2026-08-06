@@ -6,6 +6,7 @@ use App\Domains\Authoring\Database\Factories\SectionFactory;
 use App\Domains\Authoring\Enums\PublishState;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,17 +28,23 @@ class Section extends Model
     use HasFactory;
 
     use HasPublicId;
+    use HasTranslations;
     use SoftDeletes;
 
     protected $table = 'course_sections';
 
-    protected $fillable = ['course_id', 'title', 'summary', 'position', 'publish_state'];
+    protected $fillable = ['course_id', 'title', 'title_i18n', 'summary', 'summary_i18n', 'position', 'publish_state'];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['title_i18n', 'summary_i18n'];
 
     protected function casts(): array
     {
         return [
             'publish_state' => PublishState::class,
             'position' => 'integer',
+            'title_i18n' => 'array',
+            'summary_i18n' => 'array',
         ];
     }
 

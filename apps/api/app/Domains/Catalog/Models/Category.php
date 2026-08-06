@@ -6,6 +6,7 @@ use App\Domains\Catalog\Database\Factories\CategoryFactory;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSeo;
 use App\Platform\Shared\Traits\HasSlug;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,11 +25,15 @@ class Category extends Model
     use HasPublicId;
     use HasSeo;
     use HasSlug;
+    use HasTranslations;
     use SoftDeletes;
 
     protected $fillable = [
-        'parent_id', 'name', 'slug', 'description', 'position', 'is_active', 'seo',
+        'parent_id', 'name', 'name_i18n', 'slug', 'description', 'description_i18n', 'position', 'is_active', 'seo',
     ];
+
+    /** @var array<int, string> */
+    protected array $translatable = ['name_i18n', 'description_i18n'];
 
     protected function casts(): array
     {
@@ -36,6 +41,8 @@ class Category extends Model
             'is_active' => 'boolean',
             'position' => 'integer',
             'seo' => 'array',
+            'name_i18n' => 'array',
+            'description_i18n' => 'array',
         ];
     }
 

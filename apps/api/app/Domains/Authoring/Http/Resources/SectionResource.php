@@ -15,8 +15,8 @@ class SectionResource extends BaseResource
     {
         return [
             'id' => $this->resource->public_id,
-            'title' => $this->resource->title,
-            'summary' => $this->resource->summary,
+            'title' => $this->resource->localized('title'),
+            'summary' => $this->resource->localized('summary'),
             'position' => $this->resource->position,
             'publish_state' => $this->resource->publish_state->value,
             'lessons' => LessonResource::collection($this->whenLoaded('lessons')),
