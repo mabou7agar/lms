@@ -1,4 +1,5 @@
 import { siteConfig } from "@/config/site";
+import { isLocale, localeCookieName } from "@/lib/i18n/config";
 import type { ApiError, ApiSuccess, AuthUser } from "@/types/api";
 
 /**
@@ -36,6 +37,21 @@ function apiBase(): string {
   return typeof window === "undefined" ? siteConfig.apiBaseUrl : "/api/backend";
 }
 
+/**
+ * The user's selected UI locale, read from the persisted `locale` cookie in the browser (the same
+ * cookie the i18n context writes on `setLocale`). Sent as `Accept-Language` so the API localizes
+ * responses to match the chosen language. Server-side there is no `document`, so we return undefined
+ * and leave the header unset — the BFF proxy forwards the browser's own `accept-language` for
+ * client-originated calls. Reading a cookie in a request/event handler (not during render) cannot
+ * cause a hydration mismatch.
+ */
+function selectedLocaleHeader(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${localeCookieName}=([^;]+)`));
+  const value = match ? decodeURIComponent(match[1]) : null;
+  return isLocale(value) ? value : undefined;
+}
+
 async function parseAndThrow(res: Response): Promise<unknown> {
   const json = res.status === 204 ? null : await res.json().catch(() => null);
 
@@ -64,6 +80,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const timeout = signal ? null : new AbortController();
   const timer = timeout ? setTimeout(() => timeout.abort(), DEFAULT_TIMEOUT_MS) : null;
 
+  const acceptLanguage = selectedLocaleHeader();
+
   try {
     const res = await fetch(`${apiBase()}/${path.replace(/^\//, "")}`, {
       ...rest,
@@ -71,6 +89,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       signal: signal ?? timeout?.signal,
       headers: {
         Accept: "application/json",
+        ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {}),
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...headers,
       },

@@ -30,6 +30,7 @@ class LiveSessionResource extends BaseResource
             'starts_at_utc' => $this->resource->starts_at?->toIso8601String(),
             'ends_at_utc' => $this->resource->ends_at?->toIso8601String(),
             'starts_at_local' => $this->resource->starts_at ? $tz->inZone($this->resource->starts_at, $this->resource->timezone) : null,
+            'ends_at_local' => $this->resource->ends_at ? $tz->inZone($this->resource->ends_at, $this->resource->timezone) : null,
             'capacity' => $this->resource->capacity,
             'registered_count' => $this->resource->registeredCount(),
             'waiting_room' => $this->resource->waiting_room,

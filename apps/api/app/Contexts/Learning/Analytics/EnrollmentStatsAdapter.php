@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class EnrollmentStatsAdapter implements EnrollmentStatsPort
 {
-    public function statsForCourses(array $courseIds, ?string $from = null, ?string $to = null): EnrollmentStats
+    public function statsForCourses(array $courseIds, ?string $from = null, ?string $to = null, string $timezone = 'UTC'): EnrollmentStats
     {
         if ($courseIds === []) {
             return EnrollmentStats::empty();
@@ -30,7 +30,7 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
         // One grouped query for the row-level figures; the two DISTINCT counts cannot share it,
         // because counting distinct users and counting rows are different aggregates over the same
         // filtered set. Three queries total, each bounded by the same course-id set.
-        $agg = $this->scoped($courseIds, $from, $to)
+        $agg = $this->scoped($courseIds, $from, $to, $timezone)
             ->toBase()
             ->selectRaw('count(*) as enrollments')
             ->selectRaw('coalesce(sum(case when status = ? then 1 else 0 end), 0) as completions', [EnrollmentStatus::Completed->value])
@@ -38,11 +38,11 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
             ->first();
 
         // DISTINCT user_id: a learner enrolled in three of these courses is one learner.
-        $uniqueLearners = (int) $this->scoped($courseIds, $from, $to)
+        $uniqueLearners = (int) $this->scoped($courseIds, $from, $to, $timezone)
             ->distinct('user_id')
             ->count('user_id');
 
-        $activeLearners = (int) $this->scoped($courseIds, $from, $to)
+        $activeLearners = (int) $this->scoped($courseIds, $from, $to, $timezone)
             ->where('status', EnrollmentStatus::Active->value)
             ->where('progress_percentage', '>', 0)
             ->distinct('user_id')
@@ -57,7 +57,7 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
         );
     }
 
-    public function statsPerCourse(array $courseIds, ?string $from = null, ?string $to = null): array
+    public function statsPerCourse(array $courseIds, ?string $from = null, ?string $to = null, string $timezone = 'UTC'): array
     {
         // Seed every requested course with zeroes first: a course with no enrollments must appear
         // in the result, or the caller has to distinguish "absent" from "empty" at every use site.
@@ -70,7 +70,7 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
         // ONE grouped query for the whole page rather than one per row. At this grain a learner
         // cannot enrol twice in the same course, so count(*) and distinct users coincide — which is
         // why this needs no second DISTINCT pass, unlike the cross-course aggregate above.
-        $rows = $this->scoped($courseIds, $from, $to)
+        $rows = $this->scoped($courseIds, $from, $to, $timezone)
             ->toBase()
             ->selectRaw('course_id')
             ->selectRaw('count(*) as enrollments')
@@ -99,7 +99,7 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
      * @param  list<int>  $courseIds
      * @return Builder<Enrollment>
      */
-    private function scoped(array $courseIds, ?string $from, ?string $to): Builder
+    private function scoped(array $courseIds, ?string $from, ?string $to, string $timezone = 'UTC'): Builder
     {
         $query = Enrollment::query()->whereIn('course_id', $courseIds);
 
@@ -107,16 +107,30 @@ class EnrollmentStatsAdapter implements EnrollmentStatsPort
         // wraps the column in DATE(enrolled_at), which is non-sargable — it cannot use an index on
         // enrolled_at and sequential-scans. Comparing the bare column against day boundaries keeps
         // the index usable and preserves the exact inclusive-day semantics: `DATE(col) >= from` is
-        // `col >= from 00:00:00`, and `DATE(col) <= to` is `col < (to + 1 day) 00:00:00`. Columns are
-        // UTC timestamps and the app timezone is UTC, so the boundaries are computed in UTC too —
-        // identical to the prior behaviour. CarbonImmutable so the boundary instances are never
-        // mutated in place.
+        // `col >= from 00:00:00`, and `DATE(col) <= to` is `col < (to + 1 day) 00:00:00`. CarbonImmutable
+        // so the boundary instances are never mutated in place.
+        //
+        // $timezone defaults to UTC. With the default the columns are UTC timestamps and the app
+        // timezone is UTC, so the boundaries are computed in UTC too — byte-for-byte identical to the
+        // prior behaviour. When a valid IANA zone is supplied the from/to calendar days are interpreted
+        // in that zone (day start, and the day-after start, computed in-zone so a DST transition is
+        // respected) and converted back to UTC for the query; an unknown zone falls through to UTC.
+        $zoned = $timezone !== 'UTC' && in_array($timezone, timezone_identifiers_list(), true);
+
         if ($from !== null) {
-            $query->where('enrolled_at', '>=', CarbonImmutable::parse($from)->startOfDay());
+            $lower = $zoned
+                ? CarbonImmutable::parse($from)->shiftTimezone($timezone)->startOfDay()->utc()
+                : CarbonImmutable::parse($from)->startOfDay();
+
+            $query->where('enrolled_at', '>=', $lower);
         }
 
         if ($to !== null) {
-            $query->where('enrolled_at', '<', CarbonImmutable::parse($to)->startOfDay()->addDay());
+            $upper = $zoned
+                ? CarbonImmutable::parse($to)->shiftTimezone($timezone)->startOfDay()->addDay()->utc()
+                : CarbonImmutable::parse($to)->startOfDay()->addDay();
+
+            $query->where('enrolled_at', '<', $upper);
         }
 
         return $query;

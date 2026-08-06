@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import { useI18n } from "@/lib/i18n/i18n-context";
@@ -13,7 +13,6 @@ import { Field } from "@/components/auth/field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/states/empty-state";
 import { toast } from "@/components/ui/toast";
@@ -22,6 +21,30 @@ import { cn } from "@/lib/utils";
 const controlClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
+/**
+ * Small, MENA-first curated IANA fallback used only when the runtime lacks
+ * `Intl.supportedValuesOf` (pre-2022 engines). Kept deterministic so the rendered option list is
+ * identical on the server and client (no hydration mismatch).
+ */
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Africa/Cairo",
+  "Asia/Riyadh",
+  "Asia/Dubai",
+  "Europe/London",
+  "Europe/Paris",
+  "America/New_York",
+] as const;
+
+/** All IANA timezone identifiers, falling back to a curated list when the API is unavailable. */
+function timezoneOptions(): readonly string[] {
+  try {
+    return Intl.supportedValuesOf("timeZone");
+  } catch {
+    return FALLBACK_TIMEZONES;
+  }
+}
+
 type PrefValues = { locale: "en" | "ar"; digest_frequency: "none" | "daily" | "weekly"; timezone: string };
 
 function PreferencesForm() {
@@ -29,6 +52,7 @@ function PreferencesForm() {
   const { user } = useAuth();
   const update = useUpdatePreferences();
   const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC";
+  const timezones = useMemo(() => timezoneOptions(), []);
 
   const { register, handleSubmit } = useForm<PrefValues>({
     defaultValues: { locale: user?.locale ?? "en", digest_frequency: "daily", timezone: tz },
@@ -62,7 +86,13 @@ function PreferencesForm() {
             </select>
           </Field>
           <Field id="timezone" label={t("student.notifications.timezone")}>
-            <Input id="timezone" {...register("timezone")} />
+            <select id="timezone" className={controlClass} {...register("timezone")}>
+              {timezones.map((zone) => (
+                <option key={zone} value={zone}>
+                  {zone}
+                </option>
+              ))}
+            </select>
           </Field>
           <div className="sm:col-span-3">
             <Button type="submit" loading={update.isPending}>

@@ -41,6 +41,9 @@ class EventDetailResource extends BaseResource
             'starts_at_local' => $this->resource->starts_at
                 ? $tz->inZone($this->resource->starts_at, $this->resource->timezone)
                 : null,
+            'ends_at_local' => $this->resource->ends_at
+                ? $tz->inZone($this->resource->ends_at, $this->resource->timezone)
+                : null,
             'capacity' => $this->resource->capacity,
             'registered_count' => $this->countFor('registered_count', RegistrationStatus::Registered->value),
             'waitlist_count' => $this->countFor('waitlist_count', RegistrationStatus::Waitlisted->value),
