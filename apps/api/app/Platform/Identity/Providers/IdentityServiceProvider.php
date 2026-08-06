@@ -12,12 +12,14 @@ use App\Platform\Identity\Contracts\UserPermissionPort;
 use App\Platform\Identity\Contracts\UserRolePort;
 use App\Platform\Identity\Events\UserLoggedIn;
 use App\Platform\Identity\Events\UserRegistered;
+use App\Platform\Identity\Exceptions\ProtectedRoleException;
 use App\Platform\Identity\Listeners\SendEmailOtpOnRegistration;
 use App\Platform\Identity\Listeners\SendPhoneOtpOnRegistration;
 use App\Platform\Identity\Listeners\UpdateLastLoginTimestamp;
 use App\Platform\Identity\Models\User;
 use App\Platform\Identity\Models\UserDevice;
 use App\Platform\Identity\Policies\DevicePolicy;
+use App\Platform\Identity\Policies\RolePolicy;
 use App\Platform\Identity\Policies\UserPolicy;
 use App\Platform\Identity\Tenancy\RoleBasedTenancyBypassPolicy;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
@@ -26,6 +28,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Spatie\Permission\Models\Role;
 
 /**
  * Wires the Identity module: config, migrations, split route files, policies, named rate
@@ -44,6 +47,7 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
     protected array $policies = [
         User::class => UserPolicy::class,
         UserDevice::class => DevicePolicy::class,
+        Role::class => RolePolicy::class,
     ];
 
     public function register(): void
@@ -66,6 +70,16 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
     {
         $this->registerRateLimiters();
         $this->registerListeners();
+        $this->protectSystemRoles();
+    }
+
+    private function protectSystemRoles(): void
+    {
+        Role::deleting(function (Role $role): void {
+            if (in_array($role->name, ['super_admin', 'admin', 'instructor', 'student'], true)) {
+                throw new ProtectedRoleException((string) $role->name);
+            }
+        });
     }
 
     private function registerRateLimiters(): void
