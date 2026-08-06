@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             CrmSeeder::class,
             AnalyticsSeeder::class,
             NotificationsSeeder::class,
+            StaffRoleTemplatesSeeder::class,
             HomepageSeeder::class,
             BrandingSeeder::class,
             NavigationSeeder::class,
