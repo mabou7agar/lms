@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -26,9 +27,20 @@ class BadgeResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('name')->required(),
-            Textarea::make('description')->rows(2),
-            TextInput::make('criteria'),
+            Section::make('Content')->columns(2)->schema([
+                TextInput::make('name_i18n.en')->label('Name (EN)')->required()
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('name_i18n.ar')->label('Name (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                Textarea::make('description_i18n.en')->label('Description (EN)')->rows(2)->columnSpanFull()
+                    ->helperText('English is the default and fallback locale.'),
+                Textarea::make('description_i18n.ar')->label('Description (AR)')->rows(2)->columnSpanFull()
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('criteria_i18n.en')->label('Criteria (EN)')
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('criteria_i18n.ar')->label('Criteria (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
             Toggle::make('is_active')->default(true),
         ]);
     }

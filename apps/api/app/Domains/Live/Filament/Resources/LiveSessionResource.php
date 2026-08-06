@@ -28,11 +28,24 @@ class LiveSessionResource extends Resource
         return $schema->components([
             TextInput::make('title')->required(),
             TextInput::make('timezone')->default('UTC'),
-            DateTimePicker::make('starts_at')->required(),
-            DateTimePicker::make('ends_at')->required(),
+            DateTimePicker::make('starts_at')->required()->timezone(self::adminTimezone()),
+            DateTimePicker::make('ends_at')->required()->timezone(self::adminTimezone()),
             TextInput::make('capacity')->numeric(),
             Select::make('status')->options(collect(LiveSessionStatus::cases())->mapWithKeys(fn ($s) => [$s->value => ucfirst($s->value)])->all()),
         ]);
+    }
+
+    /**
+     * The signed-in admin's IANA timezone (falling back to the platform default) so the schedule
+     * pickers store the operator's local wall-clock correctly. Guards a missing/non-IANA value.
+     */
+    private static function adminTimezone(): string
+    {
+        $timezone = auth()->user()?->timezone ?? config('shared.default_timezone', 'UTC');
+
+        return is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true)
+            ? $timezone
+            : 'UTC';
     }
 
     public static function table(Table $table): Table

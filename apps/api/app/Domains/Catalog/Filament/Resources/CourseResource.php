@@ -11,6 +11,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -29,9 +30,20 @@ class CourseResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('title')->required()->maxLength(255),
-            TextInput::make('subtitle')->maxLength(255),
-            Textarea::make('description')->rows(4),
+            Section::make('Content')->columns(2)->schema([
+                TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('subtitle_i18n.en')->label('Subtitle (EN)')->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('subtitle_i18n.ar')->label('Subtitle (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                Textarea::make('description_i18n.en')->label('Description (EN)')->rows(4)->columnSpanFull()
+                    ->helperText('English is the default and fallback locale.'),
+                Textarea::make('description_i18n.ar')->label('Description (AR)')->rows(4)->columnSpanFull()
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
             Select::make('status')
                 ->options(collect(CourseStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])->all())
                 ->default(CourseStatus::Draft->value),

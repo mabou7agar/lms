@@ -36,8 +36,22 @@ class CourseAnnouncementResource extends Resource
             Select::make('course_id')->relationship('course', 'title')->searchable()->required(),
             TextInput::make('title')->required()->maxLength(160),
             Textarea::make('body')->required()->rows(8),
-            DateTimePicker::make('published_at')->helperText('When learners see this announcement.'),
+            DateTimePicker::make('published_at')->timezone(self::adminTimezone())
+                ->helperText('When learners see this announcement.'),
         ]);
+    }
+
+    /**
+     * The signed-in admin's IANA timezone (falling back to the platform default) so the publish
+     * picker stores the operator's local wall-clock correctly. Guards a missing/non-IANA value.
+     */
+    private static function adminTimezone(): string
+    {
+        $timezone = auth()->user()?->timezone ?? config('shared.default_timezone', 'UTC');
+
+        return is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true)
+            ? $timezone
+            : 'UTC';
     }
 
     public static function table(Table $table): Table

@@ -10,6 +10,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -29,7 +30,12 @@ class LessonResource extends Resource
     {
         return $schema->components([
             Select::make('section_id')->relationship('section', 'title')->searchable()->required(),
-            TextInput::make('title')->required()->maxLength(255),
+            Grid::make(2)->schema([
+                TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
             Select::make('type')
                 ->options(collect(LessonType::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()])->all())
                 ->required(),

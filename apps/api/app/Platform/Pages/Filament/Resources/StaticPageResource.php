@@ -57,6 +57,19 @@ class StaticPageResource extends Resource
         return $user instanceof Actor && $user->hasRole(['admin', 'super_admin']);
     }
 
+    /**
+     * The signed-in admin's IANA timezone (falling back to the platform default) so the schedule
+     * pickers store the operator's local wall-clock correctly. Guards a missing/non-IANA value.
+     */
+    private static function adminTimezone(): string
+    {
+        $timezone = Auth::user()?->timezone ?? config('shared.default_timezone', 'UTC');
+
+        return is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true)
+            ? $timezone
+            : 'UTC';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -137,9 +150,9 @@ class StaticPageResource extends Resource
                 Select::make('reviewer_id')->label('Reviewer')
                     ->relationship('reviewer', 'name')->searchable()->preload()
                     ->helperText('Optional — the admin who reviewed this page.'),
-                DateTimePicker::make('published_at')->label('Publish at')
+                DateTimePicker::make('published_at')->label('Publish at')->timezone(self::adminTimezone())
                     ->helperText('Leave blank to publish immediately when status is Published.'),
-                DateTimePicker::make('unpublished_at')->label('Unpublish at')
+                DateTimePicker::make('unpublished_at')->label('Unpublish at')->timezone(self::adminTimezone())
                     ->helperText('Optional — automatically retires the page after this time.'),
             ]),
             Section::make('Placement')->columns(2)->schema([

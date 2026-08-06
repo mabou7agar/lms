@@ -4,10 +4,11 @@ namespace App\Domains\Certification\Filament\Resources;
 
 use App\Domains\Certification\Filament\Resources\CertificateTemplateResource\Pages;
 use App\Domains\Certification\Models\CertificateTemplate;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -28,8 +29,16 @@ class CertificateTemplateResource extends Resource
         return $schema->components([
             TextInput::make('key')->required(),
             TextInput::make('version')->numeric()->default(1),
-            TextInput::make('name')->required(),
-            Textarea::make('html')->rows(10)->required(),
+            Section::make('Content')->columns(2)->schema([
+                TextInput::make('name_i18n.en')->label('Name (EN)')->required()
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('name_i18n.ar')->label('Name (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                RichEditor::make('html_i18n.en')->label('HTML (EN)')->required()->columnSpanFull()
+                    ->helperText('English is the default and fallback locale.'),
+                RichEditor::make('html_i18n.ar')->label('HTML (AR)')->columnSpanFull()
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
             Toggle::make('is_active'),
         ]);
     }

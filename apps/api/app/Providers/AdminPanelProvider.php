@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Filament\Widgets\PlatformOverview;
 use App\Platform\Identity\Http\Middleware\EnforceAdminMfa;
+use App\Platform\Shared\Http\Middleware\SetAdminLocale;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -107,6 +108,9 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // Applies the signed-in admin's own `locale` preference to the panel (runs after
+                // session/auth middleware above so Auth::user() is resolved). RBAC is untouched.
+                SetAdminLocale::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

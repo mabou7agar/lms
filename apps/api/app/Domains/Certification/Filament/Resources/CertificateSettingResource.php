@@ -6,6 +6,7 @@ use App\Domains\Certification\Filament\Resources\CertificateSettingResource\Page
 use App\Domains\Certification\Models\CertificateSetting;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -27,12 +28,24 @@ class CertificateSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('issuer_name')->required()->maxLength(255)
-                ->helperText('Organization name printed as the certificate issuer.'),
-            TextInput::make('signature_name')->maxLength(255),
-            TextInput::make('signature_title')->maxLength(255),
-            TextInput::make('signature_image_path')->maxLength(255)
-                ->helperText('Storage path of the signature image (uploaded via media pipeline).'),
+            Section::make('Issuer')->columns(2)->schema([
+                TextInput::make('issuer_name_i18n.en')->label('Issuer name (EN)')->required()->maxLength(255)
+                    ->helperText('Organization name printed as the certificate issuer. English is the default and fallback locale.'),
+                TextInput::make('issuer_name_i18n.ar')->label('Issuer name (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
+            Section::make('Signature')->columns(2)->schema([
+                TextInput::make('signature_name_i18n.en')->label('Signature name (EN)')->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('signature_name_i18n.ar')->label('Signature name (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('signature_title_i18n.en')->label('Signature title (EN)')->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('signature_title_i18n.ar')->label('Signature title (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('signature_image_path')->maxLength(255)->columnSpanFull()
+                    ->helperText('Storage path of the signature image (uploaded via media pipeline).'),
+            ]),
         ]);
     }
 

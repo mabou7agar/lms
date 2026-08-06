@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -26,8 +27,16 @@ class ProductResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('title')->required()->maxLength(255),
-            Textarea::make('description')->rows(3),
+            Section::make('Content')->columns(2)->schema([
+                TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
+                    ->helperText('English is the default and fallback locale.'),
+                TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                Textarea::make('description_i18n.en')->label('Description (EN)')->rows(3)->columnSpanFull()
+                    ->helperText('English is the default and fallback locale.'),
+                Textarea::make('description_i18n.ar')->label('Description (AR)')->rows(3)->columnSpanFull()
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
             Select::make('status')->options(collect(ProductStatus::cases())->mapWithKeys(fn ($s) => [$s->value => ucfirst($s->value)])->all())->default(ProductStatus::Draft->value),
         ]);
     }
