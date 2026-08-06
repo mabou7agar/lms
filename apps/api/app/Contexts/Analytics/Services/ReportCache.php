@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Analytics\Services;
 
+use App\Platform\Shared\Helpers\LocaleHelper;
 use App\Platform\Shared\Tenancy\Contracts\CurrentTenantProvider;
 use Closure;
 use Illuminate\Support\Facades\Cache;
@@ -56,6 +57,8 @@ class ReportCache
         $tenant = $this->tenant->currentTenant()?->value ?? 'global';
         $version = (int) Cache::get(self::VERSION_KEY, 1);
 
-        return 'analytics:report:'.$tenant.':v'.$version.':'.$report.':'.md5(serialize($params));
+        // Locale-scoped: report payloads can embed localized labels, so a cached entry must never
+        // be served to a different locale.
+        return 'analytics:report:'.$tenant.':'.LocaleHelper::current().':v'.$version.':'.$report.':'.md5(serialize($params));
     }
 }

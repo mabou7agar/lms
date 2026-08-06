@@ -31,7 +31,7 @@ class Organization extends Model
 
     protected $table = 'crm_organizations';
 
-    protected $fillable = ['name', 'slug', 'status', 'size', 'website'];
+    protected $fillable = ['name', 'slug', 'status', 'size', 'website', 'locale', 'timezone'];
 
     protected function casts(): array
     {

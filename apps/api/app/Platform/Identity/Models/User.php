@@ -35,7 +35,7 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
     use SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'locale', 'is_active',
+        'name', 'email', 'phone', 'password', 'locale', 'timezone', 'is_active',
     ];
 
     protected $hidden = [

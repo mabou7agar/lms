@@ -5,6 +5,7 @@ use App\Http\Middleware\ForceJsonForApi;
 use App\Http\Middleware\SecurityHeaders;
 use App\Platform\Features\Http\Middleware\EnsureFeatureEnabled;
 use App\Platform\Shared\Http\Middleware\ResolveTenant;
+use App\Platform\Shared\Http\Middleware\SetLocale;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -62,6 +63,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // TenantContext, so this is an explicit early-population step; it changes no behavior
         // until a model opts into the BelongsToTenant trait.
         $middleware->appendToGroup('api', ResolveTenant::class);
+
+        // Locale negotiation for the API surface only (after tenant resolution so the org-default
+        // step can read the active tenant). The Filament admin panel resolves locale from the
+        // authenticated admin user, never from Accept-Language, so it is intentionally NOT here.
+        $middleware->appendToGroup('api', SetLocale::class);
 
         // Feature-flag route guard: `->middleware('feature:<key>')`. Additive — default-on flags
         // plus the built-in admin override mean a normal run is unaffected. See EnsureFeatureEnabled.

@@ -3,6 +3,7 @@
 namespace App\Contexts\Analytics\Services;
 
 use App\Contexts\Analytics\Models\MetricSnapshot;
+use App\Platform\Shared\Helpers\LocaleHelper;
 use App\Platform\Shared\Services\BaseService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
@@ -41,6 +42,8 @@ class KpiEngine extends BaseService
 
     private function cached(string $key, \Closure $callback): mixed
     {
-        return Cache::remember('analytics:'.$key, (int) config('analytics.cache.ttl_seconds', 300), $callback);
+        // Locale-scoped: report/KPI payloads can embed localized labels, so entries must not be
+        // shared across locales.
+        return Cache::remember('analytics:'.LocaleHelper::current().':'.$key, (int) config('analytics.cache.ttl_seconds', 300), $callback);
     }
 }

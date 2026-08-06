@@ -19,6 +19,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Pin the session time zone so every connection reads/writes UTC regardless of the
+            // server's local zone. Persisted timestamps are canonical UTC (Sprint 0.2).
+            'timezone' => env('DB_TIMEZONE', 'UTC'),
         ],
     ],
 

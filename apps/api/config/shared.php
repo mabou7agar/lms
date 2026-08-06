@@ -15,6 +15,10 @@ return [
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
     'rtl_locales' => ['ar'],
 
+    // Timezone — application fallback when neither user nor organization sets one. IANA only.
+    // Persisted timestamps remain UTC; this is the presentation/scheduling default.
+    'default_timezone' => env('APP_TIMEZONE', 'UTC'),
+
     // Money
     'money' => [
         'default_currency' => env('DEFAULT_CURRENCY', 'SAR'),
