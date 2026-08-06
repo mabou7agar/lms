@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Filament\Widgets\PlatformOverview;
 use App\Platform\Identity\Http\Middleware\EnforceAdminMfa;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -24,7 +25,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
  *
  * Access is gated by User::canAccessPanel() (active + super_admin/admin) and, when
  * ADMIN_REQUIRE_MFA is enabled, by EnforceAdminMfa. Resources are auto-discovered from every
- * domain's Filament/Resources directory; no business logic lives in the panel — resources read
+ * domain's Filament/Resources directory; no business logic lives in the panel â€” resources read
  * existing models and defer mutations to domain Actions/Services.
  */
 class AdminPanelProvider extends PanelProvider
@@ -58,8 +59,8 @@ class AdminPanelProvider extends PanelProvider
     {
         // Brand deep-teal primary. Filament pins each generated shade's lightness, so its default
         // primary-600/700 (used for the active sidebar-item label and links) render only ~4.4:1 on
-        // the light surface — just under WCAG AA. Override those two text-facing shades with darker,
-        // in-gamut teals (≥5.3:1) so the panel is AA-clean. Provider-level; no compiled theme needed.
+        // the light surface â€” just under WCAG AA. Override those two text-facing shades with darker,
+        // in-gamut teals (â‰¥5.3:1) so the panel is AA-clean. Provider-level; no compiled theme needed.
         $primary = Color::hex('#275d55');
         $primary[600] = 'oklch(0.50 0.085 183)';
         $primary[700] = 'oklch(0.44 0.075 183)';
@@ -94,6 +95,7 @@ class AdminPanelProvider extends PanelProvider
                 'System',
             ])
             ->pages([Dashboard::class])
+            ->plugin(FilamentShieldPlugin::make())
             ->widgets([PlatformOverview::class])
             ->middleware([
                 EncryptCookies::class,
@@ -115,8 +117,8 @@ class AdminPanelProvider extends PanelProvider
             $panel->discoverResources(in: app_path($path), for: $namespace);
         }
 
-        // Sprint 4 (H5): notification delivery health widget. Discovered by path/namespace string —
-        // NOT a class import — so the composition root gains no compile-time dependency on the
+        // Sprint 4 (H5): notification delivery health widget. Discovered by path/namespace string â€”
+        // NOT a class import â€” so the composition root gains no compile-time dependency on the
         // Notifications context (keeps Deptrac boundaries intact).
         $panel->discoverWidgets(
             in: app_path('Platform/Notifications/Filament/Widgets'),
