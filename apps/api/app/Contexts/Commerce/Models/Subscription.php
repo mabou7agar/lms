@@ -4,8 +4,10 @@ namespace App\Contexts\Commerce\Models;
 
 use App\Contexts\Commerce\Enums\SubscriptionStatus;
 use App\Platform\Shared\Traits\HasPublicId;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -17,6 +19,7 @@ use Illuminate\Support\Carbon;
  * the configured auth model so no cross-context Eloquent class is imported.
  *
  * @property-read SubscriptionPlan|null $plan
+ * @property-read Collection<int, SubscriptionChange> $changes
  * @property string $public_id
  * @property int $id
  * @property int $user_id
@@ -73,6 +76,17 @@ class Subscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(SubscriptionPlan::class, 'plan_id');
+    }
+
+    /**
+     * Append-only audit trail of lifecycle transitions (created/renewal/upgrade/…), newest last.
+     * Read-only: rows are written by the domain Actions; this relation only exposes them for display.
+     *
+     * @return HasMany<SubscriptionChange, $this>
+     */
+    public function changes(): HasMany
+    {
+        return $this->hasMany(SubscriptionChange::class);
     }
 
     /**

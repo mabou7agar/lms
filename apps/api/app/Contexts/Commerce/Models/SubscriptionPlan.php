@@ -4,6 +4,7 @@ namespace App\Contexts\Commerce\Models;
 
 use App\Contexts\Commerce\Enums\BillingInterval;
 use App\Platform\Shared\Traits\HasPublicId;
+use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,12 +16,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * related subscription_plan_prices rows (one is the default); money is never stored on the plan
  * itself. trial_days, when non-zero, grants a no-charge trial before the first renewal charges.
  *
+ * The user-visible name/description are localized per the Sprint 0.2 convention: `name_i18n` /
+ * `description_i18n` hold locale => value maps (the legacy `name` scalar is kept in sync by
+ * HasTranslations during the migrate -> contract window; there is no legacy `description` scalar).
+ *
  * @property-read Collection<int, SubscriptionPlanPrice> $prices
  * @property-read Product|null $product
  * @property string $public_id
  * @property int $id
  * @property int|null $product_id
  * @property string $name
+ * @property array<string, string>|null $name_i18n
+ * @property array<string, string>|null $description_i18n
  * @property BillingInterval $interval
  * @property int $trial_days
  * @property bool $is_active
@@ -28,19 +35,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SubscriptionPlan extends Model
 {
     use HasPublicId;
+    use HasTranslations;
 
     protected $fillable = [
         'product_id',
         'name',
+        'name_i18n',
+        'description_i18n',
         'interval',
         'trial_days',
         'is_active',
     ];
 
+    /** @var array<int, string> */
+    protected array $translatable = ['name_i18n', 'description_i18n'];
+
     protected function casts(): array
     {
         return [
             'interval' => BillingInterval::class,
+            'name_i18n' => 'array',
+            'description_i18n' => 'array',
             'trial_days' => 'integer',
             'is_active' => 'boolean',
         ];
