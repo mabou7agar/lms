@@ -20,10 +20,14 @@ Route::prefix('v1/admin')->middleware('auth:sanctum')->group(function (): void {
     Route::put('sections/{section}', [SectionAdminController::class, 'update']);
     Route::delete('sections/{section}', [SectionAdminController::class, 'destroy']);
     Route::post('sections/{section}/publish', [SectionAdminController::class, 'publish']);
+    // Deep-copy a section and all its lessons; appended at the end of the course, Draft.
+    Route::post('courses/{course}/sections/{section}/duplicate', [SectionAdminController::class, 'duplicate']);
 
     // Lessons
     Route::post('sections/{section}/lessons', [LessonAdminController::class, 'store']);
     Route::put('sections/{section}/lessons/order', [LessonAdminController::class, 'reorder']);
+    // Deep-copy a lesson within its section; appended at the end of the section, Draft.
+    Route::post('sections/{section}/lessons/{lesson}/duplicate', [LessonAdminController::class, 'duplicate']);
     Route::put('lessons/{lesson}', [LessonAdminController::class, 'update']);
     Route::delete('lessons/{lesson}', [LessonAdminController::class, 'destroy']);
     Route::post('lessons/{lesson}/publish', [LessonAdminController::class, 'publish']);

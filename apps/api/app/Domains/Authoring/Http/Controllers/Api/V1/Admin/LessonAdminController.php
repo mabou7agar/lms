@@ -5,6 +5,7 @@ namespace App\Domains\Authoring\Http\Controllers\Api\V1\Admin;
 use App\Domains\Authoring\Actions\Lesson\AttachAssessmentAction;
 use App\Domains\Authoring\Actions\Lesson\CreateLessonAction;
 use App\Domains\Authoring\Actions\Lesson\DeleteLessonAction;
+use App\Domains\Authoring\Actions\Lesson\DuplicateLessonAction;
 use App\Domains\Authoring\Actions\Lesson\ReorderLessonsAction;
 use App\Domains\Authoring\Actions\Lesson\SetLessonPrerequisitesAction;
 use App\Domains\Authoring\Actions\Lesson\SetLessonPublishStateAction;
@@ -35,6 +36,21 @@ class LessonAdminController extends Controller
         Gate::authorize('update', $section);
 
         return ApiResponse::created(new LessonResource($action->execute($section, $request->validated())));
+    }
+
+    /**
+     * Deep-copy a lesson within its section. The lesson is bound independently of {section}, so its
+     * ownership is verified two ways: the caller must manage the section (Gate), and the lesson must
+     * actually belong to that section — a foreign lesson id (another course) resolves to a mismatch
+     * and 404s rather than being copied into a course the caller does not own.
+     */
+    public function duplicate(Section $section, Lesson $lesson, DuplicateLessonAction $action): JsonResponse
+    {
+        Gate::authorize('update', $section);
+
+        abort_unless((int) $lesson->section_id === (int) $section->id, 404);
+
+        return ApiResponse::created(new LessonResource($action->execute($lesson)));
     }
 
     public function update(UpdateLessonRequest $request, Lesson $lesson, UpdateLessonAction $action): JsonResponse
