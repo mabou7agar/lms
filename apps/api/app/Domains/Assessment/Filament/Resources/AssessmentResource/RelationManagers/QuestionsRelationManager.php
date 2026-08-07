@@ -2,10 +2,13 @@
 
 namespace App\Domains\Assessment\Filament\Resources\AssessmentResource\RelationManagers;
 
+use App\Domains\Assessment\Actions\Question\DuplicateQuestionAction;
 use App\Domains\Assessment\Enums\Difficulty;
 use App\Domains\Assessment\Enums\QuestionType;
+use App\Domains\Assessment\Models\AssessmentQuestion;
 use App\Domains\Assessment\Services\QuestionShapeGuard;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -14,8 +17,10 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -70,6 +75,27 @@ class QuestionsRelationManager extends RelationManager
                 Select::make('difficulty')->label('Difficulty')
                     ->options(self::enumOptions(Difficulty::cases())),
             ]),
+            // Type-specific `config` keys — ONLY the keys a grader for the current type actually
+            // reads (see ShortAnswer/FillInBlank/MultipleChoice graders). Each toggle is both hidden
+            // AND non-dehydrated when it does not apply, so an unsupported key is never written.
+            Section::make('Type-specific settings')
+                ->description('Grading options for the selected question type.')
+                ->columns(3)
+                ->visible(fn (Get $get): bool => self::usesTextMatching($get) || self::supportsPartialCredit($get))
+                ->schema([
+                    Toggle::make('config.case_sensitive')->label('Case sensitive')->inline(false)->default(false)
+                        ->helperText('Match the learner\'s text exactly, including letter case.')
+                        ->visible(fn (Get $get): bool => self::usesTextMatching($get))
+                        ->dehydrated(fn (Get $get): bool => self::usesTextMatching($get)),
+                    Toggle::make('config.normalize_arabic')->label('Normalize Arabic')->inline(false)->default(true)
+                        ->helperText('Forgive Arabic orthography and Arabic-Indic digits when matching.')
+                        ->visible(fn (Get $get): bool => self::usesTextMatching($get))
+                        ->dehydrated(fn (Get $get): bool => self::usesTextMatching($get)),
+                    Toggle::make('config.partial_credit')->label('Partial credit')->inline(false)->default(false)
+                        ->helperText('Award a fraction of the marks for a partially correct answer.')
+                        ->visible(fn (Get $get): bool => self::supportsPartialCredit($get))
+                        ->dehydrated(fn (Get $get): bool => self::supportsPartialCredit($get)),
+                ]),
             Repeater::make('options')->label('Options / accepted answers')
                 ->relationship()
                 ->orderColumn('position')
@@ -126,6 +152,17 @@ class QuestionsRelationManager extends RelationManager
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    // Deep-copies the question and its options (fresh ids, config carried) and appends
+                    // the copy to the end of the assessment. Carries no attempt data.
+                    ->action(function (AssessmentQuestion $record): void {
+                        app(DuplicateQuestionAction::class)->execute($record);
+
+                        Notification::make()->title('Question duplicated')->success()->send();
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([]);
@@ -173,6 +210,26 @@ class QuestionsRelationManager extends RelationManager
                 'group_index' => (int) ($option['group_index'] ?? 0),
             ];
         }, $items));
+    }
+
+    /** The currently-selected question type, or null when nothing valid is chosen. */
+    private static function selectedType(Get $get): ?QuestionType
+    {
+        return is_string($get('type')) ? QuestionType::tryFrom($get('type')) : null;
+    }
+
+    /** Whether the current type is graded by matching learner text (short answer / fill-in-blank). */
+    private static function usesTextMatching(Get $get): bool
+    {
+        return self::selectedType($get)?->usesTextMatching() ?? false;
+    }
+
+    /** Whether a grader for the current type honours the `partial_credit` config key. */
+    private static function supportsPartialCredit(Get $get): bool
+    {
+        $type = self::selectedType($get);
+
+        return $type === QuestionType::MultipleChoice || $type === QuestionType::FillInBlank;
     }
 
     /**

@@ -67,6 +67,17 @@ class Assignment extends Model
     /** @var array<int, string> */
     protected array $translatable = ['title_i18n'];
 
+    /**
+     * `instructions` is a locale => sanitized-HTML map (e.g. {"en": "<p>…</p>", "ar": "<p>…</p>"}).
+     * Declaring it here runs each locale value through the shared HtmlSanitizer on write — the same
+     * rich-text strategy the question prompt/explanation/hint fields use — without a legacy scalar or
+     * an `_i18n` suffix (so no legacy-column sync is attempted). Non-string values in the map (a
+     * structured block payload) are left untouched by the sanitizer.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableHtml = ['instructions'];
+
     /** @return array<string, string> */
     protected function casts(): array
     {

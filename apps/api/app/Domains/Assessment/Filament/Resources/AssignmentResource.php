@@ -12,6 +12,7 @@ use App\Domains\Assessment\Services\AssignmentService;
 use App\Platform\Identity\Contracts\Actor;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -29,9 +30,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Admin authoring surface for instructor-reviewed assignments. The form binds to the Assignment
- * model (its casts and the HasTranslations title sync apply as for the API). The structured
- * `instructions` JSONB payload is intentionally NOT exposed here — it is authored by the engine's
- * own structured editor, and rendering it as a free field would risk corrupting its shape.
+ * model (its casts and the HasTranslations title sync apply as for the API). The bilingual
+ * `instructions` payload is authored as localized rich text through the same HtmlSanitizer strategy
+ * the assessment question fields use — the model declares `instructions` translatableHtml, so each
+ * locale value is sanitized on save; it is never exposed as a raw JSON editor.
  *
  * The publish lifecycle is not a form field: the Publish / Unpublish record actions delegate to
  * AssignmentService (which audits and dispatches AssignmentPublished). Rubric authoring lives in the
@@ -95,6 +97,12 @@ class AssignmentResource extends Resource
                 TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
                     ->helperText('English is the default and fallback locale.'),
                 TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'rtl']),
+            ]),
+            Section::make('Instructions')->columns(2)->schema([
+                RichEditor::make('instructions.en')->label('Instructions (EN)')
+                    ->helperText('Bilingual rich text. HTML is sanitized on save.'),
+                RichEditor::make('instructions.ar')->label('Instructions (AR)')
                     ->extraInputAttributes(['dir' => 'rtl']),
             ]),
             Section::make('Submission')->columns(2)->schema([

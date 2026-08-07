@@ -2,12 +2,15 @@
 
 namespace App\Domains\Assessment\Filament\Resources;
 
+use App\Domains\Assessment\Actions\Assessment\AttachAssessmentToLessonAction;
+use App\Domains\Assessment\Actions\Assessment\DuplicateAssessmentAction;
 use App\Domains\Assessment\Actions\Assessment\SetAssessmentStatusAction;
 use App\Domains\Assessment\Enums\AssessmentScope;
 use App\Domains\Assessment\Enums\AssessmentStatus;
 use App\Domains\Assessment\Enums\FeedbackMode;
 use App\Domains\Assessment\Filament\Resources\AssessmentResource\Pages;
 use App\Domains\Assessment\Filament\Resources\AssessmentResource\RelationManagers\QuestionsRelationManager;
+use App\Domains\Assessment\Filament\Support\AssessmentPreviewRenderer;
 use App\Domains\Assessment\Models\Assessment;
 use App\Platform\Identity\Contracts\Actor;
 use Filament\Actions\Action;
@@ -160,7 +163,118 @@ class AssessmentResource extends Resource
                     ->requiresConfirmation()
                     ->modalDescription('Archive this assessment? It stays readable for historical attempts but cannot be attached to new lessons.')
                     ->action(fn (Assessment $record) => self::transition($record, AssessmentStatus::Archived, 'Assessment archived')),
+                self::previewAction(),
+                self::duplicateAction(),
+                self::attachToLessonAction(),
+                self::detachFromLessonAction(),
             ]);
+    }
+
+    /**
+     * A1 — deep-duplicate an assessment (fresh ids, forced Draft, questions + options + tags copied,
+     * NO attempts). Gated by AssessmentPolicy's `update` (course ownership); the domain action writes
+     * the `assessment.duplicated` audit entry.
+     */
+    private static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon('heroicon-o-document-duplicate')
+            ->color('gray')
+            ->visible(fn (Assessment $record): bool => (bool) Auth::user()?->can('update', $record))
+            ->requiresConfirmation()
+            ->modalDescription('Create an editable Draft copy of this assessment, including its questions and options. Learner attempts and results are NOT copied.')
+            ->action(function (Assessment $record): void {
+                $copy = app(DuplicateAssessmentAction::class)->execute($record, Auth::id());
+
+                Notification::make()
+                    ->title('Assessment duplicated')
+                    ->body('A Draft copy was created with '.$copy->questions->count().' question(s).')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * A2 — read-only, learner-style bilingual preview. Renders every runtime question type in EN and
+     * AR (dir=rtl) from already-stored rows; it creates no attempt and grades nothing.
+     */
+    private static function previewAction(): Action
+    {
+        return Action::make('preview')
+            ->label('Preview')
+            ->icon('heroicon-o-eye')
+            ->color('gray')
+            ->visible(fn (Assessment $record): bool => (bool) Auth::user()?->can('view', $record))
+            ->modalHeading('Learner preview')
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->modalContent(fn (Assessment $record) => app(AssessmentPreviewRenderer::class)->render($record));
+    }
+
+    /**
+     * A5 — attach this assessment to a lesson via the existing `lessons.assessment_id` reference,
+     * scoped to the assessment's own course. Hidden for platform-level banks (no course) and archived
+     * assessments; gated by AssessmentPolicy's `update`.
+     */
+    private static function attachToLessonAction(): Action
+    {
+        return Action::make('attachToLesson')
+            ->label('Attach to lesson')
+            ->icon('heroicon-o-link')
+            ->color('gray')
+            ->visible(fn (Assessment $record): bool => $record->course_id !== null
+                && $record->status !== AssessmentStatus::Archived
+                && (bool) Auth::user()?->can('update', $record))
+            ->modalDescription('Point a lesson in this course at this assessment. Only lessons from the same course are eligible.')
+            ->schema([
+                Select::make('lesson_id')->label('Lesson')->required()->searchable()
+                    ->options(fn (Assessment $record): array => DB::table('lessons')
+                        ->join('course_sections', 'lessons.section_id', '=', 'course_sections.id')
+                        ->where('course_sections.course_id', $record->course_id)
+                        ->orderBy('lessons.title')
+                        ->pluck('lessons.title', 'lessons.id')
+                        ->all()),
+            ])
+            ->action(function (array $data, Assessment $record): void {
+                try {
+                    app(AttachAssessmentToLessonAction::class)->attach($record, (int) $data['lesson_id']);
+                } catch (ValidationException $exception) {
+                    Notification::make()->title('Cannot attach')->body($exception->getMessage())->danger()->send();
+
+                    return;
+                }
+
+                Notification::make()->title('Attached to lesson')->success()->send();
+            });
+    }
+
+    /**
+     * A5 — detach this assessment from a lesson currently referencing it. Visible only when at least
+     * one lesson points here; allowed even for archived assessments so a bad one can be pulled.
+     */
+    private static function detachFromLessonAction(): Action
+    {
+        return Action::make('detachFromLesson')
+            ->label('Detach from lesson')
+            ->icon('heroicon-o-link-slash')
+            ->color('gray')
+            ->visible(fn (Assessment $record): bool => (bool) Auth::user()?->can('update', $record)
+                && DB::table('lessons')->where('assessment_id', $record->id)->exists())
+            ->modalDescription('Clear this assessment from a lesson that currently references it.')
+            ->schema([
+                Select::make('lesson_id')->label('Lesson')->required()->searchable()
+                    ->options(fn (Assessment $record): array => DB::table('lessons')
+                        ->where('assessment_id', $record->id)
+                        ->orderBy('title')
+                        ->pluck('title', 'id')
+                        ->all()),
+            ])
+            ->action(function (array $data, Assessment $record): void {
+                app(AttachAssessmentToLessonAction::class)->detach($record, (int) $data['lesson_id']);
+
+                Notification::make()->title('Detached from lesson')->success()->send();
+            });
     }
 
     public static function getRelations(): array
