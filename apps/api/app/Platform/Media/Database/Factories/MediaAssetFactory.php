@@ -60,6 +60,12 @@ class MediaAssetFactory extends Factory
         return $this->state(fn () => ['course_id' => $courseId]);
     }
 
+    /** Place the asset inside an organizational folder (Phase 8 / D1). */
+    public function inFolder(int $folderId): self
+    {
+        return $this->state(fn () => ['folder_id' => $folderId]);
+    }
+
     /** A live, single-use upload token bound to a provider ref, awaiting finalize. */
     public function awaitingUpload(): self
     {

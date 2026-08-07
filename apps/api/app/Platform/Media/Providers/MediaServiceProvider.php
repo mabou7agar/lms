@@ -4,11 +4,15 @@ namespace App\Platform\Media\Providers;
 
 use App\Platform\Media\Ingestion\IngestionProviderManager;
 use App\Platform\Media\Models\MediaAsset;
+use App\Platform\Media\Models\MediaFolder;
 use App\Platform\Media\Playback\PlaybackTokenManager;
 use App\Platform\Media\Policies\MediaAssetPolicy;
+use App\Platform\Media\Policies\MediaFolderPolicy;
+use App\Platform\Media\Ports\MediaPickerAdapter;
 use App\Platform\Media\Ports\MediaReferenceAdapter;
 use App\Platform\Media\Ports\NullMediaEnrollmentPort;
 use App\Platform\Shared\Media\Contracts\MediaEnrollmentPort;
+use App\Platform\Shared\Media\Contracts\MediaPickerPort;
 use App\Platform\Shared\Media\Contracts\MediaReferencePort;
 use App\Platform\Shared\Media\Contracts\PlaybackPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
@@ -35,6 +39,7 @@ class MediaServiceProvider extends BaseDomainServiceProvider
     /** @var array<class-string, class-string> */
     protected array $policies = [
         MediaAsset::class => MediaAssetPolicy::class,
+        MediaFolder::class => MediaFolderPolicy::class,
     ];
 
     protected function domainPath(): string
@@ -52,6 +57,10 @@ class MediaServiceProvider extends BaseDomainServiceProvider
         $this->app->singleton(IngestionProviderManager::class);
 
         $this->app->bind(MediaReferencePort::class, MediaReferenceAdapter::class);
+
+        // The seam the Shared reusable Filament MediaPicker resolves for every Media-side concern
+        // (search selectable assets, sign a preview, re-authorize a picked id, upload a new asset).
+        $this->app->bind(MediaPickerPort::class, MediaPickerAdapter::class);
 
         // Deny-by-default; Learning overrides with a real enrollment/publication-aware implementation.
         $this->app->bind(MediaEnrollmentPort::class, NullMediaEnrollmentPort::class);

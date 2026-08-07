@@ -65,6 +65,11 @@ class SharedServiceProvider extends ServiceProvider
         $this->registerBlueprintMacros();
         $this->registerTenancyMiddlewareAlias();
         $this->registerPublicRateLimiters();
+
+        // Shared Filament view namespace so the reusable MediaPicker field (U1), which now lives in the
+        // Shared kernel, resolves its Blade view as `shared::media-picker`. Structural only — a path
+        // hint, no dependency on any other layer.
+        $this->loadViewsFrom(__DIR__.'/../Filament/Forms/Components/views', 'shared');
     }
 
     /**

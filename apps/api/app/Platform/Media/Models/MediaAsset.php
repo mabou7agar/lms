@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property MediaPurpose $purpose
  * @property int $created_by
  * @property int|null $course_id
+ * @property int|null $folder_id
  * @property string|null $original_filename
  * @property string|null $mime_type
  * @property int|null $size_bytes
@@ -75,6 +77,7 @@ class MediaAsset extends Model
             'purpose' => MediaPurpose::class,
             'created_by' => 'integer',
             'course_id' => 'integer',
+            'folder_id' => 'integer',
             'size_bytes' => 'integer',
             'duration_seconds' => 'integer',
             'width' => 'integer',
@@ -90,6 +93,16 @@ class MediaAsset extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(MediaAttachment::class);
+    }
+
+    /**
+     * Optional organizational folder (Phase 8 / D1); null = root.
+     *
+     * @return BelongsTo<MediaFolder, $this>
+     */
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(MediaFolder::class, 'folder_id');
     }
 
     /** @return HasMany<MediaCaption, $this> */

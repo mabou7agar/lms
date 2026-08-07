@@ -4,11 +4,16 @@ namespace App\Platform\Media\Filament\Resources;
 
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Media\Exceptions\MediaInUseException;
+use App\Platform\Media\Exceptions\MediaTransitionException;
 use App\Platform\Media\Filament\Resources\MediaAssetResource\Pages;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaAttachment;
+use App\Platform\Media\Models\MediaFolder;
 use App\Platform\Media\Ports\MediaAssetRefResolver;
+use App\Platform\Media\Services\MediaAdminUploadService;
 use App\Platform\Media\Services\MediaDeletionService;
+use App\Platform\Media\Services\MediaIngestionService;
+use App\Platform\Media\Services\MediaReplacementService;
 use App\Platform\Shared\Media\Contracts\PlaybackPort;
 use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
@@ -18,18 +23,22 @@ use App\Platform\Shared\Media\Exceptions\MediaUnavailableException;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Throwable;
 use UnitEnum;
 
@@ -135,9 +144,48 @@ class MediaAssetResource extends Resource
                 SelectFilter::make('type')->options(self::enumOptions(MediaType::cases())),
                 SelectFilter::make('status')->options(self::enumOptions(MediaStatus::cases())),
                 SelectFilter::make('provider')->options(self::enumOptions(MediaProvider::cases())),
+                // D3: filter by uploader (created_by). Options are the distinct owner ids actually
+                // present, labelled as user ids (the DAM references users by scalar id, no join).
+                SelectFilter::make('created_by')
+                    ->label('Uploader')
+                    ->options(fn (): array => self::uploaderOptions()),
+                // D1: filter by organizational folder.
+                SelectFilter::make('folder_id')
+                    ->label('Folder')
+                    ->options(fn (): array => MediaFolder::query()->orderBy('name')->pluck('name', 'id')->all()),
+                // D3: created_at date-range filter (inclusive by calendar day).
+                Filter::make('created_at')
+                    ->schema([
+                        DatePicker::make('created_from')->label('Uploaded from'),
+                        DatePicker::make('created_until')->label('Uploaded until'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'] ?? null,
+                            fn (Builder $q, $date): Builder => $q->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'] ?? null,
+                            fn (Builder $q, $date): Builder => $q->whereDate('created_at', '<=', $date),
+                        ))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = 'Uploaded from '.$data['created_from'];
+                        }
+
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = 'Uploaded until '.$data['created_until'];
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->recordActions([
                 ViewAction::make(),
+                self::retryAction(),
+                self::replaceAction(),
                 self::deleteAction(),
                 self::forceDeleteAction(),
             ])
@@ -249,6 +297,112 @@ class MediaAssetResource extends Resource
             ->action(function (MediaAsset $record): void {
                 self::runDeletion($record, true);
             });
+    }
+
+    /**
+     * D8: Retry a failed ingestion. Only shown for an asset the engine reports as retryable, gated by
+     * the Media policy's `retry` ability, and delegated wholesale to MediaIngestionService::retry
+     * (which re-verifies the EXISTING remote asset — never creates a duplicate upload).
+     */
+    public static function retryAction(): Action
+    {
+        return Action::make('retryIngestion')
+            ->label('Retry')
+            ->icon('heroicon-o-arrow-path')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Retry media processing')
+            ->modalDescription('Re-verify this failed asset with its provider and resume processing. This does not create a new upload.')
+            ->modalSubmitActionLabel('Retry')
+            // Only a genuinely retryable (failed) asset, and only for an operator the policy allows.
+            ->visible(fn (MediaAsset $record): bool => $record->status->isRetryable() && self::operatorCan('retry', $record))
+            ->action(function (MediaAsset $record): void {
+                try {
+                    app(MediaIngestionService::class)->retry($record);
+                    Notification::make()->title('Retry started')->success()->send();
+                } catch (MediaTransitionException $e) {
+                    Notification::make()->title('Cannot retry')->body($e->getMessage())->danger()->send();
+                } catch (Throwable $e) {
+                    Notification::make()->title('Retry failed')->body($e->getMessage())->danger()->send();
+                }
+            });
+    }
+
+    /**
+     * D2 safe replace: upload a replacement binary as a brand-new asset (a version), then repoint
+     * EVERY usage of this asset onto it and retire the original — all delegated to the engine
+     * (MediaAdminUploadService + MediaReplacementService). Ownership is preserved: the replacement is
+     * attributed to the ORIGINAL owner, so the engine's owner-only attach/detach guarantees hold even
+     * when a super_admin / course-manager triggers the replace. Policy-gated by `update`.
+     */
+    public static function replaceAction(): Action
+    {
+        return Action::make('replaceAsset')
+            ->label('Replace')
+            ->icon('heroicon-o-arrows-right-left')
+            ->color('warning')
+            ->modalHeading('Replace media')
+            ->modalDescription('Upload a replacement. Every place this asset is used is repointed to the new version and the original is retired. This cannot be undone.')
+            ->modalSubmitActionLabel('Replace')
+            ->visible(fn (MediaAsset $record): bool => self::operatorCan('update', $record) && ! $record->trashed())
+            ->schema([
+                FileUpload::make('file')->label('Replacement file')->required()->storeFiles(false),
+            ])
+            ->action(function (MediaAsset $record, array $data): void {
+                $file = $data['file'] ?? null;
+
+                if (is_array($file)) {
+                    $file = reset($file);
+                }
+
+                if (! $file instanceof TemporaryUploadedFile) {
+                    Notification::make()->title('No replacement file provided')->danger()->send();
+
+                    return;
+                }
+
+                // Attribute the new version to the original owner so the engine's owner-only repoint
+                // (attach/detach) applies regardless of which operator triggered the replace.
+                $ownerId = (int) $record->created_by;
+
+                try {
+                    $new = app(MediaAdminUploadService::class)->upload(
+                        actorId: $ownerId,
+                        purpose: $record->purpose,
+                        filename: $file->getClientOriginalName(),
+                        mimeType: $file->getMimeType() ?: 'application/octet-stream',
+                        sizeBytes: (int) $file->getSize(),
+                        contents: (string) file_get_contents($file->getRealPath()),
+                        type: $record->type,
+                        courseId: $record->course_id,
+                    );
+
+                    $repointed = app(MediaReplacementService::class)->replace($record, $new, $ownerId);
+
+                    Notification::make()
+                        ->title('Media replaced')
+                        ->body("{$repointed} reference(s) repointed to the new version.")
+                        ->success()
+                        ->send();
+                } catch (Throwable $e) {
+                    Notification::make()->title('Replace failed')->body($e->getMessage())->danger()->send();
+                }
+            });
+    }
+
+    /**
+     * Distinct uploader ids present in the library, labelled by id. Bounded by DISTINCT so the option
+     * list never scales with row count. @return array<int, string>
+     */
+    private static function uploaderOptions(): array
+    {
+        return MediaAsset::query()
+            ->select('created_by')
+            ->distinct()
+            ->orderBy('created_by')
+            ->pluck('created_by')
+            ->mapWithKeys(fn (int $id): array => [$id => "User #{$id}"])
+            ->all();
     }
 
     /**
