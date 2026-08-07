@@ -42,7 +42,7 @@ use Spatie\Permission\Models\Role;
  */
 class IdentityServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php'];
+    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php', 'routes/privacy.php'];
 
     protected function domainPath(): string
     {
