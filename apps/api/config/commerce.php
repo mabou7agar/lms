@@ -22,6 +22,35 @@ return [
         'prefix' => env('COMMERCE_INVOICE_PREFIX', 'INV'),
     ],
 
+    /*
+     | Fiscal e-invoicing (KSA ZATCA "Fatoora", Egypt ETA). Resolved via the EInvoiceProvider
+     | abstraction the same way payments are: off by default, `fake` clears deterministically for
+     | local/test, and `fake` is refused in production (ProductionConfigValidator) unless explicitly
+     | allowed. The provider builds a canonical document + hash and submits it; the cryptographic
+     | stamp (ZATCA CSID / XAdES, ETA signing) and the live sandbox round-trip need real certificates
+     | and are exercised locally (LOCAL REQUIRED).
+     */
+    'einvoicing' => [
+        'enabled' => (bool) env('COMMERCE_EINVOICING_ENABLED', false),
+        'provider' => env('COMMERCE_EINVOICING_PROVIDER', 'fake'), // fake | zatca | eta
+        'allow_fake_provider' => (bool) env('COMMERCE_EINVOICING_ALLOW_FAKE', false),
+
+        'zatca' => [
+            // Seller (VAT registrant) identity, stamped onto every document.
+            'seller_name' => env('ZATCA_SELLER_NAME'),
+            'vat_number' => env('ZATCA_VAT_NUMBER'),
+            'base_url' => env('ZATCA_BASE_URL', 'https://gw-fatoora.zatca.gov.sa/e-invoicing/core'),
+            // Reporting (B2C simplified) vs clearance (B2B standard).
+            'mode' => env('ZATCA_MODE', 'reporting'),
+        ],
+
+        'eta' => [
+            'seller_name' => env('ETA_SELLER_NAME'),
+            'tax_number' => env('ETA_TAX_NUMBER'),
+            'base_url' => env('ETA_BASE_URL', 'https://api.invoicing.eta.gov.eg'),
+        ],
+    ],
+
     'credit_note' => [
         'prefix' => env('COMMERCE_CREDIT_NOTE_PREFIX', 'CN'),
     ],

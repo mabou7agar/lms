@@ -131,6 +131,14 @@ class ProductionConfigValidator
             $e[] = 'SSO fake provider is enabled in production (set SSO_ALLOW_FAKE_PROVIDER=true only for a deliberate non-auth environment).';
         }
 
+        // E-invoicing: the fake provider marks invoices "cleared" without contacting the tax authority.
+        // Refuse it in production (when e-invoicing is on) unless explicitly permitted.
+        if ((bool) config('commerce.einvoicing.enabled', false) === true
+            && (string) config('commerce.einvoicing.provider') === 'fake'
+            && (bool) config('commerce.einvoicing.allow_fake_provider', false) !== true) {
+            $e[] = 'COMMERCE_EINVOICING_PROVIDER=fake is not allowed in production (set COMMERCE_EINVOICING_ALLOW_FAKE=true only for a deliberate non-fiscal environment).';
+        }
+
         // Trusted proxies must be explicit (fail-closed W07 default trusts nothing, defeating rate limits).
         if (trim((string) config('security.trusted_proxies', '')) === '') {
             $e[] = 'TRUSTED_PROXIES is not set — required behind a load balancer for correct client IPs and rate limiting.';
