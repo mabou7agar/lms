@@ -4,17 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Sparkles } from "lucide-react";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { readString, withValue } from "@/lib/authoring/block-content";
 import { blockDef } from "@/lib/authoring/block-registry";
 import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
 import { useBuilder } from "@/lib/authoring/builder-store";
-import type { BlockContent } from "@/lib/authoring/types";
+import type { BlockContent, LocalizedText } from "@/lib/authoring/types";
 import { QuizLessonPanel } from "../assessment/quiz-lesson-panel";
 import { BlockIcon } from "../block-icon";
-import { useFieldAutosave } from "../field-autosave";
+import { useLocalizedAutosave } from "../field-autosave";
 import { StatusBadge } from "../status-badge";
+import { BilingualField } from "./bilingual-field";
 import { ExternalLinkEditor } from "./external-link-editor";
 import { MediaEditor } from "./media-editor";
 
@@ -41,10 +41,10 @@ export function LessonEditor({ sectionId, blockId }: { sectionId: string; blockI
   const block = builder.curriculum?.sections.find((s) => s.id === sectionId)?.blocks.find((b) => b.id === blockId);
 
   const commitTitle = useCallback(
-    (v: string) => builder.renameBlock(sectionId, blockId, v),
+    (v: LocalizedText) => builder.setBlockTitle(sectionId, blockId, v),
     [builder, sectionId, blockId],
   );
-  const title = useFieldAutosave(block?.title ?? "", commitTitle);
+  const title = useLocalizedAutosave(block?.title_i18n ?? { en: "", ar: "" }, commitTitle);
 
   const [content, setContent] = useState<BlockContent>(block?.content ?? {});
   const contentJson = JSON.stringify(content);
@@ -86,13 +86,15 @@ export function LessonEditor({ sectionId, blockId }: { sectionId: string; blockI
         <StatusBadge state={block.publish_state} />
       </div>
 
-      <FormField
+      <BilingualField
         label={t("editor.block.titleLabel")}
         required
-        error={title.value.trim() ? undefined : t("validation.blockTitle")}
-      >
-        <Input value={title.value} onChange={(e) => title.setValue(e.target.value)} onBlur={title.flush} />
-      </FormField>
+        value={title.value}
+        onChange={title.setLang}
+        onBlur={title.flush}
+        error={title.value.en.trim() ? undefined : t("validation.blockTitle")}
+      />
+
 
       {block.kind === "quiz" ? (
         // A quiz lesson's payload is an attached Assessment, not `content` or media — so it gets

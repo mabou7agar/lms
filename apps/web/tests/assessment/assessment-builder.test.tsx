@@ -80,10 +80,12 @@ function quizBlock(overrides: Partial<Block> = {}): Block {
   return {
     id: "l1",
     title: "Knowledge check",
+    title_i18n: { en: "Knowledge check", ar: "" },
     kind: "quiz",
     content: {},
     position: 0,
     publish_state: "draft",
+    lock_version: 0,
     is_preview: false,
     media: null,
     prerequisites: [],

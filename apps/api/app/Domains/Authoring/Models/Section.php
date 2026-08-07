@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * annotation convention and are covered by the PHPStan baseline.
  *
  * @property int $course_id
+ * @property int $lock_version optimistic-locking counter (C3); advanced on every guarded write
  */
 class Section extends Model
 {
@@ -43,6 +44,7 @@ class Section extends Model
         return [
             'publish_state' => PublishState::class,
             'position' => 'integer',
+            'lock_version' => 'integer',
             'title_i18n' => 'array',
             'summary_i18n' => 'array',
         ];

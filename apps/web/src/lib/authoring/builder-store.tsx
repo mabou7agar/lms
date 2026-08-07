@@ -19,6 +19,7 @@ import {
 } from "react";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api/errors";
+import { StaleWriteError } from "./api";
 import { blockDef } from "./block-registry";
 import { useAuthoringController } from "./hooks";
 import { validateCurriculum } from "./validation";
@@ -27,6 +28,7 @@ import type {
   BlockContent,
   BlockKind,
   Curriculum,
+  LocalizedText,
   PublishState,
   Section,
   Selection,
@@ -34,6 +36,12 @@ import type {
   UpsertMediaInput,
   ValidationIssue,
 } from "./types";
+
+/** Non-destructive conflict surfaced after a stale-write (HTTP 409). */
+export interface ConflictState {
+  /** The server's authoritative version, when it reported one. */
+  currentVersion?: number;
+}
 
 interface Command {
   label: string;
@@ -68,16 +76,23 @@ export interface BuilderContextValue {
 
   issues: ValidationIssue[];
 
+  /** Set when a mutation was rejected as stale (409); drives the non-destructive conflict banner. */
+  conflict: ConflictState | null;
+  /** Refetch the tree and clear the conflict (discards local undo history, whose versions are stale). */
+  reloadAfterConflict: () => void;
+  /** Dismiss the banner and keep editing (the user's unsaved input in the editors is preserved). */
+  dismissConflict: () => void;
+
   // High-level actions
   addSection: () => Promise<void>;
-  renameSection: (sectionId: string, title: string) => Promise<void>;
-  setSectionSummary: (sectionId: string, summary: string) => Promise<void>;
+  setSectionTitle: (sectionId: string, title: LocalizedText) => Promise<void>;
+  setSectionSummary: (sectionId: string, summary: LocalizedText) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   publishSection: (sectionId: string, state: PublishState) => Promise<void>;
   reorderSections: (orderedIds: string[]) => Promise<void>;
 
   addBlock: (sectionId: string, kind: BlockKind) => Promise<void>;
-  renameBlock: (sectionId: string, blockId: string, title: string) => Promise<void>;
+  setBlockTitle: (sectionId: string, blockId: string, title: LocalizedText) => Promise<void>;
   setBlockContent: (sectionId: string, blockId: string, content: BlockContent) => Promise<void>;
   setMedia: (sectionId: string, blockId: string, input: UpsertMediaInput) => Promise<void>;
   deleteBlock: (sectionId: string, blockId: string) => Promise<void>;
@@ -105,6 +120,7 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [search, setSearch] = useState("");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [past, setPast] = useState<Command[]>([]);
   const [future, setFuture] = useState<Command[]>([]);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +140,21 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     savedTimer.current = setTimeout(() => setSaveStatus("idle"), 1600);
   }, []);
 
+  /**
+   * A stale-write (409) is not a save failure to shout about — the server simply has newer state.
+   * Surface it as a non-destructive banner instead of the generic error toast. The failing action
+   * has already rolled back its optimistic patch, so there is no partial local mutation to undo.
+   */
+  const handleMutationError = useCallback((e: unknown) => {
+    if (e instanceof StaleWriteError) {
+      setSaveStatus("idle");
+      setConflict({ currentVersion: e.currentVersion });
+      return;
+    }
+    setSaveStatus("error");
+    toast.error(errorMessage(e, "Couldn't save your changes"));
+  }, []);
+
   /** Execute a side-effect with save-status + error handling. */
   const run = useCallback(
     async (fn: () => Promise<void>) => {
@@ -132,11 +163,10 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
         await fn();
         flashSaved();
       } catch (e) {
-        setSaveStatus("error");
-        toast.error(errorMessage(e, "Couldn't save your changes"));
+        handleMutationError(e);
       }
     },
-    [flashSaved],
+    [flashSaved, handleMutationError],
   );
 
   /** Run a reversible command and record it for undo. */
@@ -149,12 +179,20 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
         setFuture([]);
         flashSaved();
       } catch (e) {
-        setSaveStatus("error");
-        toast.error(errorMessage(e, "Couldn't save your changes"));
+        handleMutationError(e);
       }
     },
-    [flashSaved],
+    [flashSaved, handleMutationError],
   );
+
+  const reloadAfterConflict = useCallback(() => {
+    setConflict(null);
+    setPast([]);
+    setFuture([]);
+    void query.refetch();
+  }, [query]);
+
+  const dismissConflict = useCallback(() => setConflict(null), []);
 
   const undo = useCallback(() => {
     setPast((p) => {
@@ -198,27 +236,27 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     });
   }, [actions, run]);
 
-  const renameSection = useCallback(
-    async (sectionId: string, title: string) => {
-      const prev = findSection(sectionId)?.title ?? "";
-      if (prev === title) return;
+  const setSectionTitle = useCallback(
+    async (sectionId: string, title: LocalizedText) => {
+      const prev = findSection(sectionId)?.title_i18n ?? { en: "", ar: "" };
+      if (sameText(prev, title)) return;
       await runCommand({
         label: "rename section",
-        redo: () => actions.updateSection(sectionId, { title }),
-        undo: () => actions.updateSection(sectionId, { title: prev }),
+        redo: () => actions.updateSection(sectionId, { title_i18n: title }),
+        undo: () => actions.updateSection(sectionId, { title_i18n: prev }),
       });
     },
     [actions, findSection, runCommand],
   );
 
   const setSectionSummary = useCallback(
-    async (sectionId: string, summary: string) => {
-      const prev = findSection(sectionId)?.summary ?? "";
-      if (prev === summary) return;
+    async (sectionId: string, summary: LocalizedText) => {
+      const prev = findSection(sectionId)?.summary_i18n ?? { en: "", ar: "" };
+      if (sameText(prev, summary)) return;
       await runCommand({
         label: "edit section summary",
-        redo: () => actions.updateSection(sectionId, { summary }),
-        undo: () => actions.updateSection(sectionId, { summary: prev }),
+        redo: () => actions.updateSection(sectionId, { summary_i18n: summary }),
+        undo: () => actions.updateSection(sectionId, { summary_i18n: prev }),
       });
     },
     [actions, findSection, runCommand],
@@ -279,14 +317,14 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     [actions, run],
   );
 
-  const renameBlock = useCallback(
-    async (sectionId: string, blockId: string, title: string) => {
-      const prev = findBlock(sectionId, blockId)?.title ?? "";
-      if (prev === title) return;
+  const setBlockTitle = useCallback(
+    async (sectionId: string, blockId: string, title: LocalizedText) => {
+      const prev = findBlock(sectionId, blockId)?.title_i18n ?? { en: "", ar: "" };
+      if (sameText(prev, title)) return;
       await runCommand({
         label: "rename lesson",
-        redo: () => actions.updateBlock(sectionId, blockId, { title }),
-        undo: () => actions.updateBlock(sectionId, blockId, { title: prev }),
+        redo: () => actions.updateBlock(sectionId, blockId, { title_i18n: title }),
+        undo: () => actions.updateBlock(sectionId, blockId, { title_i18n: prev }),
       });
     },
     [actions, findBlock, runCommand],
@@ -389,17 +427,17 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     [actions, findSection, runCommand],
   );
 
+  /**
+   * Deep-copy a section via the backend's dedicated endpoint. The previous client-side re-creation
+   * lost media, prerequisites, i18n maps and draft state; the server clone preserves them exactly.
+   * We refetch the tree (in the controller) so ordering/positions are authoritative, then select the
+   * returned copy.
+   */
   const duplicateSection = useCallback(
     async (sectionId: string) => {
-      const src = findSection(sectionId);
-      if (!src) return;
+      if (!findSection(sectionId)) return;
       await run(async () => {
-        const created = await actions.addSection({ title: `${src.title} (copy)`, summary: src.summary ?? undefined });
-        for (const b of src.blocks) {
-          if (blockDef(b.kind).supported) {
-            await actions.addBlock(created.id, { title: b.title, kind: b.kind, content: b.content, is_preview: b.is_preview });
-          }
-        }
+        const created = await actions.duplicateSection(sectionId);
         setExpanded((prev) => new Set(prev).add(created.id));
         setSelection({ kind: "section", sectionId: created.id });
         setPast([]);
@@ -410,21 +448,15 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     [actions, findSection, run],
   );
 
+  /**
+   * Deep-copy a lesson via the backend's dedicated endpoint (preserves media, prerequisites, i18n
+   * title and draft state). No client re-creation, so unsupported kinds no longer need a guard.
+   */
   const duplicateBlock = useCallback(
     async (sectionId: string, blockId: string) => {
-      const src = findBlock(sectionId, blockId);
-      if (!src) return;
-      if (!blockDef(src.kind).supported) {
-        toast.error("That block type isn't available to save yet");
-        return;
-      }
+      if (!findBlock(sectionId, blockId)) return;
       await run(async () => {
-        const created = await actions.addBlock(sectionId, {
-          title: `${src.title} (copy)`,
-          kind: src.kind,
-          content: src.content,
-          is_preview: src.is_preview,
-        });
+        const created = await actions.duplicateBlock(sectionId, blockId);
         setSelection({ kind: "lesson", sectionId, blockId: created.id });
         toast.success("Added");
       });
@@ -455,14 +487,17 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
     undo,
     redo,
     issues,
+    conflict,
+    reloadAfterConflict,
+    dismissConflict,
     addSection,
-    renameSection,
+    setSectionTitle,
     setSectionSummary,
     deleteSection,
     publishSection,
     reorderSections,
     addBlock,
-    renameBlock,
+    setBlockTitle,
     setBlockContent,
     setMedia,
     deleteBlock,
@@ -475,4 +510,9 @@ export function BuilderProvider({ courseId, children }: { courseId: string; chil
   };
 
   return <BuilderContext.Provider value={value}>{children}</BuilderContext.Provider>;
+}
+
+/** Structural equality for a bilingual field, so a no-op edit doesn't record an undo command. */
+function sameText(a: LocalizedText, b: LocalizedText): boolean {
+  return a.en === b.en && a.ar === b.ar;
 }

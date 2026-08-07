@@ -24,6 +24,12 @@ export class ApiRequestError extends Error {
     message: string,
     public readonly details?: Record<string, unknown>,
     public readonly correlationId?: string,
+    /**
+     * The raw parsed response body. Kept so callers can read non-standard error shapes the
+     * envelope does not model — e.g. the optimistic-concurrency 409 body
+     * `{ error: "stale_write", current_version: <int> }` used by the curriculum builder.
+     */
+    public readonly payload?: unknown,
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -63,6 +69,7 @@ async function parseAndThrow(res: Response): Promise<unknown> {
       err?.message ?? res.statusText,
       err?.details,
       err?.correlation_id,
+      json,
     );
   }
 

@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $title
  * @property array<string, mixed>|null $content
  * @property int|null $assessment_id reference to an Assessment; resolved via LessonAssessmentPort
+ * @property int $lock_version optimistic-locking counter (C3); advanced on every guarded write
  */
 class Lesson extends Model
 {
@@ -65,6 +66,7 @@ class Lesson extends Model
             'content' => 'array',
             'title_i18n' => 'array',
             'position' => 'integer',
+            'lock_version' => 'integer',
             'is_preview' => 'boolean',
         ];
     }

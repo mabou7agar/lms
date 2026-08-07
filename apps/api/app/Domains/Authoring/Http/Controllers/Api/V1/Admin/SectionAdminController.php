@@ -48,7 +48,9 @@ class SectionAdminController extends Controller
     {
         Gate::authorize('update', $section);
 
-        return ApiResponse::updated(new SectionResource($action->execute($section, $request->validated())));
+        return ApiResponse::updated(new SectionResource(
+            $action->execute($section, $request->validated(), $request->expectedVersion()),
+        ));
     }
 
     public function destroy(Section $section, DeleteSectionAction $action): JsonResponse

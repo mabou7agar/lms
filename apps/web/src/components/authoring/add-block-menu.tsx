@@ -50,7 +50,7 @@ export function AddBlockMenu({ onAdd, trigger }: { onAdd: (kind: BlockKind) => v
                 <span className="flex-1 truncate">{t(def.labelKey)}</span>
                 {!def.supported ? (
                   <Badge variant="outline" className="text-[0.65rem]">
-                    Soon
+                    {t("block.comingSoon")}
                   </Badge>
                 ) : null}
               </DropdownMenuItem>

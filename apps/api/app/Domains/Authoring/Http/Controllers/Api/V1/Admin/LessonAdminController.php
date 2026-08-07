@@ -57,7 +57,9 @@ class LessonAdminController extends Controller
     {
         Gate::authorize('update', $lesson);
 
-        return ApiResponse::updated(new LessonResource($action->execute($lesson, $request->validated())));
+        return ApiResponse::updated(new LessonResource(
+            $action->execute($lesson, $request->validated(), $request->expectedVersion()),
+        ));
     }
 
     public function destroy(Lesson $lesson, DeleteLessonAction $action): JsonResponse
@@ -71,9 +73,9 @@ class LessonAdminController extends Controller
     public function reorder(ReorderRequest $request, Section $section, ReorderLessonsAction $action): JsonResponse
     {
         Gate::authorize('update', $section);
-        $action->execute($section, $request->validated()['order']);
+        $lockVersion = $action->execute($section, $request->validated()['order'], $request->expectedVersion());
 
-        return ApiResponse::success(null, 'Lessons reordered.');
+        return ApiResponse::success(['lock_version' => $lockVersion], 'Lessons reordered.');
     }
 
     public function publish(SetPublishStateRequest $request, Lesson $lesson, SetLessonPublishStateAction $action): JsonResponse

@@ -43,10 +43,14 @@ class LessonResource extends BaseResource
         return [
             'id' => $this->resource->public_id,
             'title' => $this->resource->localized('title'),
+            // C1: raw title locale map for EN/AR round-trip in the builder; `title` stays string-out.
+            'title_i18n' => $this->resource->title_i18n ?? [],
             'type' => $this->resource->type->value,
             'content' => $this->resource->content,
             'position' => $this->resource->position,
             'publish_state' => $this->resource->publish_state->value,
+            // C3: optimistic-lock counter the builder echoes back as expected_version on edits.
+            'lock_version' => $this->resource->lock_version,
             'is_preview' => $this->resource->is_preview,
             'media' => new LessonMediaResource($this->whenLoaded('media')),
             // Resolved through the port, so Authoring never imports an Assessment class. Null both

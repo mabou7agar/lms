@@ -11,6 +11,19 @@
 /** Publish lifecycle shared by course, section and lesson (mirrors backend PublishState). */
 export type PublishState = "draft" | "published";
 
+/** The two authoring languages the builder edits. */
+export type LocaleCode = "en" | "ar";
+
+/**
+ * A translatable string, one entry per authoring language. Mirrors the backend `*_i18n` jsonb
+ * columns (`title_i18n`, `summary_i18n` → `{ en, ar }`). Arabic falls back to English when empty;
+ * the map is authoring-only and is NEVER placed inside a lesson's learner-facing `content`.
+ */
+export interface LocalizedText {
+  en: string;
+  ar: string;
+}
+
 /**
  * Every content block kind the builder understands.
  * The first group is accepted by the backend today (LessonType enum); the second group is
@@ -63,10 +76,14 @@ export interface PrerequisiteRef {
 export interface Block {
   id: string; // public_id
   title: string;
+  /** Bilingual title (authoring-only). `title` above is the locale-resolved display string. */
+  title_i18n: LocalizedText;
   kind: BlockKind; // maps to backend `type`
   content: BlockContent;
   position: number;
   publish_state: PublishState;
+  /** Optimistic-concurrency token. Sent back as `expected_version`; bumped by the server on write. */
+  lock_version: number;
   is_preview: boolean;
   media: LessonMedia | null;
   prerequisites: PrerequisiteRef[];
@@ -93,9 +110,15 @@ export interface LessonAssessmentRef {
 export interface Section {
   id: string; // public_id
   title: string;
+  /** Bilingual title (authoring-only). `title` above is the locale-resolved display string. */
+  title_i18n: LocalizedText;
   summary: string | null;
+  /** Bilingual summary (authoring-only). `summary` above is the locale-resolved display string. */
+  summary_i18n: LocalizedText;
   position: number;
   publish_state: PublishState;
+  /** Optimistic-concurrency token. Sent back as `expected_version`; bumped by the server on write. */
+  lock_version: number;
   blocks: Block[];
   /** Frontend-only nesting; not persisted until backend adds sub-section support. */
   subsections?: Section[];
@@ -143,21 +166,33 @@ export interface ValidationIssue {
 export interface CreateSectionInput {
   title: string;
   summary?: string;
+  title_i18n?: LocalizedText;
+  summary_i18n?: LocalizedText;
 }
 export interface UpdateSectionInput {
   title?: string;
   summary?: string | null;
+  /** Bilingual edits. When present the client dual-writes `title`/`summary` = the English value. */
+  title_i18n?: LocalizedText;
+  summary_i18n?: LocalizedText;
+  /** Optimistic-concurrency token (last known `lock_version`); a stale value yields HTTP 409. */
+  expected_version?: number;
 }
 export interface CreateBlockInput {
   title: string;
   kind: BlockKind;
   content?: BlockContent;
   is_preview?: boolean;
+  title_i18n?: LocalizedText;
 }
 export interface UpdateBlockInput {
   title?: string;
   kind?: BlockKind;
   content?: BlockContent;
+  /** Bilingual title edit. When present the client dual-writes `title` = the English value. */
+  title_i18n?: LocalizedText;
+  /** Optimistic-concurrency token (last known `lock_version`); a stale value yields HTTP 409. */
+  expected_version?: number;
 }
 /**
  * Payload for `PUT /admin/lessons/{lesson}/media`. Every field is `nullable` in

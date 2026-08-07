@@ -1,24 +1,23 @@
 "use client";
 
 import { useCallback } from "react";
-import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
 import { useBuilder } from "@/lib/authoring/builder-store";
-import { useFieldAutosave } from "../field-autosave";
+import type { LocalizedText } from "@/lib/authoring/types";
+import { useLocalizedAutosave } from "../field-autosave";
 import { StatusBadge } from "../status-badge";
+import { BilingualField } from "./bilingual-field";
 
 export function SectionEditor({ sectionId }: { sectionId: string }) {
   const { t } = useAuthoringI18n();
   const builder = useBuilder();
   const section = builder.curriculum?.sections.find((s) => s.id === sectionId);
 
-  const commitTitle = useCallback((v: string) => builder.renameSection(sectionId, v), [builder, sectionId]);
-  const commitSummary = useCallback((v: string) => builder.setSectionSummary(sectionId, v), [builder, sectionId]);
+  const commitTitle = useCallback((v: LocalizedText) => builder.setSectionTitle(sectionId, v), [builder, sectionId]);
+  const commitSummary = useCallback((v: LocalizedText) => builder.setSectionSummary(sectionId, v), [builder, sectionId]);
 
-  const title = useFieldAutosave(section?.title ?? "", commitTitle);
-  const summary = useFieldAutosave(section?.summary ?? "", commitSummary);
+  const title = useLocalizedAutosave(section?.title_i18n ?? { en: "", ar: "" }, commitTitle);
+  const summary = useLocalizedAutosave(section?.summary_i18n ?? { en: "", ar: "" }, commitSummary);
 
   if (!section) return null;
 
@@ -29,28 +28,23 @@ export function SectionEditor({ sectionId }: { sectionId: string }) {
         <StatusBadge state={section.publish_state} />
       </div>
 
-      <FormField
+      <BilingualField
         label={t("editor.section.titleLabel")}
         required
-        error={title.value.trim() ? undefined : t("validation.sectionTitle")}
-      >
-        <Input
-          value={title.value}
-          onChange={(e) => title.setValue(e.target.value)}
-          onBlur={title.flush}
-          placeholder={t("editor.section.titleLabel")}
-        />
-      </FormField>
+        value={title.value}
+        onChange={title.setLang}
+        onBlur={title.flush}
+        error={title.value.en.trim() ? undefined : t("validation.sectionTitle")}
+      />
 
-      <FormField label={t("editor.section.summaryLabel")} hint={t("editor.section.summaryHint")}>
-        <Textarea
-          rows={4}
-          value={summary.value}
-          onChange={(e) => summary.setValue(e.target.value)}
-          onBlur={summary.flush}
-          placeholder={t("editor.section.summaryLabel")}
-        />
-      </FormField>
+      <BilingualField
+        label={t("editor.section.summaryLabel")}
+        multiline
+        value={summary.value}
+        onChange={summary.setLang}
+        onBlur={summary.flush}
+        hint={t("editor.section.summaryHint")}
+      />
     </div>
   );
 }

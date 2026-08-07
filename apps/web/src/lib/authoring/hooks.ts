@@ -51,6 +51,8 @@ export interface AuthoringActions {
   removeSection: (sectionId: string) => Promise<void>;
   publishSection: (sectionId: string, state: PublishState) => Promise<void>;
   reorderSections: (orderedIds: string[]) => Promise<void>;
+  /** Deep-copy a section server-side, then refetch so the new node's contents are authoritative. */
+  duplicateSection: (sectionId: string) => Promise<Section>;
 
   addBlock: (sectionId: string, input: CreateBlockInput) => Promise<Block>;
   updateBlock: (sectionId: string, blockId: string, input: UpdateBlockInput) => Promise<void>;
@@ -66,6 +68,8 @@ export interface AuthoringActions {
     blockId: string,
     toIndex: number,
   ) => Promise<void>;
+  /** Deep-copy a lesson server-side, then refetch so media/prereqs/i18n come from the server. */
+  duplicateBlock: (sectionId: string, blockId: string) => Promise<Block>;
 }
 
 export function useAuthoringController(courseId: string) {
@@ -107,10 +111,13 @@ export function useAuthoringController(courseId: string) {
           (c) =>
             mapSection(c, sectionId, (s) => ({
               ...s,
-              title: input.title ?? s.title,
-              summary: input.summary !== undefined ? input.summary : s.summary,
+              // Keep the resolved scalar in step with the English edit so the tree updates instantly.
+              title: input.title_i18n?.en ?? input.title ?? s.title,
+              title_i18n: input.title_i18n ?? s.title_i18n,
+              summary: input.summary_i18n ? input.summary_i18n.en : input.summary !== undefined ? input.summary : s.summary,
+              summary_i18n: input.summary_i18n ?? s.summary_i18n,
             })),
-          () => apiClient.updateSection(sectionId, input),
+          () => apiClient.updateSection(sectionId, { ...input, expected_version: sectionVersion(read(), sectionId) }),
         );
       },
       removeSection(sectionId) {
@@ -131,6 +138,11 @@ export function useAuthoringController(courseId: string) {
           () => apiClient.reorderSections(courseId, orderedIds),
         );
       },
+      async duplicateSection(sectionId) {
+        const created = await apiClient.duplicateSection(courseId, sectionId);
+        await invalidate();
+        return created;
+      },
 
       async addBlock(sectionId, input) {
         const created = await apiClient.createBlock(sectionId, input);
@@ -146,14 +158,15 @@ export function useAuthoringController(courseId: string) {
                 b.id === blockId
                   ? {
                       ...b,
-                      title: input.title ?? b.title,
+                      title: input.title_i18n?.en ?? input.title ?? b.title,
+                      title_i18n: input.title_i18n ?? b.title_i18n,
                       kind: input.kind ?? b.kind,
                       content: input.content ?? b.content,
                     }
                   : b,
               ),
             })),
-          () => apiClient.updateBlock(blockId, input),
+          () => apiClient.updateBlock(blockId, { ...input, expected_version: blockVersion(read(), sectionId, blockId) }),
         );
       },
       removeBlock(sectionId, blockId) {
@@ -187,7 +200,7 @@ export function useAuthoringController(courseId: string) {
       reorderBlocks(sectionId, orderedIds) {
         return optimistic(
           (c) => mapSection(c, sectionId, (s) => ({ ...s, blocks: reindex(orderBy(s.blocks, orderedIds)) })),
-          () => apiClient.reorderBlocks(sectionId, orderedIds),
+          () => apiClient.reorderBlocks(sectionId, orderedIds, sectionVersion(read(), sectionId)),
         );
       },
       moveBlockAcross(fromSectionId, toSectionId, blockId, toIndex) {
@@ -221,10 +234,24 @@ export function useAuthoringController(courseId: string) {
           },
         );
       },
+      async duplicateBlock(sectionId, blockId) {
+        const created = await apiClient.duplicateBlock(sectionId, blockId);
+        await invalidate();
+        return created;
+      },
     };
   }, [qc, key, courseId]);
 
   return { query, actions };
+}
+
+/** Last known `lock_version` of a section, for the `expected_version` optimistic-concurrency token. */
+function sectionVersion(c: Curriculum | undefined, sectionId: string): number | undefined {
+  return c?.sections.find((s) => s.id === sectionId)?.lock_version;
+}
+/** Last known `lock_version` of a lesson, for the `expected_version` optimistic-concurrency token. */
+function blockVersion(c: Curriculum | undefined, sectionId: string, blockId: string): number | undefined {
+  return c?.sections.find((s) => s.id === sectionId)?.blocks.find((b) => b.id === blockId)?.lock_version;
 }
 
 /**

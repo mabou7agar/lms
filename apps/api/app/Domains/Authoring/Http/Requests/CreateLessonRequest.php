@@ -15,6 +15,9 @@ class CreateLessonRequest extends BaseFormRequest
             'type' => ['required', Rule::in(LessonType::values())],
             'content' => ['nullable', 'array'],
             'is_preview' => ['nullable', 'boolean'],
+            // C1 bilingual: optional title locale map; legacy `title` scalar stays the synced mirror.
+            'title_i18n' => ['sometimes', 'array'],
+            'title_i18n.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

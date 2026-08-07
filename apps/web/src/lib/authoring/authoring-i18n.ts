@@ -8,8 +8,21 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n/i18n-context";
+import type { LocalizedText } from "./types";
 
 type Dict = Record<string, string>;
+
+/**
+ * Resolve a bilingual field to a single display string for the given locale, falling back to the
+ * other language when the requested one is empty (Arabic → English is the common case). This is the
+ * ONLY way builder UI turns a translation map into learner-visible text; the map itself is never
+ * emitted to a learner-facing surface.
+ */
+export function resolveLocalized(text: LocalizedText, locale: string): string {
+  const primary = locale === "ar" ? text.ar : text.en;
+  const fallback = locale === "ar" ? text.en : text.ar;
+  return (primary && primary.trim() ? primary : fallback) ?? "";
+}
 
 const en: Dict = {
   "builder.saving": "Saving…",
@@ -354,6 +367,20 @@ const en: Dict = {
 
   "new.section": "Untitled section",
   "new.block": "Untitled {kind}",
+
+  // ── Bilingual authoring (EN / AR) ─────────────────────────────────────
+  "i18n.english": "English",
+  "i18n.arabic": "Arabic",
+  "i18n.badge.complete": "EN · AR",
+  "i18n.badge.enOnly": "EN only",
+  "i18n.fallbackToEn": "Arabic is empty — English is shown to Arabic learners.",
+
+  // ── Coming-soon / concurrency ─────────────────────────────────────────
+  "block.comingSoon": "Soon",
+  "conflict.title": "This was changed elsewhere",
+  "conflict.body": "Someone else saved changes to this course after you opened it. Your edit was not applied so it wouldn't overwrite theirs. Reload to get the latest, then reapply your change.",
+  "conflict.reload": "Reload latest",
+  "conflict.dismiss": "Keep editing",
 
   // Block labels / descriptions
   "block.article.label": "Article", "block.article.desc": "Rich text lesson",
@@ -716,6 +743,20 @@ const ar: Dict = {
 
   "new.section": "قسم بلا عنوان",
   "new.block": "{kind} بلا عنوان",
+
+  // ── التأليف ثنائي اللغة (إنجليزي / عربي) ──────────────────────────────
+  "i18n.english": "الإنجليزية",
+  "i18n.arabic": "العربية",
+  "i18n.badge.complete": "إنجليزي · عربي",
+  "i18n.badge.enOnly": "إنجليزي فقط",
+  "i18n.fallbackToEn": "العربية فارغة — يُعرض النص الإنجليزي للمتعلّمين العرب.",
+
+  // ── قريبًا / التزامن ──────────────────────────────────────────────────
+  "block.comingSoon": "قريبًا",
+  "conflict.title": "تم تعديل هذا في مكان آخر",
+  "conflict.body": "حفظ شخص آخر تغييرات على هذه الدورة بعد فتحك لها. لم يُطبَّق تعديلك حتى لا يطمس تعديلهم. أعد التحميل للحصول على أحدث نسخة ثم أعد تطبيق تغييرك.",
+  "conflict.reload": "إعادة تحميل الأحدث",
+  "conflict.dismiss": "متابعة التحرير",
 
   "block.article.label": "مقال", "block.article.desc": "درس نصي ثري",
   "block.pdf.label": "PDF", "block.pdf.desc": "عارض مستندات",

@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
 import { BuilderProvider, useBuilder } from "@/lib/authoring/builder-store";
 import { BuilderToolbar } from "./builder-toolbar";
+import { ConflictBanner } from "./conflict-banner";
 import { CurriculumTree } from "./curriculum-tree";
 import { EditorPanel } from "./editor-panel";
 import { InspectorPanel } from "./inspector-panel";
@@ -64,6 +65,7 @@ function BuilderShell() {
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] min-h-[560px] flex-col">
       <BuilderToolbar onOpenTree={() => setTreeOpen(true)} onOpenInspector={() => setInspectorOpen(true)} />
+      <ConflictBanner />
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-[300px] shrink-0 border-e border-border lg:block">

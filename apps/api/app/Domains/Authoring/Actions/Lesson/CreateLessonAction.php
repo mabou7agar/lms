@@ -25,15 +25,17 @@ class CreateLessonAction extends BaseAction
         return $this->transaction(function () use ($section, $data, $content): Lesson {
             $position = (int) Lesson::where('section_id', $section->id)->max('position');
 
-            return Lesson::create([
+            // C1: pass through the optional title locale map; HasTranslations keeps `title` synced.
+            return Lesson::create(array_filter([
                 'section_id' => $section->id,
                 'title' => $data['title'],
+                'title_i18n' => $data['title_i18n'] ?? null,
                 'type' => ($data['type'] instanceof LessonType ? $data['type']->value : $data['type']),
                 'content' => $content,
                 'position' => $position + 1,
                 'is_preview' => $data['is_preview'] ?? config('authoring.preview.default', false),
                 'publish_state' => PublishState::Draft->value,
-            ]);
+            ], fn ($v) => $v !== null));
         });
     }
 }
