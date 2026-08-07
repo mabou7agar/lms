@@ -8,6 +8,7 @@ use App\Domains\Catalog\Models\CourseLanguage;
 use App\Domains\Catalog\Models\CourseLevel;
 use App\Domains\Catalog\Models\CourseTag;
 use App\Platform\Shared\Services\BaseService;
+use App\Platform\Shared\Text\ArabicTextNormalizer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -78,15 +79,29 @@ class CourseSearchService extends BaseService
         }
     }
 
+    /**
+     * Bilingual, Arabic-aware search over the folded `search_text` index (title/subtitle/description
+     * across every locale). The query is folded through the same normaliser that builds the index,
+     * so it matches regardless of locale, diacritics, alef/ya/ta-marbuta form, digit script or case.
+     * LIKE metacharacters in the user's term are escaped, so "50%" searches for the literal text.
+     */
     private function applySearch(Builder $query, ?string $term): void
     {
-        $term = is_string($term) ? trim($term) : '';
+        $raw = is_string($term) ? trim($term) : '';
 
-        if (strlen($term) >= (int) config('catalog.search.min_query_length', 2)) {
-            $query->where(function (Builder $q) use ($term): void {
-                $q->where('title', 'ilike', "%{$term}%")
-                    ->orWhere('subtitle', 'ilike', "%{$term}%");
-            });
+        if (strlen($raw) < (int) config('catalog.search.min_query_length', 2)) {
+            return;
         }
+
+        $needle = app(ArabicTextNormalizer::class)->normalize($raw);
+
+        if ($needle === '') {
+            return;
+        }
+
+        // Escape the LIKE wildcards (\ % _) so they are matched literally, not as patterns.
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $needle);
+
+        $query->where('search_text', 'like', '%'.$escaped.'%');
     }
 }

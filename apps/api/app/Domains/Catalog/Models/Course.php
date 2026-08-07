@@ -5,6 +5,7 @@ namespace App\Domains\Catalog\Models;
 use App\Domains\Catalog\Database\Factories\CourseFactory;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Platform\Shared\Enums\Visibility;
+use App\Platform\Shared\Search\SearchableText;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSeo;
 use App\Platform\Shared\Traits\HasSlug;
@@ -31,6 +32,7 @@ class Course extends Model
     use HasSeo;
     use HasSlug;
     use HasTranslations;
+    use SearchableText;
     use SoftDeletes;
 
     protected $fillable = [
@@ -41,6 +43,14 @@ class Course extends Model
 
     /** @var array<int, string> */
     protected array $translatable = ['title_i18n', 'subtitle_i18n', 'description_i18n'];
+
+    /**
+     * Base fields folded into the locale-aware `search_text` index by SearchableText (both the
+     * legacy scalar and every locale of its `{base}_i18n` map are indexed).
+     *
+     * @var array<int, string>
+     */
+    protected array $searchable = ['title', 'subtitle', 'description'];
 
     protected function casts(): array
     {
