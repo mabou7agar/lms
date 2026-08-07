@@ -54,6 +54,7 @@ class AdminPanelProvider extends PanelProvider
         'App\\Domains\\Certification\\Filament\\Resources' => 'Domains/Certification/Filament/Resources',
         'App\\Domains\\Live\\Filament\\Resources' => 'Domains/Live/Filament/Resources',
         'App\\Domains\\Crm\\Filament\\Resources' => 'Domains/Crm/Filament/Resources',
+        'App\\Platform\\Media\\Filament\\Resources' => 'Platform/Media/Filament/Resources',
         'App\\Platform\\Shared\\Filament\\Resources' => 'Platform/Shared/Filament/Resources',
     ];
 
@@ -90,6 +91,7 @@ class AdminPanelProvider extends PanelProvider
                 'Commerce',
                 'Certification',
                 'Live',
+                'Media',
                 'CRM',
                 'Analytics',
                 'Notifications',
