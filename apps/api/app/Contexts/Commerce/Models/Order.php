@@ -46,6 +46,31 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * The purchasing user. Bound to the configured auth model so no cross-context Eloquent class is
+     * imported here (mirrors Subscription::user()).
+     *
+     * @return BelongsTo<Model, $this>
+     */
+    public function user(): BelongsTo
+    {
+        /** @var class-string<Model> $model */
+        $model = (string) config('auth.providers.users.model', 'App\\Models\\User');
+
+        return $this->belongsTo($model, 'user_id');
+    }
+
+    /**
+     * Append-only trail of payment attempts (checkout + dunning) against this order, oldest first by
+     * attempt ordinal. Read-only: rows are written by PaymentRecoveryService.
+     *
+     * @return HasMany<PaymentAttempt, $this>
+     */
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class)->orderBy('attempt_no');
+    }
+
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);

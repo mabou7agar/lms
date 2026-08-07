@@ -2,7 +2,10 @@
 
 namespace App\Contexts\Commerce\Filament\Resources;
 
+use App\Contexts\Commerce\Actions\Refund\IssueRefundAction;
 use App\Contexts\Commerce\Enums\CommercePermission;
+use App\Contexts\Commerce\Enums\OrderStatus;
+use App\Contexts\Commerce\Enums\RefundReason;
 use App\Contexts\Commerce\Enums\RefundStatus;
 use App\Contexts\Commerce\Filament\Resources\RefundResource\Pages;
 use App\Contexts\Commerce\Models\CreditNote;
@@ -10,10 +13,13 @@ use App\Contexts\Commerce\Models\Order;
 use App\Contexts\Commerce\Models\Refund;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Shared\Audit\AuditLog;
+use App\Platform\Shared\Audit\AuditLogger;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -22,6 +28,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 use UnitEnum;
 
 /**
@@ -112,8 +119,18 @@ class RefundResource extends Resource
             Section::make('Refund')->columns(2)->schema([
                 TextEntry::make('public_id')->label('Refund ID'),
                 TextEntry::make('order.public_id')->label('Order'),
+                TextEntry::make('customer_name')->label('Customer')
+                    ->state(fn (Refund $record): string => self::customerName($record)),
+                TextEntry::make('customer_email')->label('Customer email')
+                    ->state(fn (Refund $record): string => self::customerEmail($record)),
                 TextEntry::make('status')->badge(),
                 TextEntry::make('reason')->badge()->default('—'),
+                TextEntry::make('captured_total')
+                    ->label('Captured / paid total (minor units)')
+                    ->numeric()
+                    ->state(fn (Refund $record): int => $record->order !== null
+                        ? (int) $record->order->getAttribute('total_minor')
+                        : 0),
                 TextEntry::make('amount_minor')->label('Refunded (minor units)')->numeric(),
                 TextEntry::make('refundable_remaining')
                     ->label('Refundable remaining (minor units)')
@@ -121,6 +138,10 @@ class RefundResource extends Resource
                         ? self::remainingRefundableMinor($record->order)
                         : 0),
                 TextEntry::make('currency'),
+                TextEntry::make('entitlement_effect')
+                    ->label('Entitlement effect')
+                    ->columnSpanFull()
+                    ->state(fn (Refund $record): string => self::entitlementEffect($record)),
             ]),
             Section::make('Gateway & linkage')->columns(2)->schema([
                 TextEntry::make('gateway_result')
@@ -154,10 +175,13 @@ class RefundResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['order', 'transaction']))
+            // Eager-load order + its purchasing user (customer column) and the transaction so the
+            // list never issues a per-row query (N+1 guard).
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['order.user', 'transaction']))
             ->columns([
                 TextColumn::make('public_id')->label('Refund')->searchable(),
                 TextColumn::make('order.public_id')->label('Order')->searchable(),
+                TextColumn::make('order.user.email')->label('Customer')->toggleable()->searchable(),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('amount_minor')->label('Amount (minor)')->numeric()->sortable(),
                 TextColumn::make('currency')->toggleable(),
@@ -171,8 +195,73 @@ class RefundResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+                self::retryAction(),
             ])
             ->defaultSort('id', 'desc');
+    }
+
+    /**
+     * R4 — retry a FAILED refund as a NEW attempt. Financial immutability means a failed refund row is
+     * frozen forever, so this never mutates it: it re-invokes IssueRefundAction against the same order
+     * for the failed amount, which under RefundOrderAction's lock re-derives the remaining refundable
+     * balance (paid total minus non-failed refunds) and creates a fresh pending → settled refund. That
+     * makes it inherently idempotent and over-refund-safe — a concurrent double-retry cannot exceed the
+     * balance, and a credit note is minted at most once per order by IssueCreditNoteOnRefund. Visible
+     * ONLY for a failed refund; requires the finance permission (support cannot); confirmed; audited.
+     */
+    public static function retryAction(): Action
+    {
+        return Action::make('retryRefund')
+            ->label('Retry as new attempt')
+            ->icon('heroicon-o-arrow-path')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Retry refund as a new attempt')
+            ->modalDescription('The failed refund is immutable and is kept as-is. This issues a NEW refund for the same amount against the order; the engine re-checks the refundable balance under a lock, so it cannot over-refund or duplicate a credit note.')
+            ->modalSubmitActionLabel('Retry refund')
+            // Only a genuinely failed refund is retryable — never a succeeded or pending (in-flight) one.
+            ->visible(fn (Refund $record): bool => self::userCanManage()
+                && $record->statusEnum() === RefundStatus::Failed)
+            ->action(function (Refund $record): void {
+                $order = $record->order;
+
+                if (! $order instanceof Order) {
+                    Notification::make()->title('Retry failed')->body('The refund has no order to retry against.')->danger()->send();
+
+                    return;
+                }
+
+                if (self::orderStatusOf($order) !== OrderStatus::Paid) {
+                    Notification::make()
+                        ->title('Retry rejected')
+                        ->body('The order is no longer in a refundable (paid) state.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $reason = $record->reasonEnum() ?? RefundReason::RequestedByCustomer;
+
+                try {
+                    $new = app(IssueRefundAction::class)->execute($order, $record->amountMinor(), $reason);
+
+                    app(AuditLogger::class)->log('commerce.refund.retry_attempted', $new, [
+                        'retried_refund' => (string) $record->getAttribute('public_id'),
+                        'order_id' => (string) $order->getAttribute('public_id'),
+                        'amount_minor' => $record->amountMinor(),
+                    ]);
+
+                    Notification::make()
+                        ->title('Retry issued')
+                        ->body(sprintf('New refund %s issued for %d %s.', (string) $new->getAttribute('public_id'), $new->amountMinor(), (string) $order->getAttribute('currency')))
+                        ->success()
+                        ->send();
+                } catch (Throwable $e) {
+                    // Surface the domain guard's rejection verbatim; never re-implement or bypass it.
+                    Notification::make()->title('Retry rejected')->body($e->getMessage())->danger()->send();
+                }
+            });
     }
 
     public static function getPages(): array
@@ -181,6 +270,62 @@ class RefundResource extends Resource
             'index' => Pages\ListRefund::route('/'),
             'view' => Pages\ViewRefund::route('/{record}'),
         ];
+    }
+
+    /** The purchasing customer's display name for a refund's order, or an em dash. */
+    private static function customerName(Refund $record): string
+    {
+        $user = $record->order?->user;
+
+        if (! $user instanceof Model) {
+            return '—';
+        }
+
+        $name = $user->getAttribute('name');
+
+        return is_string($name) && $name !== '' ? $name : '—';
+    }
+
+    /** The purchasing customer's email for a refund's order, or an em dash. */
+    private static function customerEmail(Refund $record): string
+    {
+        $user = $record->order?->user;
+
+        if (! $user instanceof Model) {
+            return '—';
+        }
+
+        $email = $user->getAttribute('email');
+
+        return is_string($email) && $email !== '' ? $email : '—';
+    }
+
+    /**
+     * The read-only entitlement consequence of this refund, derived from the engine's behavior
+     * (RefundOrderAction dispatches OrderRefunded — which RevokeEnrollmentsOnRefund handles — ONLY on
+     * a FULL refund). A partial or non-succeeded refund leaves access untouched.
+     */
+    private static function entitlementEffect(Refund $record): string
+    {
+        if ($record->statusEnum() !== RefundStatus::Succeeded) {
+            return 'No entitlement change (refund not succeeded).';
+        }
+
+        $order = $record->order;
+
+        if ($order instanceof Order && self::orderStatusOf($order) === OrderStatus::Refunded) {
+            return 'Enrollment revoked (order fully refunded).';
+        }
+
+        return 'Access retained (partial refund — order still paid).';
+    }
+
+    /** Derive an order's status enum PHPStan-clean. */
+    private static function orderStatusOf(Order $order): OrderStatus
+    {
+        $status = $order->getAttribute('status');
+
+        return $status instanceof OrderStatus ? $status : OrderStatus::from((string) $status);
     }
 
     /** Redact a gateway reference/token: never surface the raw value, only a last-4 fingerprint. */

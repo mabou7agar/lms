@@ -10,6 +10,7 @@ use App\Contexts\Commerce\Enums\SubscriptionStatus;
 use App\Contexts\Commerce\Filament\Resources\SubscriptionResource\Pages;
 use App\Contexts\Commerce\Models\Subscription;
 use App\Contexts\Commerce\Models\SubscriptionPlan;
+use App\Platform\Shared\Audit\AuditLog;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -21,6 +22,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
@@ -117,7 +119,11 @@ class SubscriptionResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return $table
+            // Eager-load the display relations so the list never issues a per-row query for the
+            // user email / plan name columns (N+1 guard).
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['user', 'plan']))
+            ->columns([
             TextColumn::make('public_id')->label('Subscription')->searchable(),
             TextColumn::make('user.email')->label('User')->toggleable(),
             TextColumn::make('plan.name')->label('Plan')->toggleable(),
@@ -134,6 +140,7 @@ class SubscriptionResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 self::cancelAction(),
+                self::cancelImmediatelyAction(),
                 self::reactivateAction(),
                 self::changePlanAction(),
             ]);
@@ -144,6 +151,7 @@ class SubscriptionResource extends Resource
     {
         return [
             self::cancelAction(),
+            self::cancelImmediatelyAction(),
             self::reactivateAction(),
             self::changePlanAction(),
         ];
@@ -163,6 +171,32 @@ class SubscriptionResource extends Resource
                 try {
                     app(CancelSubscriptionAction::class)->execute($record, atPeriodEnd: true);
                     Notification::make()->title('Cancellation scheduled')->success()->send();
+                } catch (Throwable $e) {
+                    Notification::make()->title('Cancel failed')->body($e->getMessage())->danger()->send();
+                }
+            });
+    }
+
+    /**
+     * Cancel immediately — delegates to CancelSubscriptionAction with atPeriodEnd:false, terminating
+     * access now rather than at the period boundary. This is a distinct, explicitly-confirmed action
+     * from the (default) cancel-at-period-end button; it introduces no raw status editing — the domain
+     * action holds every state guard, dispatches SubscriptionCanceled(immediate) and writes the audit
+     * entry.
+     */
+    public static function cancelImmediatelyAction(): Action
+    {
+        return Action::make('cancelImmediately')
+            ->label('Cancel immediately')
+            ->icon('heroicon-o-no-symbol')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalDescription('Cancel this subscription immediately? Access is revoked now — the remainder of the paid period is forfeited. This cannot be undone.')
+            ->visible(fn (Subscription $record): bool => self::canManage() && ! self::isTerminal($record))
+            ->action(function (Subscription $record): void {
+                try {
+                    app(CancelSubscriptionAction::class)->execute($record, atPeriodEnd: false);
+                    Notification::make()->title('Subscription canceled')->success()->send();
                 } catch (Throwable $e) {
                     Notification::make()->title('Cancel failed')->body($e->getMessage())->danger()->send();
                 }
@@ -237,6 +271,30 @@ class SubscriptionResource extends Resource
         $status = $subscription->statusEnum();
 
         return $status === SubscriptionStatus::Canceled || $status === SubscriptionStatus::Expired;
+    }
+
+    /**
+     * The append-only audit history for one subscription — every privileged lifecycle transition
+     * (renewed, renewal_failed, cancel_scheduled, canceled, …) the domain Actions recorded, oldest
+     * first. Mirrors RefundResource::auditTrail so the history renders identically across surfaces.
+     *
+     * @return array<int, string>
+     */
+    public static function auditTrail(Subscription $record): array
+    {
+        $entries = AuditLog::query()
+            ->where('subject_type', $record->getMorphClass())
+            ->where('subject_id', $record->getKey())
+            ->orderBy('id')
+            ->get(['action', 'created_at'])
+            ->map(fn (AuditLog $log): string => sprintf(
+                '%s — %s',
+                (string) $log->getAttribute('action'),
+                optional($log->getAttribute('created_at'))->toDateTimeString() ?? '',
+            ))
+            ->all();
+
+        return $entries === [] ? ['No audit entries.'] : $entries;
     }
 
     public static function getPages(): array

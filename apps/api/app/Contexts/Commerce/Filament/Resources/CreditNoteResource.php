@@ -100,6 +100,15 @@ class CreditNoteResource extends Resource
                 TextEntry::make('currency'),
                 TextEntry::make('total_minor')->label('Total (minor units)')->numeric(),
                 TextEntry::make('issued_at')->dateTime(),
+                TextEntry::make('entitlement_effect')
+                    ->label('Entitlement effect')
+                    ->columnSpanFull()
+                    // A credit note is engine-minted only on a FULL refund (OrderRefunded), which is
+                    // exactly when RevokeEnrollmentsOnRefund revokes the granted enrollments. This is a
+                    // read-only reflection of that engine behavior — it changes nothing.
+                    ->state(fn (CreditNote $record): string => $record->refund_id !== null
+                        ? 'Enrollment revoked (issued on a full refund).'
+                        : 'Enrollment revoked (issued on a fully-refunded order).'),
             ]),
             Section::make('Lines')->schema([
                 RepeatableEntry::make('lines')->schema([
