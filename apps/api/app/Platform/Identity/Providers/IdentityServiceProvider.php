@@ -42,7 +42,7 @@ use Spatie\Permission\Models\Role;
  */
 class IdentityServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/auth.php', 'routes/profile.php', 'routes/devices.php'];
+    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php'];
 
     protected function domainPath(): string
     {
@@ -59,6 +59,7 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../../../../config/identity.php', 'identity');
+        $this->mergeConfigFrom(__DIR__.'/../../../../config/sso.php', 'sso');
 
         // Identity owns RBAC, so it provides the concrete tenancy-bypass policy (platform admins
         // bypass tenant scoping). This overrides the Shared NullTenancyBypassPolicy default.
@@ -144,6 +145,10 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
 
         RateLimiter::for('identity-otp-verify', fn (Request $r) => Limit::perMinute(10)
             ->by(optional($r->user())->getAuthIdentifier() ?? $r->ip()));
+
+        // Social redirect/callback are public and unauthenticated; key on IP so one source cannot
+        // spray provider round-trips (and consume upstream IdP rate budget).
+        RateLimiter::for('identity-social', fn (Request $r) => Limit::perMinute(20)->by((string) $r->ip()));
     }
 
     private function registerListeners(): void

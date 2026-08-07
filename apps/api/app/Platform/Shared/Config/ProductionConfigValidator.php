@@ -123,6 +123,14 @@ class ProductionConfigValidator
             $e[] = 'MEDIA provider "fake" is a dev/test stub and must not run in production.';
         }
 
+        // SSO: the fake social provider accepts logins with no real IdP — refuse it in production
+        // (when SSO is on) unless explicitly permitted for a deliberate non-auth environment.
+        if ((bool) config('sso.enabled', false) === true
+            && (bool) config('sso.providers.fake.enabled', false) === true
+            && (bool) config('sso.allow_fake_provider', false) !== true) {
+            $e[] = 'SSO fake provider is enabled in production (set SSO_ALLOW_FAKE_PROVIDER=true only for a deliberate non-auth environment).';
+        }
+
         // Trusted proxies must be explicit (fail-closed W07 default trusts nothing, defeating rate limits).
         if (trim((string) config('security.trusted_proxies', '')) === '') {
             $e[] = 'TRUSTED_PROXIES is not set — required behind a load balancer for correct client IPs and rate limiting.';
