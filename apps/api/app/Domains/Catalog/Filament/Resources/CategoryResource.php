@@ -4,6 +4,7 @@ namespace App\Domains\Catalog\Filament\Resources;
 
 use App\Domains\Catalog\Filament\Resources\CategoryResource\Pages;
 use App\Domains\Catalog\Models\Category;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -39,6 +40,13 @@ class CategoryResource extends Resource
                     ->extraInputAttributes(['dir' => 'rtl']),
             ]),
             Select::make('parent_id')->relationship('parent', 'name')->searchable(),
+            MediaPicker::make('image_path')
+                ->label('Image / icon')
+                ->purpose('lesson_image')
+                ->acceptedTypes(['image'])
+                ->allowLegacyUrl()
+                ->searchable()
+                ->helperText('Pick from the media library or upload a new image. Existing URLs are kept until replaced.'),
             TextInput::make('position')->numeric()->default(0),
             Toggle::make('is_active')->default(true),
         ]);

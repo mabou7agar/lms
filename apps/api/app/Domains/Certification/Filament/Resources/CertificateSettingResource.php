@@ -4,6 +4,7 @@ namespace App\Domains\Certification\Filament\Resources;
 
 use App\Domains\Certification\Filament\Resources\CertificateSettingResource\Pages;
 use App\Domains\Certification\Models\CertificateSetting;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -43,8 +44,15 @@ class CertificateSettingResource extends Resource
                     ->helperText('English is the default and fallback locale.'),
                 TextInput::make('signature_title_i18n.ar')->label('Signature title (AR)')->maxLength(255)
                     ->extraInputAttributes(['dir' => 'rtl']),
-                TextInput::make('signature_image_path')->maxLength(255)->columnSpanFull()
-                    ->helperText('Storage path of the signature image (uploaded via media pipeline).'),
+                MediaPicker::make('signature_image_path')
+                    ->label('Signature image')
+                    ->columnSpanFull()
+                    ->purpose('lesson_image')
+                    ->acceptedTypes(['image'])
+                    ->allowLegacyUrl()
+                    ->reusable()
+                    ->searchable()
+                    ->helperText('Pick from the media library or upload a new image. An existing storage path is kept until replaced.'),
             ]),
         ]);
     }

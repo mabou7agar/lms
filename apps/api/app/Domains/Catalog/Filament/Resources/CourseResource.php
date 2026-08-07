@@ -4,8 +4,10 @@ namespace App\Domains\Catalog\Filament\Resources;
 
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Filament\Resources\CourseResource\Pages;
+use App\Domains\Catalog\Filament\Resources\CourseResource\RelationManagers\GalleryRelationManager;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Shared\Enums\Visibility;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -53,6 +55,13 @@ class CourseResource extends Resource
             Select::make('level_id')->relationship('level', 'name')->searchable(),
             Select::make('language_id')->relationship('language', 'name')->searchable(),
             Toggle::make('is_featured'),
+            MediaPicker::make('thumbnail_path')
+                ->label('Thumbnail')
+                ->purpose('lesson_image')
+                ->acceptedTypes(['image'])
+                ->allowLegacyUrl()
+                ->searchable()
+                ->helperText('Pick from the media library or upload a new image. Existing URLs are kept until replaced.'),
         ]);
     }
 
@@ -66,6 +75,11 @@ class CourseResource extends Resource
                 TextColumn::make('published_at')->dateTime()->sortable()->toggleable(),
             ])
             ->defaultSort('id', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [GalleryRelationManager::class];
     }
 
     public static function getPages(): array

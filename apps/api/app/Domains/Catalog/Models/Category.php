@@ -29,7 +29,7 @@ class Category extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'parent_id', 'name', 'name_i18n', 'slug', 'description', 'description_i18n', 'position', 'is_active', 'seo',
+        'parent_id', 'name', 'name_i18n', 'slug', 'description', 'description_i18n', 'image_path', 'position', 'is_active', 'seo',
     ];
 
     /** @var array<int, string> */

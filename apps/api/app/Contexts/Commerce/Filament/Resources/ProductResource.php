@@ -5,6 +5,7 @@ namespace App\Contexts\Commerce\Filament\Resources;
 use App\Contexts\Commerce\Enums\ProductStatus;
 use App\Contexts\Commerce\Filament\Resources\ProductResource\Pages;
 use App\Contexts\Commerce\Models\Product;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -38,6 +39,13 @@ class ProductResource extends Resource
                     ->extraInputAttributes(['dir' => 'rtl']),
             ]),
             Select::make('status')->options(collect(ProductStatus::cases())->mapWithKeys(fn ($s) => [$s->value => ucfirst($s->value)])->all())->default(ProductStatus::Draft->value),
+            MediaPicker::make('image_path')
+                ->label('Product image')
+                ->purpose('lesson_image')
+                ->acceptedTypes(['image'])
+                ->allowLegacyUrl()
+                ->searchable()
+                ->helperText('Pick from the media library or upload a new image. Existing URLs are kept until replaced.'),
         ]);
     }
 

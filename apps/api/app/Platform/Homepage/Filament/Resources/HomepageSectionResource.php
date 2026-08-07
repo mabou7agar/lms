@@ -7,6 +7,7 @@ use App\Platform\Homepage\Enums\HomepageStatus;
 use App\Platform\Homepage\Filament\Resources\HomepageSectionResource\Pages;
 use App\Platform\Homepage\Filament\Resources\HomepageSectionResource\RelationManagers\VersionsRelationManager;
 use App\Platform\Homepage\Models\HomepageSection;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -104,7 +105,7 @@ class HomepageSectionResource extends Resource
                 TextInput::make('content.cta_secondary.label.en')->label('Secondary CTA label (EN)'),
                 TextInput::make('content.cta_secondary.label.ar')->label('Secondary CTA label (AR)'),
                 TextInput::make('content.cta_secondary.href')->label('Secondary CTA link'),
-                TextInput::make('content.image')->label('Hero image URL')->url(),
+                self::imagePicker('content.image', 'Hero image'),
             ]),
 
             // --- Features ---
@@ -127,7 +128,7 @@ class HomepageSectionResource extends Resource
                     TextInput::make('author')->label('Author'),
                     TextInput::make('role.en')->label('Role (EN)'),
                     TextInput::make('role.ar')->label('Role (AR)'),
-                    TextInput::make('avatar')->label('Avatar URL')->url(),
+                    self::imagePicker('avatar', 'Avatar'),
                 ])->reorderable()->collapsible()->defaultItems(1),
 
             // --- Partners / Clients / Logo cloud (shared logo-item shape) ---
@@ -169,7 +170,7 @@ class HomepageSectionResource extends Resource
                 TextInput::make('content.meta_title.ar')->label('Meta title (AR)'),
                 Textarea::make('content.meta_description.en')->label('Meta description (EN)')->rows(2),
                 Textarea::make('content.meta_description.ar')->label('Meta description (AR)')->rows(2),
-                TextInput::make('content.og_image')->label('OG image URL')->url(),
+                self::imagePicker('content.og_image', 'OG image'),
                 TextInput::make('content.canonical')->label('Canonical path'),
             ]),
 
@@ -263,7 +264,7 @@ class HomepageSectionResource extends Resource
             ...self::heading(BlockType::Video),
             ...self::visibleGroup(BlockType::Video, [
                 TextInput::make('content.url')->label('Video URL')->url(),
-                TextInput::make('content.poster')->label('Poster image URL')->url(),
+                self::imagePicker('content.poster', 'Poster image'),
                 TextInput::make('content.caption.en')->label('Caption (EN)'),
                 TextInput::make('content.caption.ar')->label('Caption (AR)'),
             ]),
@@ -273,7 +274,7 @@ class HomepageSectionResource extends Resource
             Repeater::make('content.items')->label('Gallery images')
                 ->visible(fn (?HomepageSection $record) => self::isType($record, BlockType::Gallery))
                 ->schema([
-                    TextInput::make('image')->label('Image URL')->url()->required(),
+                    self::imagePicker('image', 'Image')->required(),
                     TextInput::make('caption.en')->label('Caption (EN)'),
                     TextInput::make('caption.ar')->label('Caption (AR)'),
                 ])->reorderable()->collapsible()->defaultItems(1),
@@ -299,7 +300,7 @@ class HomepageSectionResource extends Resource
                     TextInput::make('name')->label('Name')->required(),
                     TextInput::make('role.en')->label('Role (EN)'),
                     TextInput::make('role.ar')->label('Role (AR)'),
-                    TextInput::make('avatar')->label('Avatar URL')->url(),
+                    self::imagePicker('avatar', 'Avatar'),
                     TextInput::make('href')->label('Profile link')->url(),
                 ])->reorderable()->collapsible()->defaultItems(1),
 
@@ -410,10 +411,25 @@ class HomepageSectionResource extends Resource
                 ->visible(fn (?HomepageSection $record) => self::isType($record, $type))
                 ->schema([
                     TextInput::make('name')->label('Name')->required(),
-                    TextInput::make('logo')->label('Logo URL')->url(),
+                    self::imagePicker('logo', 'Logo'),
                     TextInput::make('href')->label('Link')->url(),
                 ])->reorderable()->collapsible()->defaultItems(1),
         ];
+    }
+
+    /**
+     * A media picker bound to an image field. Stores a MediaAsset public_id for new picks and
+     * preserves any pre-existing image URL via the picker's dual-read until it is replaced. Only IMAGE
+     * fields are upload-first; video playback references (content.url, background.video) stay URLs.
+     */
+    private static function imagePicker(string $path, string $label): MediaPicker
+    {
+        return MediaPicker::make($path)
+            ->label($label)
+            ->purpose('lesson_image')
+            ->acceptedTypes(['image'])
+            ->allowLegacyUrl()
+            ->searchable();
     }
 
     // ----- Presentation tab (shared visual controls) -----
@@ -437,7 +453,7 @@ class HomepageSectionResource extends Resource
             ]),
             Section::make('Background')->columns(2)->schema([
                 ColorPicker::make('background.color')->label('Background color'),
-                TextInput::make('background.image')->label('Background image URL')->url(),
+                self::imagePicker('background.image', 'Background image'),
                 TextInput::make('background.video')->label('Background video URL')->url(),
                 TextInput::make('background.overlay')->label('Overlay')
                     ->helperText('Optional overlay color/opacity (e.g. "rgba(0,0,0,.5)").'),

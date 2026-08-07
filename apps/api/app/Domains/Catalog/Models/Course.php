@@ -102,6 +102,17 @@ class Course extends Model
     }
 
     /**
+     * Ordered gallery images (U8). Each item carries a media asset reference (public_id) and a
+     * position; deleting an item never touches the shared asset.
+     *
+     * @return HasMany<CourseGalleryItem, $this>
+     */
+    public function galleryItems(): HasMany
+    {
+        return $this->hasMany(CourseGalleryItem::class, 'course_id')->orderBy('position');
+    }
+
+    /**
      * Flat sync of the course_trainer pivot by trainer user id (preserves the prior
      * trainers()->sync($ids) behavior without a belongsToMany(User) relation).
      *

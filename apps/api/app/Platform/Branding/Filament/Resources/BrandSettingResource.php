@@ -5,6 +5,7 @@ namespace App\Platform\Branding\Filament\Resources;
 use App\Platform\Branding\Filament\Resources\BrandSettingResource\Pages;
 use App\Platform\Branding\Models\BrandSetting;
 use App\Platform\Identity\Contracts\Actor;
+use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -109,19 +110,34 @@ class BrandSettingResource extends Resource
     {
         return Tab::make('Logos')->icon('heroicon-o-photo')->schema([
             Section::make('Logos & icons')->columns(2)
-                ->description('Enter a public path or absolute URL for each asset (upload via the media library, then paste the path).')
+                ->description('Pick each asset from the media library or upload a new image. Existing paths/URLs are kept until replaced.')
                 ->schema([
-                    TextInput::make('logos.logo_light')->label('Logo (light background)')->maxLength(255),
-                    TextInput::make('logos.logo_dark')->label('Logo (dark background)')->maxLength(255),
-                    TextInput::make('logos.favicon')->label('Favicon')->maxLength(255),
-                    TextInput::make('logos.apple_icon')->label('Apple touch icon')->maxLength(255),
-                    TextInput::make('logos.pwa_icon')->label('PWA icon')->maxLength(255),
-                    TextInput::make('logos.email_logo')->label('Email logo')->maxLength(255),
-                    TextInput::make('logos.certificate_logo')->label('Certificate logo')->maxLength(255),
-                    TextInput::make('logos.loader')->label('Loading spinner / splash')->maxLength(255),
-                    TextInput::make('logos.login_background')->label('Login background')->maxLength(255),
+                    self::imagePicker('logos.logo_light', 'Logo (light background)'),
+                    self::imagePicker('logos.logo_dark', 'Logo (dark background)'),
+                    self::imagePicker('logos.favicon', 'Favicon'),
+                    self::imagePicker('logos.apple_icon', 'Apple touch icon'),
+                    self::imagePicker('logos.pwa_icon', 'PWA icon'),
+                    self::imagePicker('logos.email_logo', 'Email logo'),
+                    self::imagePicker('logos.certificate_logo', 'Certificate logo'),
+                    self::imagePicker('logos.loader', 'Loading spinner / splash'),
+                    self::imagePicker('logos.login_background', 'Login background'),
                 ]),
         ]);
+    }
+
+    /**
+     * A media picker bound to a branding image field. Stores a MediaAsset public_id for new picks and
+     * preserves any pre-existing path/URL via the picker's dual-read until it is replaced.
+     */
+    private static function imagePicker(string $path, string $label): MediaPicker
+    {
+        return MediaPicker::make($path)
+            ->label($label)
+            ->purpose('lesson_image')
+            ->acceptedTypes(['image'])
+            ->allowLegacyUrl()
+            ->reusable()
+            ->searchable();
     }
 
     private static function themeTab(): Tab
@@ -182,10 +198,10 @@ class BrandSettingResource extends Resource
     {
         return Tab::make('Certificate branding')->icon('heroicon-o-academic-cap')->schema([
             Section::make('Certificate assets')->columns(2)->schema([
-                TextInput::make('certificate.background')->label('Background image')->maxLength(255),
-                TextInput::make('certificate.logo')->label('Logo')->maxLength(255),
-                TextInput::make('certificate.signature')->label('Signature image')->maxLength(255),
-                TextInput::make('certificate.stamp')->label('Stamp / seal image')->maxLength(255),
+                self::imagePicker('certificate.background', 'Background image'),
+                self::imagePicker('certificate.logo', 'Logo'),
+                self::imagePicker('certificate.signature', 'Signature image'),
+                self::imagePicker('certificate.stamp', 'Stamp / seal image'),
             ]),
             Section::make('Typography & layout')->columns(2)->schema([
                 Select::make('certificate.qr_position')->label('QR position')
