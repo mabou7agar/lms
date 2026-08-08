@@ -4,6 +4,7 @@ namespace App\Contexts\Commerce\Services;
 
 use App\Contexts\Commerce\Exceptions\SubscriptionException;
 use App\Contexts\Commerce\Models\Subscription;
+use App\Contexts\Commerce\Support\OrganizationSubscriptionGuard;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
 use App\Platform\Shared\Services\BaseService;
 
@@ -19,17 +20,22 @@ use App\Platform\Shared\Services\BaseService;
  * Read operations (organizationSubscription, seatUsage, summary) back the admin/manager visibility of
  * the org subscription + seat usage. They are pure reads — no writes, no gateway I/O.
  *
- * AUTHORIZATION (later): callers must gate these to an organization admin (and manager where allowed).
- * That policy check belongs in the HTTP/Filament layer that invokes this service and is out of scope
- * for this phase.
- *
- * TENANCY (T1, later): every query here filters on organization_id / seat_pool_id, which are
- * tenant-owned. When tenant scoping lands these must be constrained to the active tenant.
+ * AUTHORIZATION / TENANCY (T1): `subscriptions` deliberately carries NO blanket tenant global scope
+ * (it holds both individual and org subscriptions — see T1_TENANT_OWNERSHIP_MATRIX §4). Every org-sub
+ * read/mutation here is therefore gated EXPLICITLY through OrganizationSubscriptionGuard: the target
+ * organization must equal the request's active tenant (derived only from the authenticated user's
+ * organization_id, never from client input). An org1-authenticated caller cannot read or mutate org2's
+ * subscription or seats. Seat pools/assignments carry their own strict CRM isolation (seat_pools uses
+ * BelongsToTenant; assignments ride their scoped pool), so a cross-tenant seat read/write additionally
+ * dead-ends at the CRM seat layer. When no tenant is resolved the guard is a no-op (backward compatible
+ * with individual/no-org callers and the existing suite). A finer HTTP/Filament policy (admin vs
+ * manager permission) still layers on top when these surfaces are wired.
  */
 class OrganizationSubscriptionService extends BaseService
 {
     public function __construct(
         private readonly SeatProvisioningPort $seats,
+        private readonly OrganizationSubscriptionGuard $guard,
     ) {}
 
     /**
@@ -39,12 +45,16 @@ class OrganizationSubscriptionService extends BaseService
      */
     public function assignEmployee(Subscription $subscription, int $memberId): void
     {
+        $this->guard->authorizeSubscription($subscription);
+
         $this->seats->assignSeat($this->requirePoolId($subscription), $memberId);
     }
 
     /** Release an employee's seat on the subscription (idempotent). */
     public function unassignEmployee(Subscription $subscription, int $memberId): void
     {
+        $this->guard->authorizeSubscription($subscription);
+
         $this->seats->releaseSeat($this->requirePoolId($subscription), $memberId);
     }
 
@@ -63,6 +73,8 @@ class OrganizationSubscriptionService extends BaseService
      */
     public function organizationSubscription(int $organizationId): ?Subscription
     {
+        $this->guard->authorizeOrganization($organizationId);
+
         $candidates = Subscription::query()
             ->where('organization_id', $organizationId)
             ->whereIn('status', Subscription::accessGrantingStatusValues())
@@ -86,6 +98,8 @@ class OrganizationSubscriptionService extends BaseService
      */
     public function seatUsage(Subscription $subscription): array
     {
+        $this->guard->authorizeSubscription($subscription);
+
         $counts = $this->seats->seatCounts($this->requirePoolId($subscription));
 
         return [

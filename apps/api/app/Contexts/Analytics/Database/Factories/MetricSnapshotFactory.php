@@ -15,6 +15,8 @@ class MetricSnapshotFactory extends Factory
     public function definition(): array
     {
         return [
+            // NULL = global/platform metric by default (matches every pre-tenancy row).
+            'organization_id' => null,
             'metric_key' => 'enrollments',
             'granularity' => 'daily',
             'period' => now()->toDateString(),
@@ -22,5 +24,11 @@ class MetricSnapshotFactory extends Factory
             'dimension_value' => '',
             'value' => fake()->numberBetween(1, 100),
         ];
+    }
+
+    /** An organization-owned metric bucket (adversarial tenancy tests). */
+    public function forOrganization(int $organizationId): static
+    {
+        return $this->state(fn (): array => ['organization_id' => $organizationId]);
     }
 }

@@ -12,6 +12,7 @@ use App\Contexts\Commerce\Models\SubscriptionChange;
 use App\Contexts\Commerce\Models\SubscriptionPlan;
 use App\Contexts\Commerce\Payments\Data\ChargeRequest;
 use App\Contexts\Commerce\Payments\Data\ChargeResult;
+use App\Contexts\Commerce\Support\OrganizationSubscriptionGuard;
 use App\Platform\Shared\Actions\BaseAction;
 use App\Platform\Shared\Audit\AuditLogger;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
@@ -47,19 +48,29 @@ use Throwable;
  * INVARIANT: an organization subscription sets organization_id and leaves user_id null (exactly one
  * subscriber). Money is integer minor units throughout.
  *
- * TENANCY (T1, later): organization_id is tenant-owned; the idempotency lookup below and the pool
- * provisioning must be tenant-scoped when tenant scoping lands.
+ * TENANCY (T1): organization_id is tenant-owned. `subscriptions` carries no blanket global scope
+ * (T1_TENANT_OWNERSHIP_MATRIX §4), so the target organization is authorized EXPLICITLY against the
+ * request's active tenant via OrganizationSubscriptionGuard — the organizationId argument is only ever
+ * honored when it matches the authenticated caller's tenant (a forged/mismatched id is rejected),
+ * never taken as trusted client input. No tenant resolved → no-op (backward compatible).
  */
 class SubscribeOrganizationAction extends BaseAction
 {
+    private readonly OrganizationSubscriptionGuard $guard;
+
     public function __construct(
         private readonly PaymentGateway $gateway,
         private readonly AuditLogger $audit,
         private readonly SeatProvisioningPort $seats,
-    ) {}
+        ?OrganizationSubscriptionGuard $guard = null,
+    ) {
+        $this->guard = $guard ?? app(OrganizationSubscriptionGuard::class);
+    }
 
     public function execute(int $organizationId, SubscriptionPlan $plan, int $seats, ?string $currency = null): Subscription
     {
+        $this->guard->authorizeOrganization($organizationId);
+
         if ($seats < 1) {
             throw SubscriptionException::invalidSeatCount($seats);
         }

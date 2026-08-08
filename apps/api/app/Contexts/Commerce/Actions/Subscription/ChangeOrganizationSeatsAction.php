@@ -4,6 +4,7 @@ namespace App\Contexts\Commerce\Actions\Subscription;
 
 use App\Contexts\Commerce\Exceptions\SubscriptionException;
 use App\Contexts\Commerce\Models\Subscription;
+use App\Contexts\Commerce\Support\OrganizationSubscriptionGuard;
 use App\Platform\Shared\Actions\BaseAction;
 use App\Platform\Shared\Audit\AuditLogger;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
@@ -22,16 +23,27 @@ use App\Platform\Shared\Seats\Exceptions\SeatDowngradeBelowAssignedException;
  * occur here — only a capacity adjustment and an audit trail.
  *
  * Idempotent: resizing to the current seat count is a no-op.
+ *
+ * TENANCY (T1): the subscription's organization is authorized against the request's active tenant via
+ * OrganizationSubscriptionGuard before any resize — an org1 caller cannot resize org2's seats. No
+ * tenant resolved → no-op (backward compatible). `subscriptions` intentionally has no global scope.
  */
 class ChangeOrganizationSeatsAction extends BaseAction
 {
+    private readonly OrganizationSubscriptionGuard $guard;
+
     public function __construct(
         private readonly SeatProvisioningPort $seats,
         private readonly AuditLogger $audit,
-    ) {}
+        ?OrganizationSubscriptionGuard $guard = null,
+    ) {
+        $this->guard = $guard ?? app(OrganizationSubscriptionGuard::class);
+    }
 
     public function execute(Subscription $subscription, int $newSeats): Subscription
     {
+        $this->guard->authorizeSubscription($subscription);
+
         if (! $subscription->isOrganization() || $subscription->seatPoolId() === null) {
             throw SubscriptionException::notAnOrganizationSubscription($subscription->public_id);
         }
