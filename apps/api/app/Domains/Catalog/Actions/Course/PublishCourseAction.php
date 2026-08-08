@@ -22,7 +22,11 @@ class PublishCourseAction extends BaseAction
         $course = $this->transaction(function () use ($course): Course {
             $course->forceFill([
                 'status' => CourseStatus::Published->value,
+                // First-publish time is preserved; last_published_at records every publish, and any
+                // pending scheduled time is consumed so the scheduler never republishes it.
                 'published_at' => $course->published_at ?? now(),
+                'last_published_at' => now(),
+                'scheduled_publish_at' => null,
             ])->save();
 
             return $course;

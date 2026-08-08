@@ -2,15 +2,13 @@
 
 namespace App\Domains\Catalog\Http\Controllers\Api\V1\Instructor;
 
-use App\Domains\Catalog\Actions\Course\ArchiveCourseAction;
-use App\Domains\Catalog\Actions\Course\PublishCourseAction;
-use App\Domains\Catalog\Actions\Course\UnpublishCourseAction;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Exceptions\CoursePublishBlockedException;
 use App\Domains\Catalog\Http\Resources\Instructor\InstructorCourseResource;
 use App\Domains\Catalog\Http\Resources\Instructor\ReadinessReportResource;
 use App\Domains\Catalog\Models\Course;
+use App\Domains\Catalog\Services\CourseLifecycle;
 use App\Domains\Catalog\Services\InstructorAnalyticsService;
 use App\Platform\Shared\Publishing\Data\ChangeSummary;
 use App\Platform\Shared\Publishing\Data\CourseReadinessInput;
@@ -100,12 +98,13 @@ class CourseController extends InstructorController
         return ApiResponse::success(ChangeSummary::noBaseline()->toArray());
     }
 
-    public function publish(Request $request, Course $course, PublishCourseAction $action, InstructorAnalyticsService $analytics): JsonResponse
+    public function publish(Request $request, Course $course, CourseLifecycle $lifecycle, InstructorAnalyticsService $analytics): JsonResponse
     {
+        $actor = $this->instructor($request);
         $course = $this->ownedCourse($request, $course);
 
         try {
-            $course = $action->execute($course);
+            $course = $lifecycle->transition($course, CourseStatus::Published, $actor);
         } catch (CoursePublishBlockedException $e) {
             return ApiResponse::error($e->errorCode(), $e->getMessage(), $e->details(), 422);
         }
@@ -113,16 +112,52 @@ class CourseController extends InstructorController
         return $this->courseWithStats($course, $analytics);
     }
 
-    public function unpublish(Request $request, Course $course, UnpublishCourseAction $action, InstructorAnalyticsService $analytics): JsonResponse
+    public function unpublish(Request $request, Course $course, CourseLifecycle $lifecycle, InstructorAnalyticsService $analytics): JsonResponse
     {
-        $course = $action->execute($this->ownedCourse($request, $course));
+        $actor = $this->instructor($request);
+        $course = $lifecycle->transition($this->ownedCourse($request, $course), CourseStatus::Unpublished, $actor);
 
         return $this->courseWithStats($course, $analytics);
     }
 
-    public function archive(Request $request, Course $course, ArchiveCourseAction $action, InstructorAnalyticsService $analytics): JsonResponse
+    public function archive(Request $request, Course $course, CourseLifecycle $lifecycle, InstructorAnalyticsService $analytics): JsonResponse
     {
-        $course = $action->execute($this->ownedCourse($request, $course));
+        $actor = $this->instructor($request);
+        $course = $lifecycle->transition($this->ownedCourse($request, $course), CourseStatus::Archived, $actor);
+
+        return $this->courseWithStats($course, $analytics);
+    }
+
+    /**
+     * POST /teach/courses/{course}/schedule — set the course to auto-publish at a future time.
+     *
+     * Requires a future `scheduled_publish_at`. The scheduler (courses:publish-scheduled) publishes
+     * it when the time arrives, still subject to the readiness guard.
+     */
+    public function schedule(Request $request, Course $course, CourseLifecycle $lifecycle, InstructorAnalyticsService $analytics): JsonResponse
+    {
+        $actor = $this->instructor($request);
+        $course = $this->ownedCourse($request, $course);
+
+        $validated = $request->validate([
+            'scheduled_publish_at' => ['required', 'date', 'after:now'],
+        ]);
+
+        $course = $lifecycle->transition(
+            $course,
+            CourseStatus::Scheduled,
+            $actor,
+            new \DateTimeImmutable((string) $validated['scheduled_publish_at']),
+        );
+
+        return $this->courseWithStats($course, $analytics);
+    }
+
+    /** POST /teach/courses/{course}/restore — bring an archived course back to Draft. */
+    public function restore(Request $request, Course $course, CourseLifecycle $lifecycle, InstructorAnalyticsService $analytics): JsonResponse
+    {
+        $actor = $this->instructor($request);
+        $course = $lifecycle->transition($this->ownedCourse($request, $course), CourseStatus::Draft, $actor);
 
         return $this->courseWithStats($course, $analytics);
     }

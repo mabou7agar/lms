@@ -46,7 +46,7 @@ class Course extends Model
     protected $fillable = [
         'title', 'title_i18n', 'slug', 'subtitle', 'subtitle_i18n', 'description', 'description_i18n',
         'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'thumbnail_path', 'position',
-        'published_at', 'seo',
+        'published_at', 'scheduled_publish_at', 'last_published_at', 'seo',
     ];
 
     /** @var array<int, string> */
@@ -68,6 +68,8 @@ class Course extends Model
             'is_featured' => 'boolean',
             'position' => 'integer',
             'published_at' => 'datetime',
+            'scheduled_publish_at' => 'datetime',
+            'last_published_at' => 'datetime',
             'seo' => 'array',
             'title_i18n' => 'array',
             'subtitle_i18n' => 'array',
@@ -155,6 +157,17 @@ class Course extends Model
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scheduled courses whose publish time has arrived. The scheduler reads this each minute and
+     * publishes each (still subject to the readiness guard) via the CourseLifecycle state machine.
+     */
+    public function scopeScheduledDue(Builder $query): Builder
+    {
+        return $query->where('status', CourseStatus::Scheduled->value)
+            ->whereNotNull('scheduled_publish_at')
+            ->where('scheduled_publish_at', '<=', now());
     }
 
     /**

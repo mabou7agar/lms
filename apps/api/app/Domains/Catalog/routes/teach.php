@@ -24,7 +24,9 @@ Route::prefix('v1/teach')->middleware('auth:sanctum')->group(function (): void {
     Route::get('courses/{course}/changes', [CourseController::class, 'changes']);
     Route::post('courses/{course}/publish', [CourseController::class, 'publish']);
     Route::post('courses/{course}/unpublish', [CourseController::class, 'unpublish']);
+    Route::post('courses/{course}/schedule', [CourseController::class, 'schedule']);
     Route::post('courses/{course}/archive', [CourseController::class, 'archive']);
+    Route::post('courses/{course}/restore', [CourseController::class, 'restore']);
 
     Route::get('courses/{course}/students', [StudentController::class, 'index']);
 

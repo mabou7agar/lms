@@ -3,6 +3,7 @@
 namespace App\Domains\Catalog\Providers;
 
 use App\Domains\Catalog\Access\CourseAccessAdapter;
+use App\Domains\Catalog\Console\Commands\PublishScheduledCoursesCommand;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Contracts\NullCoursePublishGuard;
 use App\Domains\Catalog\Models\Category;
@@ -45,5 +46,9 @@ class CatalogServiceProvider extends BaseDomainServiceProvider
         // may not import the model (Assessment). The adapter delegates to the existing
         // authoring.manage-curriculum gate rather than restating the rule.
         $this->app->bind(CourseAccessPort::class, CourseAccessAdapter::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([PublishScheduledCoursesCommand::class]);
+        }
     }
 }

@@ -21,6 +21,11 @@ Schedule::command('auth:clear-resets')->daily();
 // pending-status guard + per-recipient dedup key make delivery idempotent regardless.
 Schedule::command('live:dispatch-reminders')->everyMinute()->onOneServer()->withoutOverlapping();
 
+// Auto-publish courses whose scheduled publish time has arrived and that pass readiness. One
+// server + no overlap so each due course is considered once per minute-tick; the state machine's
+// readiness guard makes a premature or repeated run harmless (an unready course stays Scheduled).
+Schedule::command('courses:publish-scheduled')->everyMinute()->onOneServer()->withoutOverlapping();
+
 // Processed payment webhook events are kept 30 days for reconciliation, then pruned.
 Schedule::call(function (): void {
     PaymentWebhookEvent::query()

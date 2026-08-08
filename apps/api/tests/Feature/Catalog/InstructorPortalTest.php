@@ -89,8 +89,11 @@ it('publishes, unpublishes and archives an owned course', function () {
         ->assertOk()->assertJsonPath('data.status', 'published');
     expect($course->fresh()->status)->toBe(CourseStatus::Published);
 
+    // Unpublish now targets the distinct Unpublished state (not Draft): a course withdrawn from the
+    // catalog is meaningfully different from one that was never published — both are equally
+    // non-public. See CourseLifecycle + UnpublishCourseAction.
     $this->postJson("/api/v1/teach/courses/{$course->public_id}/unpublish")
-        ->assertOk()->assertJsonPath('data.status', 'draft');
+        ->assertOk()->assertJsonPath('data.status', 'unpublished');
 
     $this->postJson("/api/v1/teach/courses/{$course->public_id}/archive")
         ->assertOk()->assertJsonPath('data.status', 'archived');

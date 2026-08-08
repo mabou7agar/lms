@@ -44,6 +44,30 @@ class CourseFactory extends Factory
         return $this->state(fn () => ['status' => CourseStatus::Archived->value]);
     }
 
+    public function review(): static
+    {
+        return $this->state(fn () => ['status' => CourseStatus::Review->value]);
+    }
+
+    public function approved(): static
+    {
+        return $this->state(fn () => ['status' => CourseStatus::Approved->value]);
+    }
+
+    public function unpublished(): static
+    {
+        return $this->state(fn () => ['status' => CourseStatus::Unpublished->value]);
+    }
+
+    /** A course scheduled to auto-publish at the given time (defaults to one hour out). */
+    public function scheduled(?\DateTimeInterface $at = null): static
+    {
+        return $this->state(fn () => [
+            'status' => CourseStatus::Scheduled->value,
+            'scheduled_publish_at' => $at ?? now()->addHour(),
+        ]);
+    }
+
     public function featured(): static
     {
         return $this->state(fn () => ['is_featured' => true]);
