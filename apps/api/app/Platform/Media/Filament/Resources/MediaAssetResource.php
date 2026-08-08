@@ -6,6 +6,7 @@ use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Media\Exceptions\MediaInUseException;
 use App\Platform\Media\Exceptions\MediaTransitionException;
 use App\Platform\Media\Filament\Resources\MediaAssetResource\Pages;
+use App\Platform\Media\Jobs\GenerateImageVariantsJob;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaAttachment;
 use App\Platform\Media\Models\MediaFolder;
@@ -185,6 +186,7 @@ class MediaAssetResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 self::retryAction(),
+                self::regenerateVariantsAction(),
                 self::replaceAction(),
                 self::deleteAction(),
                 self::forceDeleteAction(),
@@ -325,6 +327,33 @@ class MediaAssetResource extends Resource
                 } catch (Throwable $e) {
                     Notification::make()->title('Retry failed')->body($e->getMessage())->danger()->send();
                 }
+            });
+    }
+
+    /**
+     * D6: (Re)generate image variants. Delegates wholesale to the async pipeline by queueing
+     * GenerateImageVariantsJob — the expensive GD work never runs in the request. Only shown for a
+     * Ready IMAGE asset, gated by the Media policy's `update` ability. The original object is never
+     * touched; variants are recreated deterministically from it.
+     */
+    public static function regenerateVariantsAction(): Action
+    {
+        return Action::make('regenerateVariants')
+            ->label('Regenerate variants')
+            ->icon('heroicon-o-photo')
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Regenerate image variants')
+            ->modalDescription('Re-run the image pipeline for this asset. Derived variants (thumbnail/small/medium/large) are recreated from the untouched original and queued off the request path.')
+            ->modalSubmitActionLabel('Regenerate')
+            ->visible(fn (MediaAsset $record): bool => $record->type === MediaType::Image
+                && $record->status === MediaStatus::Ready
+                && self::operatorCan('update', $record))
+            ->action(function (MediaAsset $record): void {
+                GenerateImageVariantsJob::dispatch($record->getKey())
+                    ->onQueue((string) config('media.images.queue', 'default'));
+
+                Notification::make()->title('Variant generation queued')->success()->send();
             });
     }
 

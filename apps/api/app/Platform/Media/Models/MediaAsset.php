@@ -3,6 +3,7 @@
 namespace App\Platform\Media\Models;
 
 use App\Platform\Media\Database\Factories\MediaAssetFactory;
+use App\Platform\Media\Enums\MediaVisibility;
 use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaStatus;
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property MediaStatus $status
  * @property MediaProvider $provider
  * @property MediaPurpose $purpose
+ * @property MediaVisibility $visibility
  * @property int $created_by
  * @property int|null $course_id
  * @property int|null $folder_id
@@ -54,6 +56,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, MediaAttachment> $attachments
  * @property-read Collection<int, MediaCaption> $captions
+ * @property-read Collection<int, MediaVariant> $variants
  */
 class MediaAsset extends Model
 {
@@ -75,6 +78,7 @@ class MediaAsset extends Model
             'status' => MediaStatus::class,
             'provider' => MediaProvider::class,
             'purpose' => MediaPurpose::class,
+            'visibility' => MediaVisibility::class,
             'created_by' => 'integer',
             'course_id' => 'integer',
             'folder_id' => 'integer',
@@ -109,6 +113,17 @@ class MediaAsset extends Model
     public function captions(): HasMany
     {
         return $this->hasMany(MediaCaption::class);
+    }
+
+    /**
+     * D6 - Derived image variants (thumbnail/small/medium/large/webp...). Populated by the async image
+     * pipeline; empty for non-image assets. Never includes the original object.
+     *
+     * @return HasMany<MediaVariant, $this>
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(MediaVariant::class);
     }
 
     /** A finalize token is usable only while unconsumed and unexpired. */

@@ -2,6 +2,7 @@
 
 namespace App\Platform\Media\Database\Factories;
 
+use App\Platform\Media\Enums\MediaVisibility;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
@@ -27,6 +28,8 @@ class MediaAssetFactory extends Factory
             'status' => MediaStatus::Created->value,
             'provider' => MediaProvider::Fake->value,
             'purpose' => MediaPurpose::LessonVideo->value,
+            // Secure by default: assets are PRIVATE until an authorized actor raises visibility.
+            'visibility' => MediaVisibility::Private->value,
             'created_by' => 1,
             'course_id' => null,
             'original_filename' => 'lecture.mp4',
@@ -58,6 +61,18 @@ class MediaAssetFactory extends Factory
     public function forCourse(int $courseId): self
     {
         return $this->state(fn () => ['course_id' => $courseId]);
+    }
+
+    /** Raise visibility to PUBLIC (P1) — for testing public URL resolution. */
+    public function publicVisibility(): self
+    {
+        return $this->state(fn () => ['visibility' => MediaVisibility::Public->value]);
+    }
+
+    /** Raise visibility to AUTHENTICATED (P1) — resolves to a signed URL in a public renderer. */
+    public function authenticatedVisibility(): self
+    {
+        return $this->state(fn () => ['visibility' => MediaVisibility::Authenticated->value]);
     }
 
     /** Place the asset inside an organizational folder (Phase 8 / D1). */

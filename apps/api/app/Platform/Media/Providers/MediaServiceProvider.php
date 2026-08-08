@@ -2,7 +2,10 @@
 
 namespace App\Platform\Media\Providers;
 
+use App\Platform\Media\Events\MediaReady;
+use App\Platform\Media\Imaging\ImageProcessor;
 use App\Platform\Media\Ingestion\IngestionProviderManager;
+use App\Platform\Media\Listeners\GenerateImageVariantsOnReady;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaFolder;
 use App\Platform\Media\Playback\PlaybackTokenManager;
@@ -11,11 +14,14 @@ use App\Platform\Media\Policies\MediaFolderPolicy;
 use App\Platform\Media\Ports\MediaPickerAdapter;
 use App\Platform\Media\Ports\MediaReferenceAdapter;
 use App\Platform\Media\Ports\NullMediaEnrollmentPort;
+use App\Platform\Media\Resolution\MediaPublicAssetUrlResolver;
 use App\Platform\Shared\Media\Contracts\MediaEnrollmentPort;
 use App\Platform\Shared\Media\Contracts\MediaPickerPort;
 use App\Platform\Shared\Media\Contracts\MediaReferencePort;
 use App\Platform\Shared\Media\Contracts\PlaybackPort;
+use App\Platform\Shared\Media\Contracts\PublicAssetUrlResolver;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use Illuminate\Support\Facades\Event;
 
 /**
  * Media platform wiring. Loads the Media migrations + route files (via BaseDomainServiceProvider),
@@ -58,11 +64,28 @@ class MediaServiceProvider extends BaseDomainServiceProvider
 
         $this->app->bind(MediaReferencePort::class, MediaReferenceAdapter::class);
 
+        // P1 - The seam public renderers use to turn a stored MediaPicker value into a client-facing
+        // URL by the asset's visibility (public stable URL / signed URL / hidden). Media-owned.
+        $this->app->bind(PublicAssetUrlResolver::class, MediaPublicAssetUrlResolver::class);
+
         // The seam the Shared reusable Filament MediaPicker resolves for every Media-side concern
         // (search selectable assets, sign a preview, re-authorize a picked id, upload a new asset).
         $this->app->bind(MediaPickerPort::class, MediaPickerAdapter::class);
 
         // Deny-by-default; Learning overrides with a real enrollment/publication-aware implementation.
         $this->app->bind(MediaEnrollmentPort::class, NullMediaEnrollmentPort::class);
+
+        // D6 - Native ext-gd image engine. Injected with its config block so it never reads globals; the
+        // ImageVariantService + queued job resolve it from the container (fake-disk friendly in tests).
+        $this->app->bind(ImageProcessor::class, fn () => new ImageProcessor((array) config('media.images', [])));
+    }
+
+    /**
+     * D6 - Additive ingestion hook: when an asset reaches Ready, queue image-variant generation for
+     * image assets. This observes the EXISTING MediaReady event without altering the ingestion flow.
+     */
+    protected function bootDomain(): void
+    {
+        Event::listen(MediaReady::class, GenerateImageVariantsOnReady::class);
     }
 }

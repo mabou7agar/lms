@@ -7,6 +7,7 @@ use App\Domains\Catalog\Models\Course;
 use App\Domains\Live\Models\LiveSession;
 use App\Platform\Homepage\Enums\BlockType;
 use App\Platform\Homepage\Models\HomepageSection;
+use App\Platform\Shared\Media\Contracts\PublicAssetUrlResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -69,7 +70,8 @@ class HomepageContentResolver
                 'title' => $this->bag($course->getAttribute('title')),
                 'subtitle' => $this->bag($course->getAttribute('subtitle')),
                 'slug' => $course->getAttribute('slug'),
-                'thumbnail' => $course->getAttribute('thumbnail_path'),
+                // P1: resolve a MediaAsset reference to a public URL (legacy path passes through).
+                'thumbnail' => app(PublicAssetUrlResolver::class)->resolve($course->getAttribute('thumbnail_path')),
                 'level' => $level instanceof Model ? $level->getAttribute('name') : null,
                 'href' => '/courses/'.$course->getAttribute('public_id'),
             ];

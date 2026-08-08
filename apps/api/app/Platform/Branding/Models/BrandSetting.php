@@ -3,6 +3,7 @@
 namespace App\Platform\Branding\Models;
 
 use App\Platform\Branding\Database\Factories\BrandSettingFactory;
+use App\Platform\Shared\Media\Contracts\PublicAssetUrlResolver;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -192,19 +193,53 @@ class BrandSetting extends Model
      * defaults() so callers always get a complete set. Null/absent stored keys keep the default,
      * which is what lets the frontend fall back per-value for partial settings.
      *
+     * P1: every logo key and the certificate image keys (background/logo/signature/stamp) may hold a
+     * MediaAsset public_id reference (chosen via the MediaPicker) OR a legacy URL/path. Those are
+     * resolved to public URLs through PublicAssetUrlResolver — a PUBLIC asset yields a stable URL, a
+     * legacy value passes through unchanged. Anything not resolvable (empty / private / missing)
+     * collapses to '' so the group keeps its complete, render-ready shape and no raw reference or
+     * storage key ever leaks. Field names are unchanged.
+     *
      * @return array<string, array<string, mixed>>
      */
     public function toPublicArray(): array
     {
         $defaults = self::defaults();
 
+        $logos = self::deepMergeDefined($defaults['logos'], $this->logos);
+        $certificate = self::deepMergeDefined($defaults['certificate'], $this->certificate);
+
         return [
             'identity' => self::deepMergeDefined($defaults['identity'], $this->identity),
-            'logos' => self::deepMergeDefined($defaults['logos'], $this->logos),
+            'logos' => self::resolveMediaKeys($logos, array_keys($defaults['logos'])),
             'theme' => self::deepMergeDefined($defaults['theme'], $this->theme),
             'email' => self::deepMergeDefined($defaults['email'], $this->email),
-            'certificate' => self::deepMergeDefined($defaults['certificate'], $this->certificate),
+            'certificate' => self::resolveMediaKeys($certificate, ['background', 'logo', 'signature', 'stamp']),
         ];
+    }
+
+    /**
+     * Resolve the given media-reference keys of a branding group to public URLs, coalescing a null
+     * resolution back to '' so the group stays a complete map (the frontend contract). Non-string and
+     * absent keys are left untouched.
+     *
+     * @param  array<string, mixed>  $group
+     * @param  array<int, string>  $keys
+     * @return array<string, mixed>
+     */
+    private static function resolveMediaKeys(array $group, array $keys): array
+    {
+        $resolver = app(PublicAssetUrlResolver::class);
+
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $group) || ! is_string($group[$key])) {
+                continue;
+            }
+
+            $group[$key] = $resolver->resolve($group[$key]) ?? '';
+        }
+
+        return $group;
     }
 
     /**

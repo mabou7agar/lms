@@ -60,6 +60,16 @@ class MediaAssetPolicy extends BasePolicy
         return $this->manages($user, $media);
     }
 
+    /**
+     * P1 - Change an asset's public visibility (PRIVATE / AUTHENTICATED / PUBLIC). Same authority as
+     * other management edges: the owner or a course manager (super_admin bypasses via before()). This
+     * is the gate that stops an unauthorized PRIVATE -> PUBLIC raise from a forged request.
+     */
+    public function setVisibility(Actor $user, MediaAsset $media): bool
+    {
+        return $this->manages($user, $media);
+    }
+
     /** Learner-facing: a ready asset the viewer may access through the course. */
     public function playback(Actor $user, MediaAsset $media): bool
     {

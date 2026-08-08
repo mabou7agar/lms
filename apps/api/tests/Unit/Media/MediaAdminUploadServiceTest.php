@@ -1,11 +1,13 @@
 <?php
 
+use App\Platform\Media\Jobs\GenerateImageVariantsJob;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Services\MediaAdminUploadService;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaStatus;
 use App\Platform\Shared\Media\Enums\MediaType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -14,6 +16,10 @@ beforeEach(function () {
     config()->set('media.ingestion.default', 'fake');
     // The provider byte-push is the only outbound call; stub it so the engine's finalize path runs.
     Http::fake(['*' => Http::response('', 200)]);
+    // D6: finalize -> MediaReady now queues async image-variant generation. This upload-engine test
+    // only concerns the upload/finalize outcome, so fake that one job (its own pipeline is covered by
+    // the D6 image tests); otherwise it would run inline against a real image disk.
+    Bus::fake(GenerateImageVariantsJob::class);
     $this->service = app(MediaAdminUploadService::class);
 });
 
