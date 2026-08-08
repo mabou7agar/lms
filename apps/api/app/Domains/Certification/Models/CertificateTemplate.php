@@ -16,7 +16,7 @@ class CertificateTemplate extends Model
     use HasPublicId;
     use HasTranslations;
 
-    protected $fillable = ['key', 'version', 'name', 'name_i18n', 'html', 'html_i18n', 'orientation', 'is_active'];
+    protected $fillable = ['key', 'version', 'name', 'name_i18n', 'html', 'html_i18n', 'design', 'orientation', 'is_active'];
 
     /** @var array<int, string> */
     protected array $translatable = ['name_i18n', 'html_i18n'];
@@ -36,6 +36,7 @@ class CertificateTemplate extends Model
             'is_active' => 'boolean',
             'name_i18n' => 'array',
             'html_i18n' => 'array',
+            'design' => 'array',
         ];
     }
 

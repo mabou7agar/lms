@@ -4,53 +4,110 @@ namespace App\Domains\Certification\Services;
 
 use App\Domains\Certification\Contracts\PdfGenerator;
 use App\Domains\Certification\Models\Certificate;
-use App\Domains\Certification\Models\CertificateSetting;
 use App\Domains\Certification\Models\CertificateTemplate;
-use App\Platform\Identity\Contracts\UserLookupPort;
+use App\Domains\Certification\Pdf\Data\PdfRenderOptions;
+use App\Platform\Shared\Helpers\LocaleHelper;
+use App\Platform\Shared\I18n\TranslationResolver;
 use App\Platform\Shared\Services\BaseService;
 
 /**
  * Builds certificate HTML from the template + data, then renders PDF bytes via the PdfGenerator
  * abstraction. No storage concerns here.
+ *
+ * The token substitution is delegated to the constrained {@see CertificateVariableRenderer}
+ * (allowlist + escaping). Rendering is:
+ *   • SNAPSHOT-AWARE — an already-issued certificate renders from the frozen template body captured
+ *     at issuance (visual immutability); a later edit to the live template never mutates it. Certs
+ *     issued before the snapshot column existed fall back to the live template.
+ *   • LOCALE-AWARE — the localized `html_i18n` value for the active locale is resolved (falling back
+ *     to the legacy scalar), and RTL locales render with dir="rtl".
+ *   • ORIENTATION-AWARE — the template's orientation/page setup is passed to the generator.
  */
 class CertificateRenderService extends BaseService
 {
     public function __construct(
         private readonly PdfGenerator $pdf,
-        private readonly QrCodeService $qr,
-        private readonly VerificationUrlService $urls,
-        private readonly UserLookupPort $users,
+        private readonly CertificateVariableRenderer $variables,
+        private readonly TranslationResolver $translations,
     ) {}
 
     public function renderBytes(Certificate $certificate): string
     {
         $certificate->loadMissing(['course', 'template']);
-        $template = $certificate->template ?? $this->fallbackTemplate();
 
-        $html = $this->fill($template->html, $certificate);
+        $locale = LocaleHelper::current();
+        $source = $this->resolveSource($certificate);
 
-        return $this->pdf->render($html)->bytes;
+        $html = $this->fill((string) $this->translations->resolve($source['html'], $locale), $certificate, $source['design'], $locale);
+
+        $options = new PdfRenderOptions(
+            orientation: $source['orientation'],
+            direction: LocaleHelper::direction($locale),
+            locale: $locale,
+        );
+
+        return $this->pdf->render($html, $options)->bytes;
     }
 
-    private function fill(string $html, Certificate $certificate): string
+    /**
+     * Resolve the (frozen or live) template body map, design assets, and orientation for a cert.
+     *
+     * @return array{html: array<string, mixed>|string, design: array<string, mixed>, orientation: string}
+     */
+    private function resolveSource(Certificate $certificate): array
     {
-        $settings = CertificateSetting::current();
-        $verifyUrl = $this->urls->forCertificate($certificate);
+        $snapshot = $certificate->rendered_snapshot;
 
-        $replacements = [
-            '{{ holder_name }}' => (string) $this->users->refById($certificate->user_id)?->name,
-            '{{ course_title }}' => (string) $certificate->course?->title,
-            '{{ number }}' => $certificate->number,
-            '{{ verification_code }}' => $certificate->verification_code,
-            '{{ verify_url }}' => $verifyUrl,
-            '{{ issuer_name }}' => $settings->issuer_name,
-            '{{ signature_name }}' => (string) $certificate->signature_name,
-            '{{ signature_title }}' => (string) $certificate->signature_title,
-            '{{ issued_at }}' => optional($certificate->issued_at)->toFormattedDateString(),
-            '{{ qr_svg }}' => $this->qr->svgFor($verifyUrl),
+        if (is_array($snapshot) && isset($snapshot['html'])) {
+            $html = $snapshot['html'];
+            $orientation = $snapshot['orientation'] ?? null;
+
+            /** @var array<string, mixed>|string $htmlOut */
+            $htmlOut = is_array($html) || is_string($html) ? $html : '';
+
+            /** @var array<string, mixed> $design */
+            $design = is_array($snapshot['design'] ?? null) ? $snapshot['design'] : [];
+
+            return [
+                'html' => $htmlOut,
+                'design' => $design,
+                'orientation' => is_string($orientation) ? $orientation : 'landscape',
+            ];
+        }
+
+        $template = $certificate->template ?? $this->fallbackTemplate();
+
+        /** @var array<string, mixed> $design */
+        $design = is_array($template->design) ? $template->design : [];
+
+        return [
+            'html' => $this->templateHtmlMap($template),
+            'design' => $design,
+            'orientation' => (string) ($template->orientation ?: 'landscape'),
         ];
+    }
 
-        return strtr($html, $replacements);
+    /**
+     * The template body as a locale => html map, so the TranslationResolver can pick the active
+     * locale. Falls back to the legacy scalar `html` column for pre-localization rows.
+     *
+     * @return array<string, mixed>|string
+     */
+    private function templateHtmlMap(CertificateTemplate $template): array|string
+    {
+        if (is_array($template->html_i18n) && $template->html_i18n !== []) {
+            return $template->html_i18n;
+        }
+
+        return (string) $template->html;
+    }
+
+    /**
+     * @param  array<string, mixed>  $design
+     */
+    private function fill(string $html, Certificate $certificate, array $design, ?string $locale): string
+    {
+        return $this->variables->render($html, $certificate, $design, $locale);
     }
 
     private function fallbackTemplate(): CertificateTemplate

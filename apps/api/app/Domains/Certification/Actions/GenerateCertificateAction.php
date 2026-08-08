@@ -45,14 +45,18 @@ class GenerateCertificateAction extends BaseAction
                 'course_id' => $course->id,
                 'enrollment_id' => $enrollmentId,
                 'template_id' => $template?->id ?? $settings->default_template_id,
+                'template_version' => $template?->version,
                 'number' => $this->numbers->next(),
                 'verification_code' => $this->codes->generate(),
                 'status' => CertificateStatus::Issued->value,
                 'signature_name' => $settings->signature_name,
                 'signature_title' => $settings->signature_title,
+                'rendered_snapshot' => $this->snapshotOf($template),
                 'issued_at' => now(),
             ]);
 
+            // The signature payload is number|verification_code|user_id|course_id|issued_at ONLY —
+            // the snapshot is deliberately excluded so it never affects tamper-evidence.
             $certificate->forceFill(['signature_hash' => $this->signatures->hash($certificate)])->save();
 
             return [$certificate, true];
@@ -63,5 +67,33 @@ class GenerateCertificateAction extends BaseAction
         }
 
         return $certificate;
+    }
+
+    /**
+     * Freeze the template body (localized map or legacy scalar) + design + orientation at issuance,
+     * so a later edit to the live template never mutates this certificate's rendered document.
+     *
+     * @return array{html: array<string, mixed>|string, design: array<string, mixed>, orientation: string, version: int}|null
+     */
+    private function snapshotOf(?CertificateTemplate $template): ?array
+    {
+        if ($template === null) {
+            return null;
+        }
+
+        /** @var array<string, mixed>|string $html */
+        $html = is_array($template->html_i18n) && $template->html_i18n !== []
+            ? $template->html_i18n
+            : (string) $template->html;
+
+        /** @var array<string, mixed> $design */
+        $design = is_array($template->design) ? $template->design : [];
+
+        return [
+            'html' => $html,
+            'design' => $design,
+            'orientation' => (string) ($template->orientation ?: 'landscape'),
+            'version' => (int) $template->version,
+        ];
     }
 }

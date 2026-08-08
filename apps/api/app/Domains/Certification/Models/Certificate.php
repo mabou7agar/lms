@@ -24,9 +24,9 @@ class Certificate extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'course_id', 'enrollment_id', 'template_id', 'number', 'verification_code',
+        'user_id', 'course_id', 'enrollment_id', 'template_id', 'template_version', 'number', 'verification_code',
         'status', 'signature_name', 'signature_title', 'signature_hash', 'pdf_path', 'pdf_generated_at',
-        'metadata', 'issued_at', 'revoked_at', 'reissued_at',
+        'metadata', 'rendered_snapshot', 'issued_at', 'revoked_at', 'reissued_at',
     ];
 
     protected $hidden = ['pdf_path']; // storage path is never serialized
@@ -36,6 +36,8 @@ class Certificate extends Model
         return [
             'status' => CertificateStatus::class,
             'metadata' => 'array',
+            'rendered_snapshot' => 'array',
+            'template_version' => 'integer',
             'pdf_generated_at' => 'datetime',
             'issued_at' => 'datetime',
             'revoked_at' => 'datetime',
