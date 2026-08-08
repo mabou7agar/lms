@@ -12,7 +12,9 @@ use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Policies\ConsultingRequestPolicy;
 use App\Domains\Crm\Policies\LeadPolicy;
 use App\Domains\Crm\Policies\OrganizationPolicy;
+use App\Domains\Crm\Ports\SeatProvisioningAdapter;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -38,6 +40,11 @@ class CrmServiceProvider extends BaseDomainServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../../../../config/crm.php', 'crm');
+
+        // CRM owns the seat infrastructure (seat_pools / seat_assignments / SeatService) and
+        // implements the Shared SeatProvisioningPort so Commerce can drive organization seats
+        // without importing a single CRM model. This is the single Commerce→CRM seam for seats.
+        $this->app->bind(SeatProvisioningPort::class, SeatProvisioningAdapter::class);
     }
 
     protected function bootDomain(): void

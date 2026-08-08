@@ -20,9 +20,18 @@ use Illuminate\Support\Carbon;
  *
  * @property-read SubscriptionPlan|null $plan
  * @property-read Collection<int, SubscriptionChange> $changes
+ * A subscription's SUBSCRIBER is either an individual user (user_id) OR a CRM organization
+ * (organization_id) — exactly one is set (invariant enforced in the Actions layer). An organization
+ * subscription additionally carries a purchased seat capacity (seats) and the CRM seat pool it
+ * provisioned (seat_pool_id); the recurring charge is still the plan's price, so the lifecycle
+ * (renewal/upgrade/cancel/grace/expire) is reused unchanged for both subscriber kinds.
+ *
  * @property string $public_id
  * @property int $id
- * @property int $user_id
+ * @property int|null $user_id
+ * @property int|null $organization_id
+ * @property int|null $seats
+ * @property int|null $seat_pool_id
  * @property int $plan_id
  * @property SubscriptionStatus $status
  * @property Carbon|null $current_period_start
@@ -42,6 +51,9 @@ class Subscription extends Model
 
     protected $fillable = [
         'user_id',
+        'organization_id',
+        'seats',
+        'seat_pool_id',
         'plan_id',
         'status',
         'current_period_start',
@@ -67,6 +79,9 @@ class Subscription extends Model
             'canceled_at' => 'datetime',
             'cancel_at_period_end' => 'boolean',
             'amount_minor' => 'integer',
+            'organization_id' => 'integer',
+            'seats' => 'integer',
+            'seat_pool_id' => 'integer',
         ];
     }
 
@@ -124,9 +139,43 @@ class Subscription extends Model
         ));
     }
 
+    /**
+     * The owning user id, or 0 for an organization subscription. Kept int-typed so the existing
+     * user-subscription callers and the scalar-id lifecycle events are unaffected.
+     */
     public function userId(): int
     {
         return (int) $this->getAttribute('user_id');
+    }
+
+    /** The owning CRM organization id, or null for an individual (user) subscription. */
+    public function organizationId(): ?int
+    {
+        $value = $this->getAttribute('organization_id');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** Purchased seat capacity for an organization subscription (null for a user subscription). */
+    public function seats(): ?int
+    {
+        $value = $this->getAttribute('seats');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** The provisioned CRM seat pool id backing an organization subscription, if any. */
+    public function seatPoolId(): ?int
+    {
+        $value = $this->getAttribute('seat_pool_id');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** Whether the subscriber is a CRM organization (vs an individual user). */
+    public function isOrganization(): bool
+    {
+        return $this->getAttribute('organization_id') !== null;
     }
 
     public function planId(): int

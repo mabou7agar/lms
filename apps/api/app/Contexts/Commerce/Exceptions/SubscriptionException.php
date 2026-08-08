@@ -31,4 +31,22 @@ class SubscriptionException extends RuntimeException
     {
         return new self("Subscription [{$subscriptionPublicId}] cannot be reactivated in its current state.");
     }
+
+    public static function invalidSeatCount(int $seats): self
+    {
+        return new self("An organization subscription needs at least one seat; [{$seats}] requested.");
+    }
+
+    public static function seatDowngradeBelowAssigned(string $subscriptionPublicId, int $requested, int $assigned): self
+    {
+        return new self(
+            "Subscription [{$subscriptionPublicId}] cannot be resized to [{$requested}] seats: "
+            ."[{$assigned}] are currently assigned. Unassign employees first."
+        );
+    }
+
+    public static function notAnOrganizationSubscription(string $subscriptionPublicId): self
+    {
+        return new self("Subscription [{$subscriptionPublicId}] is not an organization subscription.");
+    }
 }
