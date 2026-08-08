@@ -11,6 +11,7 @@ import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
 import { useBuilder } from "@/lib/authoring/builder-store";
 import type { BlockContent, LocalizedText } from "@/lib/authoring/types";
 import { QuizLessonPanel } from "../assessment/quiz-lesson-panel";
+import { LessonBlocksPanel } from "../blocks/lesson-blocks-panel";
 import { BlockIcon } from "../block-icon";
 import { useLocalizedAutosave } from "../field-autosave";
 import { StatusBadge } from "../status-badge";
@@ -130,6 +131,10 @@ export function LessonEditor({ sectionId, blockId }: { sectionId: string; blockI
       ) : (
         richText
       )}
+
+      {/* Nested content blocks (C5). Gated by the AUTHORING_BLOCKS_ENABLED flag and the backend
+          feature flag — renders nothing in production until both are on. */}
+      <LessonBlocksPanel lessonId={block.id} lessonVersion={block.lock_version} />
     </div>
   );
 }

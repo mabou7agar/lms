@@ -27,6 +27,13 @@ import type {
   UpdateSectionInput,
   UpsertMediaInput,
 } from "./types";
+import type {
+  BlockContentI18n,
+  ContentBlock,
+  CreateContentBlockInput,
+  ReorderContentBlocksResult,
+  UpdateContentBlockInput,
+} from "./content-blocks/types";
 
 /** Thrown when a caller tries to persist a block kind the backend does not accept yet. */
 export class UnsupportedBlockError extends globalThis.Error {
@@ -282,6 +289,105 @@ export async function upsertMedia(blockId: string, input: UpsertMediaInput): Pro
 // ── Whole-tree reorder (DnD across sections) ─────────────────────────────────
 export async function reorderTree(courseId: string, input: ReorderTreeInput): Promise<void> {
   await withConflict(() => api.put(`admin/courses/${courseId}/curriculum/order`, input));
+}
+
+// ── Nested lesson CONTENT BLOCKS (C5) ────────────────────────────────────────
+// The ordered block layer INSIDE a lesson. Endpoints are dormant behind the backend
+// `authoring.blocks_enabled` flag: each 404s while off, which is how the UI stays invisible in
+// production. Contract is identical to the section/lesson layer — same `{ data }` envelope, same
+// optimistic-concurrency 409 (`{ error:"stale_write", current_version }`) via `withConflict`, and
+// only runtime-supported kinds are ever sent (guarded by `isBackendSupported`).
+
+/** Raw `BlockResource` shape (backend → builder domain). */
+interface RawContentBlock {
+  id: string;
+  type: string;
+  family: string;
+  position: number;
+  publish_state: PublishState;
+  lock_version?: number | null;
+  content?: unknown;
+  content_i18n?: BlockContentI18n | null;
+  config?: Record<string, unknown> | null;
+  learning_object_id?: string | null;
+}
+
+function toContentBlock(raw: RawContentBlock): ContentBlock {
+  return {
+    id: raw.id,
+    type: raw.type as BlockKind,
+    family: raw.family,
+    position: raw.position,
+    publish_state: raw.publish_state,
+    lock_version: raw.lock_version ?? 0,
+    content: asContent(raw.content),
+    content_i18n: raw.content_i18n ?? {},
+    config: raw.config ?? null,
+    learning_object_id: raw.learning_object_id ?? null,
+  };
+}
+
+/** List a lesson's content blocks, ordered by position. 404s while the feature flag is off. */
+export async function listContentBlocks(lessonId: string): Promise<ContentBlock[]> {
+  const data = await api.data<RawContentBlock[]>(`admin/lessons/${lessonId}/blocks`);
+  return (Array.isArray(data) ? data : []).map(toContentBlock);
+}
+
+/** Read a single block as it renders (locale-resolved), for the read-only preview. */
+export async function getContentBlock(blockId: string): Promise<ContentBlock> {
+  return toContentBlock(await api.data<RawContentBlock>(`admin/blocks/${blockId}`));
+}
+
+export async function createContentBlock(lessonId: string, input: CreateContentBlockInput): Promise<ContentBlock> {
+  if (!isBackendSupported(input.type)) throw new UnsupportedBlockError(input.type);
+  const body: Record<string, unknown> = { type: input.type };
+  if (input.content_i18n !== undefined) body.content_i18n = input.content_i18n;
+  if (input.config !== undefined) body.config = input.config;
+  return toContentBlock(await api.data<RawContentBlock>(`admin/lessons/${lessonId}/blocks`, { method: "POST", body }));
+}
+
+export async function updateContentBlock(blockId: string, input: UpdateContentBlockInput): Promise<ContentBlock> {
+  if (input.type && !isBackendSupported(input.type)) throw new UnsupportedBlockError(input.type);
+  const body: Record<string, unknown> = {};
+  if (input.type !== undefined) body.type = input.type;
+  if (input.content_i18n !== undefined) body.content_i18n = input.content_i18n;
+  if (input.config !== undefined) body.config = input.config;
+  if (input.expected_version !== undefined) body.expected_version = input.expected_version;
+  const data = await withConflict(() => api.data<RawContentBlock>(`admin/blocks/${blockId}`, { method: "PUT", body }));
+  return toContentBlock(data);
+}
+
+export async function deleteContentBlock(blockId: string): Promise<void> {
+  await api.del(`admin/blocks/${blockId}`);
+}
+
+/** Deep-copy a block within its lesson (server-side); appended at the end, Draft. */
+export async function duplicateContentBlock(lessonId: string, blockId: string): Promise<ContentBlock> {
+  return toContentBlock(
+    await api.data<RawContentBlock>(`admin/lessons/${lessonId}/blocks/${blockId}/duplicate`, { method: "POST" }),
+  );
+}
+
+export async function setContentBlockPublish(blockId: string, state: PublishState): Promise<ContentBlock> {
+  return toContentBlock(await api.data<RawContentBlock>(`admin/blocks/${blockId}/publish`, { method: "POST", body: { state } }));
+}
+
+/**
+ * Server-authoritative reorder of a lesson's blocks. The parent LESSON is the optimistic-lock unit
+ * (its `lock_version` guards the ordering and is what `expected_version` refers to); the server
+ * returns the lesson's NEW `lock_version` so the caller can keep issuing further reorders.
+ */
+export async function reorderContentBlocks(
+  lessonId: string,
+  order: string[],
+  expectedVersion?: number,
+): Promise<ReorderContentBlocksResult> {
+  const body: Record<string, unknown> = { order };
+  if (expectedVersion !== undefined) body.expected_version = expectedVersion;
+  const data = await withConflict(() =>
+    api.data<{ lock_version?: number }>(`admin/lessons/${lessonId}/blocks/order`, { method: "PUT", body }),
+  );
+  return { lock_version: data?.lock_version ?? expectedVersion ?? 0 };
 }
 
 /**
