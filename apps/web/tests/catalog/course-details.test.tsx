@@ -6,6 +6,8 @@ const { useCourse } = vi.hoisted(() => ({ useCourse: vi.fn() }));
 vi.mock("next/navigation", () => ({ useParams: () => ({ public_id: "c1" }) }));
 vi.mock("@/lib/catalog/hooks", () => ({ useCourse, useEnroll: () => ({ mutate: vi.fn(), isPending: false }) }));
 vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => ({ status: "guest" }) }));
+// ReviewsSection is a React-Query-driven child with its own tests; stub it so this page test needs no QueryClient.
+vi.mock("@/components/community/reviews-section", () => ({ ReviewsSection: () => null }));
 
 import CourseDetailsPage from "@/app/(marketing)/(site)/courses/[public_id]/page";
 

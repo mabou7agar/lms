@@ -9,6 +9,7 @@ import { useLearnCourse } from "@/lib/learning/hooks";
 import type { LearnCourse } from "@/lib/learning/api";
 import { RequireAuth } from "@/lib/auth/guards";
 import { CurriculumSidebar } from "@/components/learning/curriculum-sidebar";
+import { CourseCommunityPanel } from "@/components/community/course-community-panel";
 import { PageHeader } from "@/components/student/page-header";
 import { ProgressBar } from "@/components/student/progress-bar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,7 +68,7 @@ function LearnInner() {
               </div>
               <ProgressBar value={course.enrollment.progress_percentage} />
             </div>
-            <CurriculumSidebar sections={course.sections} />
+            <CurriculumSidebar sections={course.sections} coursePublicId={course.course.id} />
           </CardContent>
         </Card>
 
@@ -83,6 +84,11 @@ function LearnInner() {
             ) : null}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Enrolled-learner community: Q&A + Discussion */}
+      <div className="mt-8">
+        <CourseCommunityPanel courseId={course.course.id} />
       </div>
     </div>
   );

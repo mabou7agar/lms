@@ -1,8 +1,10 @@
 import { vi } from "vitest";
 import type {
+  CourseAnalytics,
   CoursePerformanceRow,
   DashboardOverview,
   InstructorAlerts,
+  LearnerProgress,
   MetricValue,
 } from "@/lib/teach/api";
 
@@ -91,6 +93,49 @@ export function page<T>(rows: T[], patch: Partial<{ current_page: number; last_p
       ...patch,
     },
     links: { first: null, last: null, prev: null, next: null },
+  };
+}
+
+export function learnerProgress(patch: Partial<LearnerProgress> = {}): LearnerProgress {
+  return {
+    student: { id: "usr-1", name: "Sara Learner" },
+    current_lesson: { id: "les-3", title: "Eloquent Relationships", type: "video" },
+    percent_complete: 40,
+    // 5400s = 1h 30m; distinct from every count below so an assertion cannot pick the wrong node.
+    watched_seconds: 5400,
+    lessons_completed: 8,
+    lessons_total: 20,
+    last_activity_at: "2026-07-02T09:30:00+00:00",
+    started_at: "2026-06-15T10:00:00+00:00",
+    completed_at: null,
+    assessments: { required: 3, passed: 2, all_required_passed: false },
+    certificate: { issued: false },
+    ...patch,
+  };
+}
+
+export function courseAnalytics(patch: Partial<CourseAnalytics> = {}): CourseAnalytics {
+  return {
+    total_learners: available(60),
+    watch_time: {
+      total_watched_seconds: available(9000), // 2h 30m
+      avg_watched_seconds_per_learner: available(4500), // 1h 15m
+    },
+    inactive_learners: { count: available(7), window_days: 14 },
+    certificates_issued: available(11),
+    lesson_drop_off: [
+      { lesson: { id: "les-1", title: "Getting Started" }, started: 50, completed: 45, drop_off: 5 },
+      { lesson: { id: "les-2", title: "Routing Deep Dive" }, started: 44, completed: 20, drop_off: 24 },
+    ],
+    completion_distribution: {
+      "0": 3,
+      "1-25": 6,
+      "26-50": 9,
+      "51-75": 12,
+      "76-99": 4,
+      "100": 26,
+    },
+    ...patch,
   };
 }
 

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Bookmark, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useLesson, useRecordProgress, useToggleBookmark, useUpsertNote } from "@/lib/learning/hooks";
 import { RequireAuth } from "@/lib/auth/guards";
+import { AskQuestionDialog } from "@/components/community/ask-question-dialog";
 import { LessonContent } from "@/components/learning/lesson-content";
 import { PageHeader } from "@/components/student/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,10 @@ function LessonInner() {
   const { t, dir } = useI18n();
   const params = useParams<{ public_id: string }>();
   const lessonId = params.public_id;
+  // Course context threaded from the curriculum (`?course=`); enables the lesson-scoped "Ask the
+  // instructor" affordance. Absent on deep links, where the affordance is simply not shown.
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get("course");
 
   const query = useLesson(lessonId);
   const progress = useRecordProgress(lessonId);
@@ -76,6 +81,13 @@ function LessonInner() {
         action={
           <div className="flex items-center gap-2">
             <Badge variant={done ? "success" : "secondary"}>{done ? t("learn.lesson.completed") : t("learn.lesson.started")}</Badge>
+            {courseId ? (
+              <AskQuestionDialog
+                courseId={courseId}
+                lessonId={lessonId}
+                getTimestamp={() => videoRef.current?.currentTime ?? null}
+              />
+            ) : null}
             <Button
               variant="ghost"
               size="icon"
@@ -155,7 +167,10 @@ function LessonInner() {
 export default function LessonPage() {
   return (
     <RequireAuth>
-      <LessonInner />
+      {/* useSearchParams (course context for the ask-instructor affordance) needs a Suspense boundary. */}
+      <Suspense fallback={<LoadingState />}>
+        <LessonInner />
+      </Suspense>
     </RequireAuth>
   );
 }

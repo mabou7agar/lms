@@ -11,6 +11,8 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => ({ status: "authenticated", user: { id: "u1" } }) }));
 vi.mock("@/lib/learning/hooks", () => ({ useLearnCourse }));
+// The community panel is data-driven (React Query); stub it so this page test stays hermetic.
+vi.mock("@/components/community/course-community-panel", () => ({ CourseCommunityPanel: () => null }));
 
 import CourseLearnPage from "@/app/(learning)/(player)/learn/[public_id]/page";
 

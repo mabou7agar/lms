@@ -121,7 +121,12 @@ export default function TeachCourseDetailPage() {
             />
 
             <section aria-label={t("teach.course.analytics")}>
-              <h2 className="mb-3 font-serif text-lg font-semibold">{t("teach.course.analytics")}</h2>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="font-serif text-lg font-semibold">{t("teach.course.analytics")}</h2>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/teach/courses/${id}/analytics`}>{t("teach.analytics.view")}</Link>
+                </Button>
+              </div>
               <div className="stagger-in grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <StatCard label={t("teach.courses.enrollments")} value={course.stats?.enrollments ?? 0} icon={Users} />
                 <StatCard label={t("teach.courses.completions")} value={course.stats?.completions ?? 0} icon={CheckCircle2} />
@@ -171,7 +176,18 @@ function StudentsPanel({ id }: { id: string }) {
                 <TableBody>
                   {res.data.map((row) => (
                     <TableRow key={row.enrollment_id}>
-                      <TableCell className="font-medium">{row.student.name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        {row.student.id ? (
+                          <Link
+                            href={`/teach/courses/${id}/students/${row.student.id}`}
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {row.student.name ?? row.student.id}
+                          </Link>
+                        ) : (
+                          (row.student.name ?? "—")
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={row.status === "completed" ? "success" : "secondary"}>{row.status}</Badge>
                       </TableCell>

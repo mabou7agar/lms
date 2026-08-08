@@ -6,8 +6,18 @@ import type { LearnSection } from "@/lib/learning/api";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { cn } from "@/lib/utils";
 
-export function CurriculumSidebar({ sections, activeLessonId }: { sections: LearnSection[]; activeLessonId?: string }) {
+export function CurriculumSidebar({
+  sections,
+  activeLessonId,
+  coursePublicId,
+}: {
+  sections: LearnSection[];
+  activeLessonId?: string;
+  /** When set, lesson links carry `?course=` so the lesson page can scope course-level community actions. */
+  coursePublicId?: string;
+}) {
   const { t } = useI18n();
+  const lessonHref = (lessonId: string) => (coursePublicId ? `/lessons/${lessonId}?course=${coursePublicId}` : `/lessons/${lessonId}`);
   return (
     <nav className="space-y-4" aria-label={t("learn.curriculum")}>
       {sections.map((section) => (
@@ -38,7 +48,7 @@ export function CurriculumSidebar({ sections, activeLessonId }: { sections: Lear
                   {lesson.locked ? (
                     <div title={t("learn.locked")} aria-disabled className="cursor-not-allowed opacity-70">{body}</div>
                   ) : (
-                    <Link href={`/lessons/${lesson.id}`}>{body}</Link>
+                    <Link href={lessonHref(lesson.id)}>{body}</Link>
                   )}
                 </li>
               );

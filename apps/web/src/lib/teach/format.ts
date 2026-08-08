@@ -65,6 +65,18 @@ export function formatDateTime(iso: string | null | undefined, locale: Locale): 
   }
 }
 
+/**
+ * Split a whole-second duration into hours and minutes for a compact "h/m" watch-time display.
+ *
+ * Minutes are floored, not rounded, so a value one second short of the next minute never rolls up to
+ * "60m" (which would read as a broken clock). Negatives and non-finite input collapse to zero — a watch
+ * figure is never negative, and rendering "NaN m" is worse than showing nothing accrued yet.
+ */
+export function durationParts(totalSeconds: number): { hours: number; minutes: number } {
+  const safe = Number.isFinite(totalSeconds) && totalSeconds > 0 ? Math.floor(totalSeconds) : 0;
+  return { hours: Math.floor(safe / 3600), minutes: Math.floor((safe % 3600) / 60) };
+}
+
 export type MetricFormat = "number" | "percent";
 
 /**

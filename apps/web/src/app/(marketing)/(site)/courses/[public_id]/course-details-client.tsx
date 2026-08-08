@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useCourse, useEnroll } from "@/lib/catalog/hooks";
 import { QueryState } from "@/components/student/query-state";
+import { ReviewsSection } from "@/components/community/reviews-section";
 import { CourseCard } from "@/components/catalog/course-card";
 import { CourseMedia } from "@/components/catalog/course-media";
 import { Badge } from "@/components/ui/badge";
@@ -237,6 +238,11 @@ export function CourseDetailsClient() {
                   </div>
                 </Reveal>
               ) : null}
+
+              {/* REVIEWS — public aggregate + list; write form gated to signed-in learners */}
+              <Reveal as="section">
+                <ReviewsSection courseId={course.id} canReview={authed} isAuthenticated={authed} />
+              </Reveal>
             </div>
           );
         }}

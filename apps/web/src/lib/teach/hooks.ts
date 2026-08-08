@@ -5,11 +5,13 @@ import {
   archiveCourse,
   createAnnouncement,
   getAuthoringActivity,
+  getCourseAnalytics,
   getCourseChanges,
   getCoursePerformance,
   getCourseReadiness,
   getDashboardOverview,
   getInstructorAlerts,
+  getLearnerProgress,
   getTeachAnnouncements,
   getTeachCourse,
   getTeachCourses,
@@ -83,6 +85,28 @@ export const useTeachAnnouncements = (id: string) =>
     queryKey: ["teach", "announcements", id],
     queryFn: () => getTeachAnnouncements(id),
     enabled: !!id,
+  });
+
+/**
+ * Per-course engagement analytics. One request per course view — every figure is a whole-course
+ * aggregate the backend computes without scaling per learner, so there is nothing to page or fan out.
+ */
+export const useCourseAnalytics = (courseId: string) =>
+  useQuery({
+    queryKey: ["teach", "analytics", courseId],
+    queryFn: () => getCourseAnalytics(courseId),
+    enabled: !!courseId,
+  });
+
+/**
+ * One learner's drill-down within one course. A single request per view — the whole report (progress,
+ * assessments, certificate) is assembled server-side, so the UI never fans out per assessment or lesson.
+ */
+export const useLearnerProgress = (courseId: string, studentId: string) =>
+  useQuery({
+    queryKey: ["teach", "learner", courseId, studentId],
+    queryFn: () => getLearnerProgress(courseId, studentId),
+    enabled: !!courseId && !!studentId,
   });
 
 /**

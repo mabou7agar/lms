@@ -281,6 +281,70 @@ export const getTeachAnnouncements = (id: string) =>
 export const getCourseReadiness = (id: string) =>
   api.data<ReadinessReport>(`teach/courses/${id}/readiness`);
 
+// ---- Instructor analytics: learner drill-down + per-course engagement ----
+
+/** A public lesson reference as it appears in analytics payloads (public id + title — never internal). */
+export type AnalyticsLessonRef = { id: string; title: string; type?: string };
+
+/**
+ * One learner's progress through one course (InstructorLearnerProgressResource).
+ *
+ * Assessments arrive as COUNTS, not a per-assessment list: the backend summarises the required-vs-passed
+ * outcome rather than exposing per-assessment internal ids, so the UI reports "N of M passed" and cannot
+ * accidentally leak an id. `certificate.issued` is the only certificate signal in the payload — there is
+ * no separate eligibility flag to render. `student.id` is a PUBLIC id (PII-safe: name + public id only).
+ */
+export type LearnerProgress = {
+  student: { id: string | null; name: string | null };
+  current_lesson: AnalyticsLessonRef | null;
+  percent_complete: number;
+  watched_seconds: number;
+  lessons_completed: number;
+  lessons_total: number;
+  last_activity_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  assessments: { required: number; passed: number; all_required_passed: boolean };
+  certificate: { issued: boolean };
+};
+
+/** One lesson row in the drop-off funnel. `lesson` is null when the lesson was removed after activity. */
+export type LessonDropOffRow = {
+  lesson: { id: string; title: string } | null;
+  started: number;
+  completed: number;
+  drop_off: number;
+};
+
+/**
+ * Per-course engagement analytics (CourseAnalyticsResource).
+ *
+ * Headline figures ride the same `MetricValue` envelope as the dashboard overview, so "no learners yet"
+ * renders as no-data rather than a misleading zero average. `completion_distribution` is an ordered
+ * bucket→count map keyed by the fixed labels "0", "1-25", "26-50", "51-75", "76-99", "100". Watch-time
+ * metrics carry whole seconds. No revenue field exists anywhere in this payload.
+ */
+export type CourseAnalytics = {
+  total_learners: MetricValue;
+  watch_time: {
+    total_watched_seconds: MetricValue;
+    avg_watched_seconds_per_learner: MetricValue;
+  };
+  inactive_learners: { count: MetricValue; window_days: number };
+  certificates_issued: MetricValue;
+  lesson_drop_off: LessonDropOffRow[];
+  completion_distribution: Record<string, number>;
+};
+
+/** The fixed, ordered completion-distribution buckets. Iterating this keeps missing buckets at zero. */
+export const COMPLETION_BUCKETS = ["0", "1-25", "26-50", "51-75", "76-99", "100"] as const;
+
+export const getLearnerProgress = (courseId: string, studentId: string) =>
+  api.data<LearnerProgress>(`teach/courses/${courseId}/students/${studentId}`);
+
+export const getCourseAnalytics = (courseId: string) =>
+  api.data<CourseAnalytics>(`teach/courses/${courseId}/analytics`);
+
 // ---- Writes ----
 export const publishCourse = (id: string) =>
   api.post<ApiSuccess<TeachCourse>>(`teach/courses/${id}/publish`);
