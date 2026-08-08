@@ -16,6 +16,7 @@ use App\Domains\Authoring\Policies\LessonPolicy;
 use App\Domains\Authoring\Policies\ModulePolicy;
 use App\Domains\Authoring\Policies\SectionPolicy;
 use App\Domains\Authoring\Services\CurriculumPublishGuard;
+use App\Domains\Authoring\Support\CourseTenantVisibility;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Contracts\Actor;
@@ -88,6 +89,19 @@ class AuthoringServiceProvider extends BaseDomainServiceProvider
             // that permission gets the same access, which is what the grant is supposed to mean.
             if ($user->hasRole('super_admin') || $user->hasPermission(AuthoringPermission::ManageCurriculum->value)) {
                 return true;
+            }
+
+            // T1 (Option N — "global-OR-own-org"): a scoped (non-bypass) actor may reach a GLOBAL
+            // course or its OWN org-private course, but NEVER another organization's private course.
+            // Enforced here, the single curriculum-authorization choke point, so every
+            // section/lesson/block/module/content-version read, mutation, duplication, reorder,
+            // versioning (snapshot/restore/clone/fork) and preview path inherits the tenant boundary
+            // TRANSITIVELY through the parent course — no redundant tenant column on the child tables.
+            // A no-op when no tenant resolves (matches SharedOrOwnedTenantScope), so the existing
+            // NULL-org suite is behaviourally unchanged. A private course of org2 is thus invisible
+            // to org1 exactly as an unowned course is.
+            if (! CourseTenantVisibility::visible($course->getAttribute('organization_id'))) {
+                return false;
             }
 
             return ! $course->isArchived() && $course->isTrainedBy($user->actorId());

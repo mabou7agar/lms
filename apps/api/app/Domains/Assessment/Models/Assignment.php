@@ -6,6 +6,7 @@ use App\Domains\Assessment\Database\Factories\AssignmentFactory;
 use App\Domains\Assessment\Enums\AssignmentState;
 use App\Domains\Assessment\Enums\LatePolicy;
 use App\Domains\Assessment\Enums\SubmissionType;
+use App\Domains\Assessment\Tenancy\InheritsCourseTenancy;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +52,11 @@ class Assignment extends Model
 {
     /** @use HasFactory<AssignmentFactory> */
     use HasFactory;
+
+    // T1 Option-N tenancy inherited from the owning Course (assignments.course_id) — NO tenant column
+    // on assignments, rubrics, criteria or levels. CourseTenantScope filters to assignments whose
+    // course is global or owned by the active tenant; dormant when no tenant is resolved.
+    use InheritsCourseTenancy;
 
     use HasPublicId;
     use HasTranslations;

@@ -6,6 +6,7 @@ use App\Platform\Media\Exceptions\MediaValidationException;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaFolder;
 use App\Platform\Shared\Audit\AuditLogger;
+use App\Platform\Shared\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -14,10 +15,19 @@ use Illuminate\Support\Facades\DB;
  * asset in the folder is reassigned to root (folder_id = null) and every child folder is reparented
  * to the deleted folder's own parent, so nothing is orphaned and no binary is lost. All of this runs
  * in a single transaction. Move is cycle-guarded so a folder can never become its own ancestor.
+ *
+ * TENANCY (T1 Option-N): folders themselves carry NO tenant column — the matrix models them as
+ * following their asset transitively, so they stay simple/unscoped. Tenant isolation is enforced at
+ * the ASSET boundary instead: assignAsset() refuses to place an asset into a folder that already holds
+ * an asset of a DIFFERENT organization, so a folder can never link (mix) assets across tenants and a
+ * folder move can never drag an asset across a tenant boundary.
  */
 class MediaFolderService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly TenantContext $tenant,
+    ) {}
 
     public function create(string $name, int $actorId, ?MediaFolder $parent = null, ?int $ownerId = null): MediaFolder
     {
@@ -87,13 +97,55 @@ class MediaFolderService
         ], $actorId);
     }
 
-    /** Move a single asset into a folder, or to root when $folder is null. */
+    /**
+     * Move a single asset into a folder, or to root when $folder is null. Moving to a folder is
+     * rejected when that folder already holds an asset owned by a DIFFERENT organization, so an asset
+     * can never be linked into another tenant's folder (nor a folder mix assets across tenants).
+     *
+     * @throws MediaValidationException on a cross-tenant folder target.
+     */
     public function assignAsset(MediaAsset $asset, ?MediaFolder $folder, int $actorId): void
     {
+        if ($folder !== null) {
+            $this->assertTenantCompatible($asset, $folder);
+        }
+
         MediaAsset::query()->whereKey($asset->getKey())->update(['folder_id' => $folder?->getKey()]);
         $this->audit->log('media.folder.asset_assigned', $asset, [
             'folder_id' => $folder?->getKey(),
         ], $actorId);
+    }
+
+    /**
+     * Reject placing $asset into $folder when the folder already contains an asset owned by a different
+     * organization. The folder's existing contents are read with tenancy BYPASSED so an invisible
+     * cross-tenant occupant is still detected (otherwise the SharedOrOwnedTenantScope would hide it and
+     * the mix would slip through). NULL (global) only matches NULL (global).
+     *
+     * @throws MediaValidationException when the target folder belongs to another organization.
+     */
+    private function assertTenantCompatible(MediaAsset $asset, MediaFolder $folder): void
+    {
+        $assetOrg = $asset->organization_id === null ? null : (int) $asset->organization_id;
+
+        $existingOrgs = $this->tenant->runWithoutTenancy(
+            static fn () => MediaAsset::query()
+                ->where('folder_id', $folder->getKey())
+                ->whereKeyNot($asset->getKey())
+                ->distinct()
+                ->pluck('organization_id')
+        );
+
+        foreach ($existingOrgs as $org) {
+            $org = $org === null ? null : (int) $org;
+
+            if ($org !== $assetOrg) {
+                throw new MediaValidationException(
+                    'An asset cannot be moved into a folder that belongs to a different organization.',
+                    ['field' => 'folder_id'],
+                );
+            }
+        }
     }
 
     /** True when moving $folder under $target would make $folder its own ancestor. */

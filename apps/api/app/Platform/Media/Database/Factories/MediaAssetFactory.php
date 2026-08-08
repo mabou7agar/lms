@@ -81,6 +81,18 @@ class MediaAssetFactory extends Factory
         return $this->state(fn () => ['folder_id' => $folderId]);
     }
 
+    /**
+     * T1 - Directly stamp the owning organization (NULL = GLOBAL/public platform asset). organization_id
+     * is $guarded on the model (never mass-assignable / never from client input), so this seeds it via
+     * forceFill for tests that need a specific tenant without going through a resolved TenantContext.
+     */
+    public function organization(?int $organizationId): self
+    {
+        return $this->afterCreating(function (MediaAsset $asset) use ($organizationId): void {
+            $asset->forceFill(['organization_id' => $organizationId])->saveQuietly();
+        });
+    }
+
     /** A live, single-use upload token bound to a provider ref, awaiting finalize. */
     public function awaitingUpload(): self
     {

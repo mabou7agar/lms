@@ -21,6 +21,13 @@ class LessonAssessmentAdapter implements LessonAssessmentPort
             // Course scoping is enforced in the QUERY, not after the fact: an assessment belonging
             // to another course is indistinguishable from one that does not exist, so this cannot
             // be used to probe for assessments in courses the caller does not train.
+            //
+            // TENANT scoping rides on the SAME query: Assessment's CourseTenantScope (Option N) is a
+            // global scope, so this lookup additionally requires the assessment's course to be visible
+            // to the active tenant (global OR own-org). A cross-tenant attach — a global assessment
+            // onto an org-private lesson, or an org-private assessment onto a global/other-org lesson —
+            // therefore returns null and is rejected here, reusing the same-course guard below rather
+            // than restating the tenant rule.
             ->where('course_id', $courseId)
             // Archived assessments stay readable for historical attempts but must not be attached
             // to anything new.

@@ -6,6 +6,7 @@ use App\Domains\Assessment\Database\Factories\AssessmentFactory;
 use App\Domains\Assessment\Enums\AssessmentScope;
 use App\Domains\Assessment\Enums\AssessmentStatus;
 use App\Domains\Assessment\Enums\FeedbackMode;
+use App\Domains\Assessment\Tenancy\InheritsCourseTenancy;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,12 @@ class Assessment extends Model
 {
     /** @use HasFactory<AssessmentFactory> */
     use HasFactory;
+
+    // T1 Option-N tenancy inherited from the owning Course (assessments.course_id) — NO tenant column
+    // on assessments, questions or options. CourseTenantScope filters to assessments whose course is
+    // global or owned by the active tenant; dormant when no tenant is resolved (public catalog +
+    // existing suite unchanged).
+    use InheritsCourseTenancy;
 
     use HasPublicId;
     use HasTranslations;

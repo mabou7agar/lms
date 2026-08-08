@@ -19,8 +19,10 @@ use App\Platform\Media\Models\MediaAsset;
  * Base/prefix come from config so an environment can point public delivery at a CDN host; they never
  * contain a per-asset secret.
  *
- * TENANCY NOTE (T1, later phase): the fingerprint and/or path must additionally bind the owning
- * organization so a URL minted for one tenant cannot be reused to address another tenant's asset.
+ * TENANCY (T1 Option-N): this stable, unauthenticated CDN URL is emitted ONLY for GLOBAL assets
+ * (organization_id NULL). MediaPublicAssetUrlResolver downgrades an org-owned PUBLIC asset to a
+ * short-lived SIGNED URL instead, so a tenant-bound asset is never addressable via this builder — no
+ * org-binding of the fingerprint is required because a non-global asset never reaches here.
  */
 class PublicMediaUrlBuilder
 {

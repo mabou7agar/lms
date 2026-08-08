@@ -4,6 +4,7 @@ namespace App\Domains\Live\Models;
 
 use App\Domains\Live\Database\Factories\LiveSessionFactory;
 use App\Domains\Live\Enums\LiveSessionStatus;
+use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,12 @@ class LiveSession extends Model
 {
     /** @use HasFactory<LiveSessionFactory> */
     use HasFactory;
+
+    // T1 Option-N tenancy (matrix: Live sessions are SHARED-OR-OWNED/NULLABLE). Public events are global
+    // (organization_id NULL); org-private cohorts get a non-null org, stamped server-side on create from
+    // the resolved tenant. Registrations/attendance stay USER-OWNED (no tenant column). organization_id
+    // is intentionally NOT in $fillable, so it can never be mass-assigned from a request payload.
+    use BelongsToTenantNullable;
 
     use HasPublicId;
     use SoftDeletes;

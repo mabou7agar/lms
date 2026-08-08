@@ -6,6 +6,7 @@ use App\Domains\Catalog\Database\Factories\CourseFactory;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Search\SearchableText;
+use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSeo;
 use App\Platform\Shared\Traits\HasSlug;
@@ -27,6 +28,13 @@ class Course extends Model
 {
     /** @use HasFactory<CourseFactory> */
     use HasFactory;
+
+    // T1 Option-N tenancy: adds SharedOrOwnedTenantScope (global rows [organization_id IS NULL] OR the
+    // active tenant's own rows) and stamps organization_id on create ONLY when a tenant is resolved
+    // (else NULL = global). The tenant is derived server-side from the acting user's organization —
+    // NEVER from client input. `organization_id` is intentionally NOT in $fillable, so a forged
+    // organization_id/tenant_id in a request payload can never be mass-assigned onto a course.
+    use BelongsToTenantNullable;
 
     use HasPublicId;
     use HasSeo;

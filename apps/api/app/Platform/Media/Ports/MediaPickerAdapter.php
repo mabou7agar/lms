@@ -10,6 +10,7 @@ use App\Platform\Shared\Media\Contracts\PlaybackPort;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaType;
 use App\Platform\Shared\Media\Exceptions\MediaUnavailableException;
+use App\Platform\Shared\Tenancy\TenantContext;
 
 /**
  * Media's implementation of the Shared MediaPickerPort — the seam the reusable Filament MediaPicker
@@ -30,6 +31,7 @@ class MediaPickerAdapter implements MediaPickerPort
         private readonly MediaAdminUploadService $uploads,
         private readonly MediaAssetRefResolver $refs,
         private readonly PlaybackPort $playback,
+        private readonly TenantContext $tenant,
     ) {}
 
     public function searchAssets(int $actorId, array $acceptedTypes, ?string $search): array
@@ -63,9 +65,12 @@ class MediaPickerAdapter implements MediaPickerPort
 
     public function previewUrl(string $publicId): ?string
     {
+        // Rides MediaAsset's SharedOrOwnedTenantScope: a cross-tenant public_id resolves to null under a
+        // resolved tenant. The explicit tenant guard additionally denies an org-owned asset to any caller
+        // that is not its owning tenant (belt-and-suspenders for a no-tenant context).
         $asset = MediaAsset::query()->where('public_id', $publicId)->first();
 
-        if ($asset === null || ! $asset->status->isPlayable()) {
+        if ($asset === null || ! $asset->status->isPlayable() || ! $this->visibleToActiveTenant($asset)) {
             return null;
         }
 
@@ -131,6 +136,18 @@ class MediaPickerAdapter implements MediaPickerPort
         );
 
         return (string) $asset->public_id;
+    }
+
+    /** A global asset is previewable by anyone; an org-owned asset only by its owning tenant. */
+    private function visibleToActiveTenant(MediaAsset $asset): bool
+    {
+        if ($asset->organization_id === null) {
+            return true;
+        }
+
+        $tenantId = $this->tenant->id();
+
+        return $tenantId !== null && $asset->belongsToTenant($tenantId);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Platform\Media\Exceptions\MediaAccessDeniedException;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Shared\Audit\AuditLogger;
 use App\Platform\Shared\Media\Enums\MediaType;
+use App\Platform\Shared\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -25,12 +26,18 @@ use Illuminate\Support\Facades\Gate;
  *
  * Every change is written through forceFill()+save() (nothing is mass-assignable) and audited.
  *
- * TENANCY NOTE (T1, later phase): both entry points must also assert the actor and the asset belong
- * to the same organization before a raise is allowed.
+ * TENANCY (T1 Option-N): both entry points additionally assert the ASSET is visible to the active
+ * tenant before a raise is allowed. A GLOBAL asset (organization_id NULL) may be raised in any context;
+ * an org-owned asset may be raised ONLY under its owning tenant. setVisibility() also rides the
+ * MediaAssetPolicy tenant dimension; markPublicForOwner() enforces the same via assertVisibleToTenant().
+ * super_admin still bypasses through the policy's before().
  */
 class MediaVisibilityService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly TenantContext $tenant,
+    ) {}
 
     /**
      * Admin action: set an asset's visibility. Policy-gated; throws when the actor may not manage the
@@ -43,6 +50,8 @@ class MediaVisibilityService
         if (! Gate::forUser($actor)->allows('setVisibility', $asset)) {
             throw new MediaAccessDeniedException;
         }
+
+        $this->assertVisibleToTenant($asset);
 
         return $this->apply($asset, $visibility, $actor->actorId(), 'admin');
     }
@@ -59,6 +68,8 @@ class MediaVisibilityService
             throw new MediaAccessDeniedException;
         }
 
+        $this->assertVisibleToTenant($asset);
+
         if ($asset->type !== MediaType::Image) {
             return $asset;
         }
@@ -68,6 +79,25 @@ class MediaVisibilityService
         }
 
         return $this->apply($asset, MediaVisibility::Public, $actorId, 'picker');
+    }
+
+    /**
+     * A GLOBAL asset (no owning org) may be raised in any context. An org-owned asset may be raised
+     * ONLY under its owning tenant — never cross-tenant, and never with no tenant resolved.
+     *
+     * @throws MediaAccessDeniedException when the asset is org-owned but not visible to the active tenant.
+     */
+    private function assertVisibleToTenant(MediaAsset $asset): void
+    {
+        if ($asset->organization_id === null) {
+            return;
+        }
+
+        $tenantId = $this->tenant->id();
+
+        if ($tenantId === null || ! $asset->belongsToTenant($tenantId)) {
+            throw new MediaAccessDeniedException;
+        }
     }
 
     private function apply(MediaAsset $asset, MediaVisibility $to, int $actorId, string $via): MediaAsset

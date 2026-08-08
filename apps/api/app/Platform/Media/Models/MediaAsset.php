@@ -8,6 +8,7 @@ use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaStatus;
 use App\Platform\Shared\Media\Enums\MediaType;
+use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -33,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property int $created_by
  * @property int|null $course_id
  * @property int|null $folder_id
+ * @property int|null $organization_id
  * @property string|null $original_filename
  * @property string|null $mime_type
  * @property int|null $size_bytes
@@ -63,13 +65,21 @@ class MediaAsset extends Model
     /** @use HasFactory<MediaAssetFactory> */
     use HasFactory;
 
+    // T1 Option-N tenancy (SHARED-OR-OWNED / NULLABLE): adds SharedOrOwnedTenantScope so a resolved
+    // tenant sees global rows (organization_id IS NULL) PLUS its own rows and NEVER another org's
+    // private assets, and stamps organization_id on create ONLY when a tenant is resolved (else the
+    // asset is created GLOBAL/NULL). The tenant is derived server-side from the resolved TenantContext
+    // (users.organization_id), NEVER from client input. organization_id is additionally $guarded, so a
+    // forged organization_id in a request payload can never be mass-assigned onto an asset.
+    use BelongsToTenantNullable;
+
     use HasPublicId;
     use SoftDeletes;
 
     protected $table = 'media_assets';
 
-    /** Written only through services via forceFill(); nothing is mass-assignable. */
-    protected $guarded = ['id'];
+    /** Written only through services via forceFill(); nothing is mass-assignable, and the tenant column is never fillable. */
+    protected $guarded = ['id', 'organization_id'];
 
     protected function casts(): array
     {
@@ -82,6 +92,7 @@ class MediaAsset extends Model
             'created_by' => 'integer',
             'course_id' => 'integer',
             'folder_id' => 'integer',
+            'organization_id' => 'integer',
             'size_bytes' => 'integer',
             'duration_seconds' => 'integer',
             'width' => 'integer',

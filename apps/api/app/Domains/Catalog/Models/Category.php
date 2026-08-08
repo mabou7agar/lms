@@ -3,6 +3,7 @@
 namespace App\Domains\Catalog\Models;
 
 use App\Domains\Catalog\Database\Factories\CategoryFactory;
+use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
 use App\Platform\Shared\Traits\HasPublicId;
 use App\Platform\Shared\Traits\HasSeo;
 use App\Platform\Shared\Traits\HasSlug;
@@ -21,6 +22,11 @@ class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
+
+    // T1 Option-N tenancy (matrix: categories are SHARED-OR-OWNED/NULLABLE). Global taxonomy by default
+    // (organization_id NULL); optional org-private categories when non-null. organization_id is
+    // intentionally NOT in $fillable, so it can never be mass-assigned from a request payload.
+    use BelongsToTenantNullable;
 
     use HasPublicId;
     use HasSeo;

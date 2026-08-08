@@ -20,9 +20,10 @@ use App\Platform\Shared\Media\Enums\MediaType;
  * Ownership rule mirrors the engine's own "usable by" rule (MediaReferenceAdapter::assertUsableBy /
  * MediaAttachmentService::attach): the actor must be the asset's creator. Readiness is deliberately
  * NOT required here — a picker may hold a reference to an asset that is still processing and simply
- * shows the preview once it becomes Ready. The optional $ownerScope is a forward-only, tenant-ready
- * hook (T1 is out of scope): when supplied it further narrows the acceptable owner, but this class
- * implements no tenancy/global-scope logic of its own.
+ * shows the preview once it becomes Ready. The optional $ownerScope narrows the acceptable owner when
+ * supplied. T1 tenant isolation is enforced UPSTREAM: reference() rides MediaAsset's
+ * SharedOrOwnedTenantScope, so a public_id owned by another organization already resolves to null here
+ * (indistinguishable from missing) — this class adds no scope logic of its own.
  */
 class MediaPickerAssetValidator
 {
