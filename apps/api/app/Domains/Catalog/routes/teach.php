@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Catalog\Http\Controllers\Api\V1\Instructor\AnnouncementController;
+use App\Domains\Catalog\Http\Controllers\Api\V1\Instructor\CourseAnalyticsController;
 use App\Domains\Catalog\Http\Controllers\Api\V1\Instructor\CourseController;
 use App\Domains\Catalog\Http\Controllers\Api\V1\Instructor\DashboardController;
 use App\Domains\Catalog\Http\Controllers\Api\V1\Instructor\StudentController;
@@ -29,7 +30,10 @@ Route::prefix('v1/teach')->middleware('auth:sanctum')->group(function (): void {
     Route::post('courses/{course}/restore', [CourseController::class, 'restore']);
     Route::post('courses/{course}/duplicate', [CourseController::class, 'duplicate']);
 
+    Route::get('courses/{course}/analytics', [CourseAnalyticsController::class, 'show']);
+
     Route::get('courses/{course}/students', [StudentController::class, 'index']);
+    Route::get('courses/{course}/students/{student}', [StudentController::class, 'show']);
 
     Route::get('courses/{course}/announcements', [AnnouncementController::class, 'index']);
     Route::post('courses/{course}/announcements', [AnnouncementController::class, 'store']);

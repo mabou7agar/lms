@@ -5,6 +5,7 @@ namespace App\Contexts\Learning\Providers;
 use App\Contexts\Learning\Adapters\CourseEnrollmentAdapter;
 use App\Contexts\Learning\Adapters\MediaEnrollmentAdapter;
 use App\Contexts\Learning\Analytics\EnrollmentStatsAdapter;
+use App\Contexts\Learning\Analytics\WatchTimeAdapter;
 use App\Contexts\Learning\Events\LessonProgressRecorded;
 use App\Contexts\Learning\Listeners\UpdateLearningSession;
 use App\Contexts\Learning\Models\Enrollment;
@@ -21,6 +22,7 @@ use App\Platform\Shared\Learning\Contracts\CourseNavigationPort;
 use App\Platform\Shared\Learning\Contracts\EnrollmentStatsPort;
 use App\Platform\Shared\Learning\Contracts\LessonAvailabilityPort;
 use App\Platform\Shared\Learning\Contracts\LessonRequiredBlocksPort;
+use App\Platform\Shared\Learning\Contracts\WatchTimePort;
 use App\Platform\Shared\Media\Contracts\MediaEnrollmentPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -62,6 +64,11 @@ class LearningServiceProvider extends BaseDomainServiceProvider
         // Learning owns enrollment aggregates; reporting surfaces in other contexts consume them
         // through this port instead of reading the enrollments table across a boundary.
         $this->app->bind(EnrollmentStatsPort::class, EnrollmentStatsAdapter::class);
+
+        // Instructor watch-time / drop-off / per-learner drill-down read model. Learning owns the
+        // video-progress, lesson-progress and learning-session tables; the instructor portal reads
+        // them only through this port.
+        $this->app->bind(WatchTimePort::class, WatchTimeAdapter::class);
 
         // Enrollment surface published to other contexts (Assessment: roster + entitlement).
         $this->app->bind(CourseEnrollmentPort::class, CourseEnrollmentAdapter::class);

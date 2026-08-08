@@ -10,6 +10,8 @@ use App\Domains\Certification\Models\Certificate;
 use App\Domains\Certification\Pdf\PdfGeneratorManager;
 use App\Domains\Certification\Policies\BadgePolicy;
 use App\Domains\Certification\Policies\CertificatePolicy;
+use App\Domains\Certification\Support\CertificateStatusAdapter;
+use App\Platform\Shared\Certification\Contracts\CertificateStatusPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -40,6 +42,10 @@ class CertificationServiceProvider extends BaseDomainServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../../../config/certification.php', 'certification');
 
         $this->app->bind(PdfGenerator::class, fn ($app) => $app->make(PdfGeneratorManager::class)->resolve());
+
+        // Certification owns the certificates table; reporting surfaces in other contexts (the
+        // instructor portal) read certificate status only through this port, never the model.
+        $this->app->bind(CertificateStatusPort::class, CertificateStatusAdapter::class);
     }
 
     protected function bootDomain(): void

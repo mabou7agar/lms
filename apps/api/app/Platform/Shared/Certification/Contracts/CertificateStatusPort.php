@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Platform\Shared\Certification\Contracts;
+
+/**
+ * Certificate status for reporting surfaces outside the Certification context (the instructor
+ * portal's learner drill-down and course analytics). DECLARED here in Shared, IMPLEMENTED by
+ * Certification — which owns the certificates table — so Catalog never reads it directly.
+ *
+ * Deliberately narrow: it answers only "has this learner a valid certificate for this course" and
+ * "how many valid certificates has this course issued". No PDF paths, verification codes, templates
+ * or revocation detail cross this boundary. Scalar arguments and returns only, no Eloquent, no
+ * throwing. Course ids are assumed already authorization-scoped by the caller.
+ */
+interface CertificateStatusPort
+{
+    /** True if the learner holds a VALID (issued, non-revoked) certificate for the course. */
+    public function hasCertificate(int $courseId, int $userId): bool;
+
+    /** Count of VALID certificates issued for the course. */
+    public function issuedCountForCourse(int $courseId): int;
+}
