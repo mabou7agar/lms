@@ -98,6 +98,8 @@ class AssessmentResource extends Resource
                 TextInput::make('passing_score')->label('Passing score (%)')->numeric()
                     ->minValue(0)->maxValue(100)
                     ->helperText('Percentage 0–100. Leave empty for an ungraded assessment.'),
+                Toggle::make('required_for_completion')->label('Required for completion')->inline(false)
+                    ->helperText('When a course policy requires quizzes (or names this as its final exam), the learner must pass this assessment before the course completes.'),
                 Toggle::make('negative_marking')->label('Negative marking')->inline(false)
                     ->helperText('Deduct a question\'s negative points for a wrong answer.'),
                 Select::make('feedback_mode')->label('Feedback / result visibility')

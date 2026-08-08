@@ -65,6 +65,24 @@ class ProgressService extends BaseService
         return collect($this->curriculum->publishedLessonIdsForCourse($courseId));
     }
 
+    /**
+     * The pre-policy-engine completion predicate, unchanged: 100% of published lessons complete (and
+     * at least one published lesson exists). Exposed so CourseCompletionEvaluator can REUSE this exact
+     * computation for the require_all_lessons rule rather than reimplement it — keeping the default
+     * decision byte-identical to what recomputeCoursePercentage() decided before.
+     */
+    public function allPublishedLessonsComplete(Enrollment $enrollment): bool
+    {
+        $lessonIds = $this->publishedLessonIds($enrollment->course_id);
+
+        if ($lessonIds->isEmpty()) {
+            return false;
+        }
+
+        return $this->percentage($enrollment, $lessonIds)
+            >= (int) config('learning.progress.completion_percentage', 100);
+    }
+
     private function recomputeCoursePercentage(Enrollment $enrollment): bool
     {
         $lessonIds = $this->publishedLessonIds($enrollment->course_id);
@@ -74,9 +92,13 @@ class ProgressService extends BaseService
 
         $enrollment->progress_percentage = $percentage;
 
-        if ($percentage >= (int) config('learning.progress.completion_percentage', 100)
-            && $enrollment->status !== EnrollmentStatus::Completed
-            && $lessonIds->isNotEmpty()) {
+        // The completion DECISION now delegates to the policy engine. For a course with no policy row
+        // the resolved policy is CompletionPolicy::default(), which reduces isComplete() to exactly the
+        // former "percentage >= 100 && has published lessons" test — so default behaviour is preserved.
+        // progress_percentage above is computed identically and is unaffected by the policy.
+        // Resolved lazily to avoid a constructor cycle (the evaluator depends on ProgressService).
+        if ($enrollment->status !== EnrollmentStatus::Completed
+            && app(CourseCompletionEvaluator::class)->isComplete($enrollment)) {
             $enrollment->status = EnrollmentStatus::Completed;
             $enrollment->completed_at = now();
             $justCompleted = true;

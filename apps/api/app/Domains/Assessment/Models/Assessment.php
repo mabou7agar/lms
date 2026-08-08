@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property AssessmentScope $scope
  * @property AssessmentStatus $status
  * @property int|null $passing_score percentage 0-100; null = ungraded
+ * @property bool $required_for_completion whether passing this assessment gates course completion
  * @property bool $negative_marking
  * @property int|null $max_attempts null = unlimited
  * @property int|null $time_limit_seconds null = untimed
@@ -67,7 +68,7 @@ class Assessment extends Model
     /** @var list<string> */
     protected $fillable = [
         'course_id', 'title', 'title_i18n', 'description', 'description_i18n', 'scope', 'status',
-        'passing_score', 'negative_marking',
+        'passing_score', 'required_for_completion', 'negative_marking',
         'max_attempts', 'time_limit_seconds', 'shuffle_questions', 'shuffle_options',
         'questions_per_attempt', 'feedback_mode',
         'version', 'parent_assessment_id', 'created_by',
@@ -84,6 +85,7 @@ class Assessment extends Model
             'status' => AssessmentStatus::class,
             'feedback_mode' => FeedbackMode::class,
             'passing_score' => 'integer',
+            'required_for_completion' => 'boolean',
             'negative_marking' => 'boolean',
             'max_attempts' => 'integer',
             'time_limit_seconds' => 'integer',

@@ -9,10 +9,12 @@ use App\Contexts\Learning\Events\LessonProgressRecorded;
 use App\Contexts\Learning\Listeners\UpdateLearningSession;
 use App\Contexts\Learning\Models\Enrollment;
 use App\Contexts\Learning\Policies\EnrollmentPolicy;
+use App\Contexts\Learning\Support\NullAssessmentResultPort;
 use App\Contexts\Learning\Support\NullAssignmentRequirementPort;
 use App\Contexts\Learning\Support\NullCourseNavigationPort;
 use App\Contexts\Learning\Support\NullLessonAvailabilityPort;
 use App\Contexts\Learning\Support\NullLessonRequiredBlocksPort;
+use App\Platform\Shared\Assessment\Contracts\AssessmentResultPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use App\Platform\Shared\Learning\Contracts\CourseNavigationPort;
@@ -78,6 +80,11 @@ class LearningServiceProvider extends BaseDomainServiceProvider
         // Assessment (registered earlier) binds the real AssignmentRequirementAdapter; bindIf keeps
         // that binding and only falls back to the completion-safe null when Assessment is absent.
         $this->app->bindIf(AssignmentRequirementPort::class, NullAssignmentRequirementPort::class);
+
+        // Same pattern for the learner-result port consumed by CourseCompletionEvaluator: Assessment
+        // binds the real adapter, and this completion-safe null only applies when Assessment is absent,
+        // so the default-policy path never hard-depends on the Assessment context.
+        $this->app->bindIf(AssessmentResultPort::class, NullAssessmentResultPort::class);
     }
 
     protected function bootDomain(): void

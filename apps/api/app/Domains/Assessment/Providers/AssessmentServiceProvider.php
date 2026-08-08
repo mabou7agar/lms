@@ -18,10 +18,12 @@ use App\Domains\Assessment\Models\AssignmentSubmission;
 use App\Domains\Assessment\Policies\AssessmentPolicy;
 use App\Domains\Assessment\Policies\AssignmentPolicy;
 use App\Domains\Assessment\Policies\SubmissionPolicy;
+use App\Domains\Assessment\Support\AssessmentResultAdapter;
 use App\Domains\Assessment\Support\AssignmentRequirementAdapter;
 use App\Domains\Assessment\Support\LessonAssessmentAdapter;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Assessment\Contracts\AssessmentResultPort;
 use App\Platform\Shared\Assessment\Contracts\AssessmentStatsPort;
 use App\Platform\Shared\Assessment\Contracts\LessonAssessmentPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
@@ -63,6 +65,12 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
         // Assessment implements Learning's AssignmentRequirementPort so Learning can gate
         // lesson/course completion on required assignments without importing an Assessment model.
         $this->app->bind(AssignmentRequirementPort::class, AssignmentRequirementAdapter::class);
+
+        // Assessment implements the learner-result port so Learning's course-completion policy engine
+        // can gate on passed quizzes / a final exam without importing an Assessment model. Learning's
+        // provider binds a completion-safe null via bindIf, so this real binding always wins when the
+        // Assessment context is present.
+        $this->app->bind(AssessmentResultPort::class, AssessmentResultAdapter::class);
 
         // The grader registry is the single extension point for question types. Adding a type is:
         // add the enum case, write a grader, register it on the line below. Nothing else changes.
