@@ -34,10 +34,17 @@ final class BlockBackfillService
                 foreach ($lessons as $lesson) {
                     $type = BlockTypeMap::fromLessonType($lesson->type);
 
-                    // Only presentation fields are mass-assignable; the rest are set explicitly.
+                    // Deterministic representation of the existing lesson as a single block WITHOUT
+                    // touching lessons.content: the legacy `payload` mirrors the raw content, and the
+                    // new localized surface seeds the default authoring locale from the same content.
+                    $content = $lesson->content;
+                    $default = (string) config('shared.default_locale', 'en');
+
+                    // Only presentation/content fields are mass-assignable; the rest are set explicitly.
                     $block = new Block([
                         'type' => $type,
-                        'payload' => $lesson->content,
+                        'payload' => $content,
+                        'content_i18n' => $content === null ? null : [$default => $content],
                         'position' => 0,
                     ]);
                     $block->lesson_id = $lesson->getKey();

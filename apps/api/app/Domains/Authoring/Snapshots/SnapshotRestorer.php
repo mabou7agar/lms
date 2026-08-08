@@ -202,6 +202,11 @@ final class SnapshotRestorer
                 'lesson_id' => $lessonId,
                 'type' => (string) $block['type'],       // family is derived on save
                 'payload' => $block['payload'] ?? null,
+                // C5 - restore the localized surface + config. `?? null` tolerates older snapshots
+                // captured before these keys existed. lock_version is not restored — a rebuilt block
+                // starts at the column default (0), consistent with excluding it from the snapshot.
+                'content_i18n' => $block['content_i18n'] ?? null,
+                'config' => $block['config'] ?? null,
                 'position' => (int) ($block['position'] ?? 0),
                 'publish_state' => (string) $block['publish_state'],
                 'learning_object_id' => $block['learning_object_id'] ?? null,

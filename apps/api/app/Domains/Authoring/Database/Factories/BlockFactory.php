@@ -22,8 +22,12 @@ class BlockFactory extends Factory
             'lesson_id' => Lesson::factory(),
             'type' => BlockType::Article->value,
             'payload' => [],
+            'content_i18n' => null,
+            'config' => null,
             'position' => 0,
             'publish_state' => PublishState::Draft->value,
+            'lock_version' => 0,
+            'created_by' => null,
         ];
     }
 
@@ -35,5 +39,11 @@ class BlockFactory extends Factory
     public function ofType(BlockType $type): static
     {
         return $this->state(fn () => ['type' => $type->value]);
+    }
+
+    /** Seed the localized (en/ar) content surface directly. */
+    public function withContent(array $contentI18n): static
+    {
+        return $this->state(fn () => ['content_i18n' => $contentI18n]);
     }
 }

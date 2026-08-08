@@ -131,6 +131,13 @@ final class SnapshotSerializer
                 'family' => $b->family->value,
                 'type' => $b->type->value,
                 'payload' => $b->payload,
+                // C5 - the localized surface + config travel with the snapshot so a restore rebuilds a
+                // fully operable block. Additive keys: older schema-v1 snapshots (blocks captured
+                // before C5, or none at all) simply lack them and restore with nulls. lock_version is
+                // deliberately excluded, mirroring sections/lessons — the counter never enters the
+                // immutable snapshot payload.
+                'content_i18n' => $b->content_i18n,
+                'config' => $b->config,
                 'position' => (int) $b->position,
                 'publish_state' => $this->stateValue($b->publish_state),
                 'learning_object_id' => $b->learning_object_id !== null ? (int) $b->learning_object_id : null,
