@@ -103,6 +103,16 @@ deptrac:
     - name: CRM
       collectors:
         - { type: directory, value: app/Domains/Crm/.* }
+    # Community contexts (course-scoped UGC) — greenfield, no baseline; Shared + Identity contracts only.
+    - name: Reviews
+      collectors:
+        - { type: directory, value: app/Domains/Reviews/.* }
+    - name: Qna
+      collectors:
+        - { type: directory, value: app/Domains/Qna/.* }
+    - name: Forum
+      collectors:
+        - { type: directory, value: app/Domains/Forum/.* }
 
     # --- Context-layer contexts (already relocated under app/Contexts) ---
     - name: Learning
@@ -184,6 +194,17 @@ deptrac:
       - Shared
       - IdentityContracts
     CRM:
+      - Shared
+      - IdentityContracts
+    # Community contexts: like Assessment, they satisfy the target architecture from day one and reach
+    # Catalog (courses) / Learning (enrollment) / Identity only through Shared + Identity Ports.
+    Reviews:
+      - Shared
+      - IdentityContracts
+    Qna:
+      - Shared
+      - IdentityContracts
+    Forum:
       - Shared
       - IdentityContracts
     Learning:

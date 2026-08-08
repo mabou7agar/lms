@@ -8,7 +8,10 @@ use App\Domains\Authoring\Providers\AuthoringServiceProvider;
 use App\Domains\Catalog\Providers\CatalogServiceProvider;
 use App\Domains\Certification\Providers\CertificationServiceProvider;
 use App\Domains\Crm\Providers\CrmServiceProvider;
+use App\Domains\Forum\Providers\ForumServiceProvider;
 use App\Domains\Live\Providers\LiveServiceProvider;
+use App\Domains\Qna\Providers\QnaServiceProvider;
+use App\Domains\Reviews\Providers\ReviewsServiceProvider;
 use App\Platform\Branding\Providers\BrandingServiceProvider;
 use App\Platform\Features\Providers\FeaturesServiceProvider;
 use App\Platform\Homepage\Providers\HomepageServiceProvider;
@@ -18,6 +21,7 @@ use App\Platform\Navigation\Providers\NavigationServiceProvider;
 use App\Platform\Notifications\Providers\NotificationsServiceProvider;
 use App\Platform\Pages\Providers\PagesServiceProvider;
 use App\Platform\Seo\Providers\SeoServiceProvider;
+use App\Platform\Shared\Moderation\Providers\ModerationServiceProvider;
 use App\Platform\Shared\Providers\SharedServiceProvider;
 use App\Providers\AdminPanelProvider;
 use App\Providers\AppServiceProvider;
@@ -31,6 +35,7 @@ return [
     AppServiceProvider::class,
 
     SharedServiceProvider::class,
+    ModerationServiceProvider::class,
     MediaServiceProvider::class,
 
     IdentityServiceProvider::class,
@@ -43,6 +48,10 @@ return [
     CertificationServiceProvider::class,
     LiveServiceProvider::class,
     CrmServiceProvider::class,
+    // Community domains (course-scoped UGC) — depend on Shared + Identity contracts only.
+    ReviewsServiceProvider::class,
+    QnaServiceProvider::class,
+    ForumServiceProvider::class,
     AnalyticsServiceProvider::class,
     NotificationsServiceProvider::class,
     HomepageServiceProvider::class,
