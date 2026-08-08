@@ -33,6 +33,16 @@ class NotificationsSeeder extends Seeder
             ['certificate_ready', 'Certificate ready', 'Your certificate {{ number }} is ready.', 'الشهادة جاهزة', 'شهادتك {{ number }} جاهزة.'],
             ['session_scheduled', 'Live session scheduled', 'A live session "{{ title }}" is scheduled.', 'تم جدولة جلسة مباشرة', 'تم جدولة جلسة مباشرة "{{ title }}".'],
             ['consulting_ack', 'Request received', 'We received your consulting request: {{ subject }}.', 'تم استلام الطلب', 'لقد استلمنا طلب الاستشارة: {{ subject }}.'],
+            // Learning flow notifications (assignment / assessment / community) — wired via the Shared
+            // LearningNotificationPort from the Assessment, Q&A and Forum domains.
+            ['assignment_graded', 'Your assignment was graded', 'Your grade has been released. Open the assignment to see your result.', 'تم تقييم واجبك', 'تم نشر درجتك. افتح الواجب لرؤية نتيجتك.'],
+            ['assignment_changes_requested', 'Changes requested', 'Your grader asked you to revise and resubmit your assignment.', 'مطلوب تعديلات', 'طلب منك المُقيّم مراجعة واجبك وإعادة تسليمه.'],
+            ['assessment_passed', 'You passed', 'Congratulations — you passed the assessment.', 'لقد نجحت', 'تهانينا — لقد اجتزت التقييم.'],
+            ['assessment_failed', 'Assessment not passed', 'You did not pass the assessment this time. Review your answers and try again.', 'لم تجتز التقييم', 'لم تجتز التقييم هذه المرة. راجع إجاباتك وحاول مرة أخرى.'],
+            ['qna_answered', 'Your question was answered', 'Someone posted an answer to your question.', 'تمت الإجابة على سؤالك', 'قام أحدهم بنشر إجابة على سؤالك.'],
+            ['forum_reply', 'New reply to your thread', 'Someone replied to your forum thread.', 'رد جديد على موضوعك', 'قام أحدهم بالرد على موضوعك في المنتدى.'],
+            ['forum_mention', 'You were mentioned', 'You were mentioned in a forum post.', 'تمت الإشارة إليك', 'تمت الإشارة إليك في منشور بالمنتدى.'],
+            ['course_update', 'Course update', 'There is an update in one of your courses.', 'تحديث للدورة', 'يوجد تحديث في إحدى دوراتك.'],
         ];
 
         foreach ($templates as [$key, $enSubject, $enBody, $arSubject, $arBody]) {

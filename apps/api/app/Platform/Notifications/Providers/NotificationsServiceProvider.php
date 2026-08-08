@@ -12,6 +12,8 @@ use App\Platform\Notifications\Models\Notification;
 use App\Platform\Notifications\Models\NotificationDelivery;
 use App\Platform\Notifications\Observers\NotificationDeliveryObserver;
 use App\Platform\Notifications\Policies\NotificationPolicy;
+use App\Platform\Notifications\Services\LearningNotificationService;
+use App\Platform\Shared\Notifications\Contracts\LearningNotificationPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
 
@@ -36,6 +38,11 @@ class NotificationsServiceProvider extends BaseDomainServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../../../../config/notifications.php', 'notifications');
+
+        // Learning-flow notification port: producing domains (Assessment / Q&A / Forum) reach the
+        // dispatcher through this Shared contract without importing the Notifications context, so
+        // wiring those flows introduces no domain<->Notifications Deptrac edge.
+        $this->app->bind(LearningNotificationPort::class, LearningNotificationService::class);
 
         // Provider selection is config-driven (fake default). Local/test never send for real.
         $this->app->bind(MailProvider::class, fn ($app) => $app->make(ProviderManager::class)->mail());

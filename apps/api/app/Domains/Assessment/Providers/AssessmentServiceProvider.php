@@ -12,6 +12,7 @@ use App\Domains\Assessment\Grading\Graders\MultipleChoiceGrader;
 use App\Domains\Assessment\Grading\Graders\ShortAnswerGrader;
 use App\Domains\Assessment\Grading\Graders\SingleChoiceGrader;
 use App\Domains\Assessment\Grading\Graders\TrueFalseGrader;
+use App\Domains\Assessment\Listeners\AssessmentNotificationSubscriber;
 use App\Domains\Assessment\Models\Assessment;
 use App\Domains\Assessment\Models\Assignment;
 use App\Domains\Assessment\Models\AssignmentSubmission;
@@ -28,6 +29,7 @@ use App\Platform\Shared\Assessment\Contracts\AssessmentStatsPort;
 use App\Platform\Shared\Assessment\Contracts\LessonAssessmentPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 
 class AssessmentServiceProvider extends BaseDomainServiceProvider
@@ -89,6 +91,11 @@ class AssessmentServiceProvider extends BaseDomainServiceProvider
 
     protected function bootDomain(): void
     {
+        // Learner notifications for assignment grade-release / changes-requested and quiz pass/fail.
+        // The subscriber lives in this domain and reaches Notifications only through the Shared
+        // LearningNotificationPort, so no Notifications<->Assessment Deptrac edge is introduced.
+        Event::subscribe(AssessmentNotificationSubscriber::class);
+
         // Single source of truth for "may this actor manage this assessment".
         //
         //   1. super_admin          — genuine role bypass; the seeders grant it no permissions.

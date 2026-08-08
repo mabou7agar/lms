@@ -3,6 +3,7 @@
 namespace App\Domains\Assessment\Grading;
 
 use App\Domains\Assessment\Enums\AttemptStatus;
+use App\Domains\Assessment\Events\AttemptGraded;
 use App\Domains\Assessment\Models\AssessmentAnswer;
 use App\Domains\Assessment\Models\AssessmentAttempt;
 use App\Domains\Assessment\Models\AssessmentQuestion;
@@ -119,6 +120,23 @@ class AttemptScorer
             $attempt->save();
         });
 
-        return $attempt->refresh();
+        $attempt = $attempt->refresh();
+
+        // Additive pass/fail signal for learner notifications. Only fired once the outcome is decided:
+        // an attempt still awaiting manual review, or an assessment with no pass mark, leaves `passed`
+        // null and emits nothing. Scoring/persistence above is untouched — this only announces the
+        // committed result. Dedup on the attempt id (in the notification wiring) makes a re-score safe.
+        if ($attempt->passed !== null) {
+            AttemptGraded::dispatch(
+                (int) $attempt->id,
+                (int) $attempt->user_id,
+                (int) $assessment->id,
+                $assessment->course_id === null ? null : (int) $assessment->course_id,
+                (bool) $attempt->passed,
+                $attempt->score === null ? null : (float) $attempt->score,
+            );
+        }
+
+        return $attempt;
     }
 }

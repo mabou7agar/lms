@@ -10,6 +10,7 @@ use App\Domains\Assessment\Models\AssignmentSubmission;
 use App\Domains\Assessment\Models\SubmissionGrade;
 use App\Domains\Assessment\Models\SubmissionGradeEvent;
 use App\Domains\Assessment\Services\GradingService;
+use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Audit\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -21,8 +22,12 @@ function asgGrading(): GradingService
     return new GradingService(app(AuditLogger::class));
 }
 
-function asgSubmittedFor(Assignment $assignment, int $userId = 700): AssignmentSubmission
+function asgSubmittedFor(Assignment $assignment, ?int $userId = null): AssignmentSubmission
 {
+    // A real learner row: releasing a grade / requesting changes now notifies the learner, and the
+    // notifications table FKs user_id -> users.
+    $userId ??= User::factory()->create()->id;
+
     return AssignmentSubmission::factory()->submitted()->create([
         'assignment_id' => $assignment->id, 'user_id' => $userId,
     ]);
