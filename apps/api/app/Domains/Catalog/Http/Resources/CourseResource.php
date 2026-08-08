@@ -32,6 +32,14 @@ class CourseResource extends BaseResource
             'visibility' => $this->resource->visibility->value,
             'is_featured' => $this->resource->is_featured,
             'thumbnail_path' => app(PublicAssetUrlResolver::class)->resolve($this->resource->thumbnail_path),
+            // Promo video: same media-safe resolution as thumbnail_path (public_id -> URL, legacy
+            // value passes through, private/missing -> null). Never a raw reference or storage key.
+            'trailer' => app(PublicAssetUrlResolver::class)->resolve($this->resource->trailer_path),
+            'duration_minutes' => $this->resource->duration_minutes,
+            // Marketing lists, resolved to the request locale (never the raw {en,ar} map).
+            'learning_objectives' => $this->localizedList('learning_objectives'),
+            'requirements' => $this->localizedList('requirements'),
+            'target_audience' => $this->localizedList('target_audience'),
             'seo' => $this->resource->seo,
             'level' => $this->whenLoaded('level', fn () => $this->resource->level ? [
                 'id' => $this->resource->level->public_id,
@@ -52,5 +60,22 @@ class CourseResource extends BaseResource
             'related' => CourseListResource::collection($this->whenLoaded('related')),
             'published_at' => $this->resource->published_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Resolve a localized marketing LIST attribute ({locale => [items...]}) to the request locale as a
+     * clean list of strings. Returns [] when absent, so the raw {en,ar} map is never exposed.
+     *
+     * @return list<string>
+     */
+    private function localizedList(string $base): array
+    {
+        $value = $this->resource->localized($base);
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_map(static fn ($item): string => (string) $item, $value));
     }
 }

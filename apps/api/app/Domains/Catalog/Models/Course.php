@@ -45,12 +45,22 @@ class Course extends Model
 
     protected $fillable = [
         'title', 'title_i18n', 'slug', 'subtitle', 'subtitle_i18n', 'description', 'description_i18n',
-        'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'thumbnail_path', 'position',
-        'published_at', 'scheduled_publish_at', 'last_published_at', 'seo',
+        'learning_objectives_i18n', 'requirements_i18n', 'target_audience_i18n', 'duration_minutes',
+        'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'thumbnail_path', 'trailer_path',
+        'position', 'published_at', 'scheduled_publish_at', 'last_published_at', 'seo',
     ];
 
-    /** @var array<int, string> */
-    protected array $translatable = ['title_i18n', 'subtitle_i18n', 'description_i18n'];
+    /**
+     * Localized attributes. title/subtitle/description hold prose; the marketing *_i18n columns hold
+     * localized LISTS ({locale => [items...]}). All resolve through the same TranslationResolver, so a
+     * list attribute yields the request-locale array (never the raw {en,ar} map) via localized().
+     *
+     * @var array<int, string>
+     */
+    protected array $translatable = [
+        'title_i18n', 'subtitle_i18n', 'description_i18n',
+        'learning_objectives_i18n', 'requirements_i18n', 'target_audience_i18n',
+    ];
 
     /**
      * Base fields folded into the locale-aware `search_text` index by SearchableText (both the
@@ -74,6 +84,10 @@ class Course extends Model
             'title_i18n' => 'array',
             'subtitle_i18n' => 'array',
             'description_i18n' => 'array',
+            'learning_objectives_i18n' => 'array',
+            'requirements_i18n' => 'array',
+            'target_audience_i18n' => 'array',
+            'duration_minutes' => 'integer',
         ];
     }
 

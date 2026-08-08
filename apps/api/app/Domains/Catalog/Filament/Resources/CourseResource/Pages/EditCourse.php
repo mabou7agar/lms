@@ -18,6 +18,6 @@ class EditCourse extends EditRecord
      */
     protected function getHeaderActions(): array
     {
-        return CourseResource::lifecycleActions();
+        return [...CourseResource::lifecycleActions(), CourseResource::duplicateAction()];
     }
 }

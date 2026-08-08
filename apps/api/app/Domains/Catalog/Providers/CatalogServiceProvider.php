@@ -17,6 +17,8 @@ use App\Domains\Catalog\Policies\CoursePolicy;
  * CoursePublishGuard binding (a downstream domain may override it later).
  */
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Curriculum\Adapters\NullCurriculumForkPort;
+use App\Platform\Shared\Curriculum\Contracts\CurriculumForkPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 
 class CatalogServiceProvider extends BaseDomainServiceProvider
@@ -41,6 +43,10 @@ class CatalogServiceProvider extends BaseDomainServiceProvider
 
         // Default publish guard; standalone Catalog always allows publishing.
         $this->app->bind(CoursePublishGuard::class, NullCoursePublishGuard::class);
+
+        // Default curriculum fork: a no-op so a course can always be duplicated. Authoring overrides
+        // this with the real snapshot-fork adapter when loaded (it loads after Catalog).
+        $this->app->bind(CurriculumForkPort::class, NullCurriculumForkPort::class);
 
         // Catalog owns Course, so it answers course-ownership questions on behalf of contexts that
         // may not import the model (Assessment). The adapter delegates to the existing

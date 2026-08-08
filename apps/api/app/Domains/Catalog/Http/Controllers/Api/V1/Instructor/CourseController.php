@@ -2,6 +2,7 @@
 
 namespace App\Domains\Catalog\Http\Controllers\Api\V1\Instructor;
 
+use App\Domains\Catalog\Actions\Course\DuplicateCourseAction;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Exceptions\CoursePublishBlockedException;
@@ -151,6 +152,23 @@ class CourseController extends InstructorController
         );
 
         return $this->courseWithStats($course, $analytics);
+    }
+
+    /**
+     * POST /teach/courses/{course}/duplicate — clone the course into a new independent Draft.
+     *
+     * Ownership-scoped exactly like the other mutations (404 if not the caller's). The copy is
+     * stamped with the acting tenant server-side and its curriculum/associations are copied by
+     * DuplicateCourseAction; a forged organization_id is never read.
+     */
+    public function duplicate(Request $request, Course $course, DuplicateCourseAction $action, InstructorAnalyticsService $analytics): JsonResponse
+    {
+        $this->instructor($request);
+        $source = $this->ownedCourse($request, $course);
+
+        $copy = $action->execute($source);
+
+        return $this->courseWithStats($copy, $analytics);
     }
 
     /** POST /teach/courses/{course}/restore — bring an archived course back to Draft. */

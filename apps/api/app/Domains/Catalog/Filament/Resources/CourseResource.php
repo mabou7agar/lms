@@ -2,6 +2,7 @@
 
 namespace App\Domains\Catalog\Filament\Resources;
 
+use App\Domains\Catalog\Actions\Course\DuplicateCourseAction;
 use App\Domains\Catalog\Enums\CatalogPermission;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Filament\Resources\CourseResource\Pages;
@@ -17,16 +18,20 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Throwable;
 
 class CourseResource extends Resource
@@ -44,7 +49,15 @@ class CourseResource extends Resource
         return $schema->components([
             Section::make('Content')->columns(2)->schema([
                 TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
-                    ->helperText('English is the default and fallback locale.'),
+                    ->helperText('English is the default and fallback locale.')
+                    ->live(onBlur: true)
+                    // Auto-suggest a slug from the English title while the slug is still blank; an
+                    // operator-typed slug is never overwritten.
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                        if (blank($get('slug')) && filled($state)) {
+                            $set('slug', Str::slug((string) $state));
+                        }
+                    }),
                 TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
                     ->extraInputAttributes(['dir' => 'rtl']),
                 TextInput::make('subtitle_i18n.en')->label('Subtitle (EN)')->maxLength(255)
@@ -55,6 +68,9 @@ class CourseResource extends Resource
                     ->helperText('English is the default and fallback locale.'),
                 Textarea::make('description_i18n.ar')->label('Description (AR)')->rows(4)->columnSpanFull()
                     ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('slug')->label('Slug')->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->helperText('URL identifier. Auto-suggested from the English title; editable and must be unique.'),
             ]),
             // Status is READ-ONLY here: it may only change through the guarded lifecycle actions
             // (Submit for review / Approve / Schedule / Publish / Unpublish / Archive / Restore),
@@ -69,6 +85,39 @@ class CourseResource extends Resource
             Select::make('level_id')->relationship('level', 'name')->searchable(),
             Select::make('language_id')->relationship('language', 'name')->searchable(),
             Toggle::make('is_featured'),
+            Section::make('Taxonomy')->columns(2)->schema([
+                Select::make('categories')
+                    ->relationship('categories', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->select(['categories.id', 'categories.name']))
+                    ->multiple()->preload()->searchable()
+                    ->helperText('Catalog categories this course belongs to (course_category).'),
+                Select::make('tags')
+                    ->relationship('tags', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->select(['course_tags.id', 'course_tags.name']))
+                    ->multiple()->preload()->searchable()
+                    ->helperText('Free-form marketing tags (course_tag).'),
+            ]),
+            Section::make('Marketing')->columns(2)->schema([
+                TagsInput::make('learning_objectives_i18n.en')->label('Learning objectives (EN)')
+                    ->helperText('What a learner will be able to do. Press Enter after each item.'),
+                TagsInput::make('learning_objectives_i18n.ar')->label('Learning objectives (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TagsInput::make('requirements_i18n.en')->label('Requirements (EN)')
+                    ->helperText('Prerequisites/knowledge needed before starting.'),
+                TagsInput::make('requirements_i18n.ar')->label('Requirements (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TagsInput::make('target_audience_i18n.en')->label('Target audience (EN)')
+                    ->helperText('Who this course is for.'),
+                TagsInput::make('target_audience_i18n.ar')->label('Target audience (AR)')
+                    ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('duration_minutes')->label('Duration (minutes)')->numeric()->minValue(0)
+                    ->helperText('Optional manual/override total duration, in minutes.'),
+                MediaPicker::make('trailer_path')
+                    ->label('Promo trailer')
+                    ->purpose('lesson_video')
+                    ->acceptedTypes(['video'])
+                    ->allowLegacyUrl()
+                    ->searchable()
+                    ->helperText('Pick a promo video from the media library or upload one. Existing URLs are kept until replaced.'),
+            ]),
             MediaPicker::make('thumbnail_path')
                 ->label('Thumbnail')
                 ->purpose('lesson_image')
@@ -76,6 +125,12 @@ class CourseResource extends Resource
                 ->allowLegacyUrl()
                 ->searchable()
                 ->helperText('Pick from the media library or upload a new image. Existing URLs are kept until replaced.'),
+            Section::make('SEO')->columns(2)->schema([
+                TextInput::make('seo.meta_title')->label('Meta title')->maxLength(255),
+                TextInput::make('seo.canonical')->label('Canonical URL')->maxLength(2048)->url(),
+                Textarea::make('seo.meta_description')->label('Meta description')->rows(2)->columnSpanFull(),
+                TextInput::make('seo.og_image')->label('OG image URL')->maxLength(2048)->url()->columnSpanFull(),
+            ]),
         ]);
     }
 
@@ -89,7 +144,7 @@ class CourseResource extends Resource
                 TextColumn::make('scheduled_publish_at')->dateTime()->sortable()->toggleable(),
                 TextColumn::make('published_at')->dateTime()->sortable()->toggleable(),
             ])
-            ->recordActions(self::lifecycleActions())
+            ->recordActions([...self::lifecycleActions(), self::duplicateAction()])
             ->defaultSort('id', 'desc');
     }
 
@@ -125,6 +180,31 @@ class CourseResource extends Resource
             self::transitionAction('archiveCourse', 'Archive', 'heroicon-o-archive-box', 'danger', CourseStatus::Archived),
             self::transitionAction('restoreCourse', 'Restore', 'heroicon-o-arrow-uturn-left', 'info', CourseStatus::Draft),
         ];
+    }
+
+    /**
+     * REPLICATE/DUPLICATE — clone the course into a new independent Draft (fresh public_id/slug,
+     * " (Copy)" title, catalog associations + curriculum copied, publish state reset, tenant stamped
+     * server-side). Delegates entirely to DuplicateCourseAction; visible only to course managers.
+     */
+    public static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon('heroicon-o-document-duplicate')
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Duplicate course')
+            ->modalDescription('Create an independent Draft copy of this course — title suffixed " (Copy)" — including its categories, tags, instructors, gallery and curriculum. The copy is unpublished and unfeatured.')
+            ->visible(fn (Course $record): bool => self::userCanManage())
+            ->action(function (Course $record): void {
+                try {
+                    $copy = app(DuplicateCourseAction::class)->execute($record);
+                    Notification::make()->title(sprintf('Course duplicated as "%s".', $copy->title))->success()->send();
+                } catch (Throwable $e) {
+                    Notification::make()->title('Duplicate failed')->body($e->getMessage())->danger()->send();
+                }
+            });
     }
 
     /** A single guarded status transition with no extra input. */

@@ -3,6 +3,7 @@
 namespace App\Domains\Authoring\Providers;
 
 use App\Domains\Authoring\Curriculum\CurriculumReadAdapter;
+use App\Domains\Authoring\Curriculum\SnapshotCurriculumForkAdapter;
 use App\Domains\Authoring\Enums\AuthoringPermission;
 use App\Domains\Authoring\Media\LessonMediaAssetPort;
 use App\Domains\Authoring\Models\Block;
@@ -20,6 +21,7 @@ use App\Domains\Authoring\Support\CourseTenantVisibility;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Contracts\Actor;
+use App\Platform\Shared\Curriculum\Contracts\CurriculumForkPort;
 use App\Platform\Shared\Curriculum\Contracts\CurriculumReadPort;
 use App\Platform\Shared\Media\Contracts\MediaAssetPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
@@ -66,6 +68,11 @@ class AuthoringServiceProvider extends BaseDomainServiceProvider
 
         // Temporary Phase-1 curriculum read projection (enrollability + resource DTO mappers).
         $this->app->bind(CurriculumReadPort::class, CurriculumReadAdapter::class);
+
+        // Curriculum fork: overrides Catalog's NullCurriculumForkPort so duplicating a course also
+        // materialises its curriculum (via the snapshot fork mechanism). Catalog stays decoupled —
+        // it only depends on the Shared contract.
+        $this->app->bind(CurriculumForkPort::class, SnapshotCurriculumForkAdapter::class);
     }
 
     protected function bootDomain(): void
