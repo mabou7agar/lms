@@ -8,6 +8,7 @@ use App\Contexts\Analytics\Export\ExportWriterManager;
 use App\Contexts\Analytics\Models\ExportJob;
 use App\Contexts\Analytics\Models\ReportDefinition;
 use App\Contexts\Analytics\Services\ExportService;
+use App\Platform\Shared\Tenancy\Concerns\TenantAware;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,6 +19,15 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Builds the export dataset from the read model, writes CSV/XLSX, stores it privately, and marks
  * the job completed. The stored path is never exposed — downloads go through a signed route.
+ *
+ * T1 tenant safety (TENANT-AWARE): the dataset is built by ExportService → KpiEngine, which reads the
+ * tenant-scoped MetricSnapshot read model and folds the active tenant into its cache key. On a worker
+ * there is NO authenticated user, so without restoration the tenant would resolve to null and the
+ * export would sum GLOBAL + EVERY org's buckets (a cross-tenant leak) under the 'global' cache bucket.
+ * The TenantAware trait captures the dispatching org (scalar id, server-resolved — never client input)
+ * at construct/dispatch time and restores it on the worker via RestoreTenantContext, so an org1 admin's
+ * export contains only global + org1 figures. A platform admin whose organization_id is null captures
+ * null and the export legitimately runs unscoped (all orgs) — identical to the pre-tenancy behaviour.
  */
 class ProcessExportJob implements ShouldQueue
 {
@@ -25,6 +35,7 @@ class ProcessExportJob implements ShouldQueue
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
+    use TenantAware;
 
     /** Below supervisor-exports' 300s timeout so a stalled export fails rather than being killed. */
     public int $timeout = 280;
@@ -43,6 +54,10 @@ class ProcessExportJob implements ShouldQueue
     public function __construct(public readonly int $exportJobId)
     {
         $this->onQueue('exports');
+
+        // Capture the dispatching tenant NOW, on the originating (request-resolved) context, so the
+        // worker rebuilds the export under the same org boundary instead of running unscoped.
+        $this->captureTenantContext();
     }
 
     /** @return list<int> */
