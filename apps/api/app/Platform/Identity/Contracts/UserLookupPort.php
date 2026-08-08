@@ -2,6 +2,7 @@
 
 namespace App\Platform\Identity\Contracts;
 
+use App\Platform\Identity\Contracts\Data\InstructorProfileRef;
 use App\Platform\Identity\Contracts\Data\UserRef;
 
 /**
@@ -32,6 +33,16 @@ interface UserLookupPort
      * @return list<UserRef>
      */
     public function instructors(): array;
+
+    /**
+     * Public instructor directory (U4): active users holding the instructor role whose profile is
+     * marked public, ordered by profile display_order then name. Each ref carries the public profile
+     * plus its media as REFERENCES (never resolved URLs). The is_active / role / is_public filtering
+     * is an Identity implementation detail, not part of the contract.
+     *
+     * @return list<InstructorProfileRef>
+     */
+    public function instructorProfiles(): array;
 
     /** Total number of user accounts (reproduces User::query()->count()). */
     public function totalCount(): int;

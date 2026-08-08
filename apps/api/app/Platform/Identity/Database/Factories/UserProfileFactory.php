@@ -23,4 +23,17 @@ class UserProfileFactory extends Factory
             'gender' => fake()->randomElement(['male', 'female', 'unspecified']),
         ];
     }
+
+    /** A public instructor profile with bilingual headline/bio (U4). */
+    public function instructor(): static
+    {
+        return $this->state(fn (): array => [
+            'headline_i18n' => ['en' => 'Senior Instructor', 'ar' => 'مدرب أول'],
+            'bio_i18n' => ['en' => 'Seasoned educator.', 'ar' => 'مربٍّ متمرس.'],
+            'specialties' => ['Leadership', 'Strategy'],
+            'social_links' => ['linkedin' => 'https://example.com/in/instructor'],
+            'website' => 'https://example.com',
+            'is_public' => true,
+        ]);
+    }
 }

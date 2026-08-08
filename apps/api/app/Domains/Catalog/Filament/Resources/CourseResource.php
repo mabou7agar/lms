@@ -5,6 +5,7 @@ namespace App\Domains\Catalog\Filament\Resources;
 use App\Domains\Catalog\Enums\CourseStatus;
 use App\Domains\Catalog\Filament\Resources\CourseResource\Pages;
 use App\Domains\Catalog\Filament\Resources\CourseResource\RelationManagers\GalleryRelationManager;
+use App\Domains\Catalog\Filament\Resources\CourseResource\RelationManagers\InstructorsRelationManager;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
@@ -79,7 +80,7 @@ class CourseResource extends Resource
 
     public static function getRelations(): array
     {
-        return [GalleryRelationManager::class];
+        return [GalleryRelationManager::class, InstructorsRelationManager::class];
     }
 
     public static function getPages(): array
