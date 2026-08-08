@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domains\Qna\Actions;
+
+use App\Domains\Qna\Enums\QuestionStatus;
+use App\Domains\Qna\Models\CourseQuestion;
+use App\Domains\Qna\Support\ResolvedCourse;
+use App\Platform\Identity\Contracts\Actor;
+use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Html\HtmlSanitizer;
+use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+
+/**
+ * Posts a new question to a course. The author must have course ACCESS — an enrolled/entitled learner
+ * (active OR completed) or a course instructor. The check runs here, at the domain entry point, the
+ * same way StartAttemptAction gates attempts, so no authenticated non-participant can seed questions
+ * onto a course by public_id.
+ *
+ * `body` is sanitized on the way IN (never on read). `organization_id` is stamped SERVER-SIDE from
+ * the resolved course and is not mass-assignable — a forged organization_id in the payload is inert.
+ */
+final class AskQuestionAction
+{
+    public function __construct(
+        private readonly HtmlSanitizer $sanitizer,
+        private readonly CourseEnrollmentPort $enrollment,
+        private readonly CourseAccessPort $access,
+    ) {}
+
+    /** @param  array<string, mixed>  $data */
+    public function execute(Actor $author, ResolvedCourse $course, array $data): CourseQuestion
+    {
+        $userId = $author->actorId();
+
+        if (! $this->enrollment->hasCourseAccess($course->id, $userId)
+            && ! $this->access->canManageContent($author, $course->id)) {
+            throw new AccessDeniedHttpException('You do not have access to this course.');
+        }
+
+        $question = CourseQuestion::make([
+            'course_id' => $course->id,
+            'lesson_id' => $data['lesson_id'] ?? null,
+            'user_id' => $userId,
+            'title' => $data['title'],
+            'body' => $this->sanitizer->sanitize((string) $data['body']),
+            'lesson_timestamp_seconds' => $data['lesson_timestamp_seconds'] ?? null,
+        ]);
+
+        // Transitive tenancy stamp — a direct attribute write, deliberately outside $fillable.
+        $question->organization_id = $course->organizationId;
+        // Set the initial status in-memory so the freshly-created instance (never round-tripped
+        // through the DB) carries the enum the resource serializes; mirrors the DB column default.
+        $question->status = QuestionStatus::Open;
+        $question->save();
+
+        return $question;
+    }
+}
