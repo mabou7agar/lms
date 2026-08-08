@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 it('creates a lead (logging a timeline activity) and lists/searches leads', function () {
-    $res = $this->postJson('/api/v1/leads', ['name' => 'Jane Buyer', 'email' => 'jane@corp.com', 'source' => 'web'])
+    $res = $this->postJson('/api/v1/leads', ['name' => 'Jane Qzbuyerx', 'email' => 'jane@corp.com', 'source' => 'web'])
         ->assertCreated()->assertJsonPath('data.status', 'new');
 
     $lead = Lead::where('public_id', $res->json('data.id'))->firstOrFail();
@@ -24,5 +24,8 @@ it('creates a lead (logging a timeline activity) and lists/searches leads', func
 
     Lead::factory()->create(['name' => 'Other Person']);
 
-    $this->getJson('/api/v1/leads?q=Jane')->assertOk()->assertJsonPath('meta.total', 1);
+    // Search on a unique token so the assertion is deterministic: the broad lead search matches
+    // name/email/company, and a faker-generated second lead can otherwise incidentally match a common
+    // term like "Jane". "Qzbuyerx" only ever appears on the lead created above.
+    $this->getJson('/api/v1/leads?q=Qzbuyerx')->assertOk()->assertJsonPath('meta.total', 1);
 });
