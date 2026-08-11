@@ -21,7 +21,10 @@ function safeProductionConfig(): void
         'session.secure' => true,
         'commerce.payment.provider' => 'stripe',
         'commerce.payment.webhook_secret' => 'whsec_test',
-        'media.provider' => 'mux',
+        'media.ingestion.default' => 'mux',
+        'notifications.providers.mail' => 'ses',
+        'notifications.providers.sms' => 'sns',
+        'notifications.providers.push' => 'fcm',
         'mail.default' => 'smtp',
         'mail.from.address' => 'no-reply@example.com',
         'logging.default' => 'stack',
@@ -79,8 +82,16 @@ it('flags a missing webhook secret', function () {
 });
 
 it('flags the fake media provider', function () {
-    config(['media.provider' => 'fake']);
+    config(['media.ingestion.default' => 'fake']);
     expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->toContain('MEDIA');
+});
+
+it('flags a fake notification transport unless explicitly allowed', function () {
+    config(['notifications.providers.mail' => 'fake']);
+    expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->toContain('NOTIFICATIONS');
+
+    config(['notifications.allow_fake_providers' => true]);
+    expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->not->toContain('NOTIFICATIONS');
 });
 
 it('flags missing trusted proxies', function () {

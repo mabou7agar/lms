@@ -118,9 +118,21 @@ class ProductionConfigValidator
             $e[] = 'COMMERCE_WEBHOOK_SECRET is unset or still the dev default — webhooks cannot be securely verified.';
         }
 
-        // Media provider must not be the fake ingestion provider in production.
-        if ((string) config('media.provider', config('media.ingestion.provider', '')) === 'fake') {
-            $e[] = 'MEDIA provider "fake" is a dev/test stub and must not run in production.';
+        // Media provider must not be the fake ingestion provider in production. (Reads the REAL key
+        // media.ingestion.default that IngestionProviderManager consumes — the previous media.provider
+        // key never existed, so this guard was a silent no-op.)
+        if ((string) config('media.ingestion.default', '') === 'fake') {
+            $e[] = 'MEDIA_INGESTION_PROVIDER=fake is a dev/test stub and must not run in production.';
+        }
+
+        // Notification transports must not be the fake stubs in production (they never actually deliver
+        // mail/SMS/push). Allow an explicit escape hatch for a deliberate non-delivery environment.
+        if ((bool) config('notifications.allow_fake_providers', false) !== true) {
+            foreach (['mail', 'sms', 'push'] as $channel) {
+                if ((string) config('notifications.providers.'.$channel) === 'fake') {
+                    $e[] = 'NOTIFICATIONS '.$channel.' provider "fake" is a dev/test stub and must not run in production (set NOTIFICATIONS_ALLOW_FAKE=true only for a deliberate non-delivery environment).';
+                }
+            }
         }
 
         // SSO: the fake social provider accepts logins with no real IdP — refuse it in production
