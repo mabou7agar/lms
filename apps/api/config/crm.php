@@ -82,9 +82,21 @@ return [
     ],
 
     'import' => [
-        // Hard limits on a CSV employee import (defense against oversized uploads).
+        // Hard limits on a CSV import (employee import + the reusable CSV import framework). Defense
+        // against oversized uploads; enforced before the body is parsed.
         'max_bytes' => (int) env('CRM_IMPORT_MAX_BYTES', 2 * 1024 * 1024),
         'max_rows' => (int) env('CRM_IMPORT_MAX_ROWS', 5000),
+    ],
+
+    /*
+     | Org BI/data export. The artifact bundle (flat CSVs + JSON manifest) is stored privately and only
+     | ever reached through a short-lived, signed, org-bound download URL.
+     */
+    'export' => [
+        // Disk the export bundle is written to; kept private (never a public disk).
+        'disk' => env('CRM_EXPORT_DISK', 'local'),
+        // Minutes a signed per-file download URL stays valid.
+        'download_ttl_minutes' => (int) env('CRM_EXPORT_DOWNLOAD_TTL', 15),
     ],
 
     'reporting' => [

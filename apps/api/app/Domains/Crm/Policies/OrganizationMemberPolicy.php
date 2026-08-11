@@ -46,6 +46,16 @@ class OrganizationMemberPolicy extends BasePolicy
         return $this->scope($user)->viewAll;
     }
 
+    /**
+     * Producing a durable BI/data export bundle — which carries the org's full member roster — is a
+     * stronger capability than reading a figure on screen, so it is owner/admin only (never a
+     * department/team manager, who can read the on-screen report but may not extract the whole roster).
+     */
+    public function exportData(Actor $user): bool
+    {
+        return $this->scope($user)->viewAll;
+    }
+
     /** A member is visible only when the caller's scope covers it. */
     public function view(Actor $user, OrganizationMember $member): bool
     {

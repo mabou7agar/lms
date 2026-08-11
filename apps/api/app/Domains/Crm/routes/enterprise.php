@@ -5,9 +5,22 @@ use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\EmployeeImportController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\InvitationController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\ManagerReportController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\MemberController;
+use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\MemberImportController;
+use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\OrgDataExportController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\SeatController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\TeamController;
 use Illuminate\Support\Facades\Route;
+
+/*
+ | Signed export-file stream. NO auth guard: the signature authorizes the download, and the URL is
+ | additionally org-bound + file-scoped inside the controller. Declared before the authed group so the
+ | worker-produced bundle can be fetched without a session (e.g. by a BI connector).
+ */
+Route::prefix('v1/enterprise')->group(function (): void {
+    Route::get('exports/{export}/file', [OrgDataExportController::class, 'file'])
+        ->middleware('signed')
+        ->name('enterprise.exports.file');
+});
 
 /*
  | ENTERPRISE MANAGER PORTAL (self-serve org operation). Authenticated. Base 'api' prefix + these =>
@@ -52,4 +65,12 @@ Route::prefix('v1/enterprise')->middleware('auth:sanctum')->group(function (): v
 
     // Bulk employee CSV import (dry-run by default; commit=true to write).
     Route::post('employees/import', [EmployeeImportController::class, 'import']);
+
+    // Reusable CSV import framework — reference importer: bulk member import (dry-run by default).
+    Route::post('imports/members', [MemberImportController::class, 'import']);
+
+    // Org BI/data export: queue a bundle, list, and inspect (download URLs are signed, in `show`).
+    Route::get('exports', [OrgDataExportController::class, 'index']);
+    Route::post('exports', [OrgDataExportController::class, 'store']);
+    Route::get('exports/{export}', [OrgDataExportController::class, 'show']);
 });
