@@ -56,6 +56,8 @@ class AdminPanelProvider extends PanelProvider
         'App\\Domains\\Crm\\Filament\\Resources' => 'Domains/Crm/Filament/Resources',
         'App\\Platform\\Media\\Filament\\Resources' => 'Platform/Media/Filament/Resources',
         'App\\Platform\\Shared\\Filament\\Resources' => 'Platform/Shared/Filament/Resources',
+        'App\\Platform\\AI\\Filament\\Resources' => 'Platform/AI/Filament/Resources',
+        'App\\Platform\\Integration\\Filament\\Resources' => 'Platform/Integration/Filament/Resources',
     ];
 
     public function panel(Panel $panel): Panel
@@ -95,6 +97,8 @@ class AdminPanelProvider extends PanelProvider
                 'CRM',
                 'Analytics',
                 'Notifications',
+                'AI',
+                'Integrations',
                 'Branding',
                 'Navigation',
                 'System',
@@ -131,6 +135,13 @@ class AdminPanelProvider extends PanelProvider
         $panel->discoverWidgets(
             in: app_path('Platform/Notifications/Filament/Widgets'),
             for: 'App\\Platform\\Notifications\\Filament\\Widgets',
+        );
+
+        // AI provider/usage status widget — discovered by path/namespace string (no class import),
+        // keeping the composition root free of a compile-time dependency on the AI layer.
+        $panel->discoverWidgets(
+            in: app_path('Platform/AI/Filament/Widgets'),
+            for: 'App\\Platform\\AI\\Filament\\Widgets',
         );
 
         return $panel;

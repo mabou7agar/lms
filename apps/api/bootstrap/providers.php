@@ -12,10 +12,12 @@ use App\Domains\Forum\Providers\ForumServiceProvider;
 use App\Domains\Live\Providers\LiveServiceProvider;
 use App\Domains\Qna\Providers\QnaServiceProvider;
 use App\Domains\Reviews\Providers\ReviewsServiceProvider;
+use App\Platform\AI\Providers\AiServiceProvider;
 use App\Platform\Branding\Providers\BrandingServiceProvider;
 use App\Platform\Features\Providers\FeaturesServiceProvider;
 use App\Platform\Homepage\Providers\HomepageServiceProvider;
 use App\Platform\Identity\Providers\IdentityServiceProvider;
+use App\Platform\Integration\Providers\IntegrationServiceProvider;
 use App\Platform\Media\Providers\MediaServiceProvider;
 use App\Platform\Navigation\Providers\NavigationServiceProvider;
 use App\Platform\Notifications\Providers\NotificationsServiceProvider;
@@ -39,6 +41,8 @@ return [
     MediaServiceProvider::class,
 
     IdentityServiceProvider::class,
+    // Provider-neutral AI foundation (fake driver by default; live keys are env/secret-store gated).
+    AiServiceProvider::class,
     CatalogServiceProvider::class,
     AuthoringServiceProvider::class,
     // After Authoring: the assessment.manage-assessment gate delegates to authoring.manage-curriculum.
@@ -54,6 +58,8 @@ return [
     ForumServiceProvider::class,
     AnalyticsServiceProvider::class,
     NotificationsServiceProvider::class,
+    // Outbound webhook platform — an event consumer (subscribes to domain events by string name).
+    IntegrationServiceProvider::class,
     HomepageServiceProvider::class,
     BrandingServiceProvider::class,
     NavigationServiceProvider::class,
