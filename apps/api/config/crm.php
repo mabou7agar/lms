@@ -72,4 +72,23 @@ return [
             'aol.com', 'proton.me', 'protonmail.com', 'gmx.com', 'mail.com', 'yandex.com',
         ],
     ],
+
+    /*
+     | Enterprise manager portal (self-serve org operation).
+     */
+    'invitation' => [
+        // Days a membership invitation token stays valid. 0 = never expires.
+        'ttl_days' => (int) env('CRM_INVITATION_TTL_DAYS', 14),
+    ],
+
+    'import' => [
+        // Hard limits on a CSV employee import (defense against oversized uploads).
+        'max_bytes' => (int) env('CRM_IMPORT_MAX_BYTES', 2 * 1024 * 1024),
+        'max_rows' => (int) env('CRM_IMPORT_MAX_ROWS', 5000),
+    ],
+
+    'reporting' => [
+        // Default inactivity window (days) for the manager report's "inactive learners" metric.
+        'inactive_days' => (int) env('CRM_REPORT_INACTIVE_DAYS', 30),
+    ],
 ];
