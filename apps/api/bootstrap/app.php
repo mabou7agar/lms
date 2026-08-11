@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AssignCorrelationId;
+use App\Http\Middleware\EnforceApiTokenScope;
 use App\Http\Middleware\ForceJsonForApi;
 use App\Http\Middleware\SecurityHeaders;
 use App\Platform\Features\Http\Middleware\EnsureFeatureEnabled;
@@ -56,6 +57,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // non-existent `login` route -> RouteNotFoundException -> 500). Prepended so it runs before
         // auth. Scoped to the 'api' group; web/Filament are untouched.
         $middleware->prependToGroup('api', ForceJsonForApi::class);
+
+        // Confine scoped (developer) API keys to the developer surface. A non-`*` token presented as a
+        // bearer anywhere outside /api/v1/developer/* is rejected 403, so a read-scoped key can never
+        // exercise the owner's session privileges on first-party routes. Session/`*` tokens unaffected.
+        $middleware->appendToGroup('api', EnforceApiTokenScope::class);
 
         // Multi-tenancy (A2-S02): resolve the active tenant on the API surface. Applied to the
         // 'api' group only (NOT globally) — web/marketing and Filament panels activate the

@@ -76,6 +76,16 @@ it('lets an account:read token read its own account', function () {
         ->assertJsonPath('data.email', $user->email);
 });
 
+it('confines a scoped developer key to the developer surface (403 on a first-party route)', function () {
+    // A scoped key is a valid Sanctum bearer, but must NOT act as a full-access session token on the
+    // first-party API. Without EnforceApiTokenScope it would silently exercise the owner's permissions
+    // on every other auth:sanctum route (logout/profile/devices/…). It stays confined to /developer/*.
+    [, $token] = scopedToken(['account:read']);
+
+    $response = $this->withToken($token)->postJson('/api/v1/auth/logout')->assertStatus(403);
+    expect($response->getContent())->toContain('TOKEN_SCOPE_FORBIDDEN');
+});
+
 it('rejects a revoked token with 401', function () {
     [$user, $token] = scopedToken(['org:read']);
 
