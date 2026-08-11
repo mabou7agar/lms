@@ -9,6 +9,7 @@ import { fieldsFor, type BlockFormValues } from "@/lib/authoring/content-blocks/
 import { useAuthoringI18n } from "@/lib/authoring/authoring-i18n";
 import type { BlockKind } from "@/lib/authoring/types";
 import { BilingualField } from "../editors/bilingual-field";
+import { VideoSourceEditor } from "./video-source-editor";
 
 const RichTextEditor = dynamic(() => import("../editors/rich-text-editor").then((m) => m.RichTextEditor), {
   ssr: false,
@@ -41,6 +42,12 @@ export function ContentBlockEditor({
 
   if (fields.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("cblock.noFields")}</p>;
+  }
+
+  // Video / audio: an explicit provider selector over the genuinely-supported media sources
+  // (Mux / direct URL / stored object) rather than three always-visible raw reference fields.
+  if (kind === "video" || kind === "audio") {
+    return <VideoSourceEditor values={values} onChange={onChange} />;
   }
 
   return (

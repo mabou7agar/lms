@@ -427,6 +427,16 @@ const en: Dict = {
   "cblock.field.assessmentId": "Assessment ID",
   "cblock.field.assessmentIdHint": "Public ID of the assessment this quiz block references.",
 
+  // Video / audio provider selector — the genuinely-supported media sources only.
+  "cblock.media.provider": "Video provider",
+  "cblock.media.providerHint": "Choose where this media is hosted. Only one source is stored per block.",
+  "cblock.media.provider.mux": "Mux (streaming)",
+  "cblock.media.provider.muxHint": "A Mux playback ID from the media pipeline.",
+  "cblock.media.provider.url": "Direct URL",
+  "cblock.media.provider.urlHint": "A direct http(s) link to the media file.",
+  "cblock.media.provider.storage": "Uploaded file (storage)",
+  "cblock.media.provider.storageHint": "Reference to an already-uploaded object (storage key).",
+
   // Block labels / descriptions
   "block.article.label": "Article", "block.article.desc": "Rich text lesson",
   "block.pdf.label": "PDF", "block.pdf.desc": "Document viewer",
@@ -847,6 +857,16 @@ const ar: Dict = {
   "cblock.field.note": "ملاحظة المؤلّف",
   "cblock.field.assessmentId": "معرّف الاختبار",
   "cblock.field.assessmentIdHint": "المعرّف العام للاختبار الذي تشير إليه كتلة الاختبار هذه.",
+
+  // محدّد مزوّد الفيديو/الصوت — المصادر المدعومة فعليًا فقط.
+  "cblock.media.provider": "مزوّد الفيديو",
+  "cblock.media.providerHint": "اختر مكان استضافة الوسائط. يُحفظ مصدر واحد فقط لكل كتلة.",
+  "cblock.media.provider.mux": "Mux (بث)",
+  "cblock.media.provider.muxHint": "معرّف تشغيل Mux من خط معالجة الوسائط.",
+  "cblock.media.provider.url": "رابط مباشر",
+  "cblock.media.provider.urlHint": "رابط http(s) مباشر لملف الوسائط.",
+  "cblock.media.provider.storage": "ملف مرفوع (تخزين)",
+  "cblock.media.provider.storageHint": "إشارة إلى ملف مرفوع مسبقًا (مفتاح التخزين).",
 
   "block.article.label": "مقال", "block.article.desc": "درس نصي ثري",
   "block.pdf.label": "PDF", "block.pdf.desc": "عارض مستندات",

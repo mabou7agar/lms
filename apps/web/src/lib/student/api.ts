@@ -75,7 +75,23 @@ export type ProfileUpdate = {
   city?: string | null;
 };
 
-export type PreferencesUpdate = { locale?: Locale; digest_frequency?: string; timezone?: string };
+export type PreferencesUpdate = {
+  locale?: Locale;
+  digest_frequency?: string;
+  timezone?: string;
+  /**
+   * Quiet-hours window (interpreted in `timezone`). Times are "HH:MM"; the window may wrap midnight.
+   * Marketing/non-critical messages that land inside the window are deferred, never dropped;
+   * transactional/critical messages ignore quiet hours entirely.
+   *
+   * NOTE: the backend `notifications/preferences` endpoint (UpdatePreferencesRequest) does not yet
+   * accept these keys, so they are dropped by the server's `validated()` on save until the endpoint
+   * is extended to persist the `user_notification_settings` quiet-hours columns.
+   */
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+};
 
 // ---- Reads (unwrap `.data`) ----
 export const getMyLearning = () => api.data<MyLearningItem[]>("my-learning");

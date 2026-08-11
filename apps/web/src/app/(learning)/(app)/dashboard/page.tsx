@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/landing/reveal";
+import { UpcomingSessions } from "@/components/learning/upcoming-sessions";
 
 function avg(nums: number[]): number {
   return nums.length === 0 ? 0 : Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
@@ -154,6 +155,10 @@ export default function DashboardPage() {
           </Card>
         </Reveal>
       </div>
+
+      <Reveal as="section" delay={160}>
+        <UpcomingSessions />
+      </Reveal>
     </div>
   );
 }

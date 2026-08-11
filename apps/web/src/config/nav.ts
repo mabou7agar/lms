@@ -3,7 +3,7 @@ import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
   Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload,
-  ShieldCheck, KeyRound,
+  ShieldCheck, KeyRound, Palette,
 } from "lucide-react";
 
 /**
@@ -60,6 +60,7 @@ export const managerNav: NavItem[] = [
   { labelKey: "nav.managerSeats", href: "/manager/seats", icon: Armchair },
   { labelKey: "nav.managerImport", href: "/manager/import", icon: Upload },
   { labelKey: "nav.managerSso", href: "/manager/sso", icon: KeyRound },
+  { labelKey: "nav.managerBrand", href: "/manager/branding", icon: Palette },
 ];
 
 export const crmNav: NavItem[] = [
