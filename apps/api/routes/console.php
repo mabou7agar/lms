@@ -26,6 +26,12 @@ Schedule::command('live:dispatch-reminders')->everyMinute()->onOneServer()->with
 // readiness guard makes a premature or repeated run harmless (an unready course stays Scheduled).
 Schedule::command('courses:publish-scheduled')->everyMinute()->onOneServer()->withoutOverlapping();
 
+// Reconcile the search index: (re)embeds eligible content and PURGES embeddings whose source is no
+// longer eligible (unpublished/deleted/privatised), so stale/private content stops surfacing in
+// catalog search + AI retrieval. Daily because embedding a full corpus is costly with a live provider;
+// operators who wire immediate remove()-on-unpublish can lengthen or disable this safety sweep.
+Schedule::command('search:backfill')->daily()->onOneServer()->withoutOverlapping();
+
 // Processed payment webhook events are kept 30 days for reconciliation, then pruned.
 Schedule::call(function (): void {
     PaymentWebhookEvent::query()

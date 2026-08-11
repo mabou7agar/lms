@@ -41,9 +41,19 @@ final class IngestionService
     {
         $written = 0;
         foreach ($this->indexers as $indexer) {
-            foreach ($indexer->indexableIds() as $id) {
-                $written += $this->reindex($indexer->sourceType(), (int) $id);
+            $eligible = array_map('intval', $indexer->indexableIds());
+
+            foreach ($eligible as $id) {
+                $written += $this->reindex($indexer->sourceType(), $id);
             }
+
+            // PURGE embeddings for sources of this type that are no longer eligible (unpublished,
+            // deleted or privatised since they were last indexed) so stale/private content stops
+            // surfacing in catalog search + AI retrieval. When nothing is eligible, purge them all.
+            ContentEmbedding::query()
+                ->where('source_type', $indexer->sourceType())
+                ->when($eligible !== [], fn ($q) => $q->whereNotIn('embeddable_id', $eligible))
+                ->delete();
         }
 
         return $written;
