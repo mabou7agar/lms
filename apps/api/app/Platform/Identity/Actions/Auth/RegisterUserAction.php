@@ -24,6 +24,10 @@ class RegisterUserAction extends BaseAction
                 'is_active' => true,
             ]);
 
+            // Mark the account as password-capable (distinguishes it from a social-only account, which
+            // leaves this null). Read by unlink orphan-safety.
+            $user->forceFill(['password_set_at' => now()])->save();
+
             $user->profile()->create([]);
             $user->assignRole(Role::Student->value);
 

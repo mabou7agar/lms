@@ -21,11 +21,25 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'phone' => '+9665'.fake()->numerify('########'),
             'password' => Hash::make('password'),
+            // Factory users are password-capable by default (mirrors a normal registration).
+            'password_set_at' => now(),
             'locale' => 'en',
             'is_active' => true,
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * A social-only account: a random, unknown password and NO password_set_at, so it has no usable
+     * password. Used to test unlink orphan-safety (the last provider may not be removed).
+     */
+    public function socialOnly(): static
+    {
+        return $this->state(fn () => [
+            'password' => Hash::make(Str::random(40)),
+            'password_set_at' => null,
+        ]);
     }
 
     public function unverified(): static

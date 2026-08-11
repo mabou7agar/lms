@@ -47,6 +47,7 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
         return [
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
+            'password_set_at' => 'datetime',
             'locked_until' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
@@ -75,7 +76,22 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
         return $this->hasMany(UserDevice::class);
     }
 
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
     // ----- Lifecycle state -----
+
+    /**
+     * True when the account has a real, self-chosen password (registered or reset). A social-created
+     * account is minted with a random, unknown password and leaves `password_set_at` null, so it is
+     * NOT password-capable. Used by unlink orphan-safety: "never remove the last sign-in method".
+     */
+    public function hasUsablePassword(): bool
+    {
+        return $this->password_set_at !== null;
+    }
 
     public function isLocked(): bool
     {

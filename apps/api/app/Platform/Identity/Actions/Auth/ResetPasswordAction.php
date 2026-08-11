@@ -23,6 +23,8 @@ class ResetPasswordAction extends BaseAction
             $user->forceFill([
                 'password' => Hash::make($password),
                 'remember_token' => Str::random(60),
+                // Setting a password makes a previously social-only account password-capable.
+                'password_set_at' => now(),
             ])->save();
 
             // Invalidate all existing sessions on password reset.

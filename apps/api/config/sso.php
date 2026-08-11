@@ -26,6 +26,32 @@ return [
     // Where the provider sends the browser back to (the SPA route that posts code+state to /callback).
     'default_redirect_uri' => env('SSO_REDIRECT_URI'),
 
+    /*
+     | SINGLE SOURCE OF TRUTH for what SSO this platform can honestly do. The /sso/capabilities
+     | endpoint and the org-admin settings UI are BOTH driven from this map — nothing hard-codes the
+     | "SAML unsupported" stance in the controller or the frontend.
+     |
+     | SAML is UNSUPPORTED on purpose: the social/OIDC foundations verify signed OIDC id_tokens via
+     | JWKS, but there is NO XML-DSIG (signed SAML assertion) verification here. Accepting a SAML
+     | assertion we cannot cryptographically verify would be an authentication bypass, so the SAML
+     | ACS/metadata routes fail closed with 501 and never consume an assertion.
+     */
+    'capabilities' => [
+        'oidc' => [
+            'supported' => true,
+            'label' => 'OpenID Connect (OIDC)',
+        ],
+        'saml' => [
+            'supported' => false,
+            'label' => 'SAML 2.0',
+            'reason' => 'SAML SSO is not available — no signed-assertion (XML-DSIG) support; use OIDC.',
+        ],
+    ],
+
+    // Domain-mapping modes (mirrors the SsoDomainMode enum). auto_join: matching-domain sign-ins join
+    // the org; restrict: only listed domains may SSO into the org.
+    'domain_modes' => ['auto_join', 'restrict'],
+
     'providers' => [
 
         // Deterministic, network-free provider — the local/testing seam (see FakeSocialProvider).

@@ -18,10 +18,14 @@ use App\Platform\Identity\Http\Controllers\LeaveImpersonationController;
 use App\Platform\Identity\Listeners\SendEmailOtpOnRegistration;
 use App\Platform\Identity\Listeners\SendPhoneOtpOnRegistration;
 use App\Platform\Identity\Listeners\UpdateLastLoginTimestamp;
+use App\Platform\Identity\Models\SocialAccount;
+use App\Platform\Identity\Models\SsoDomainMapping;
 use App\Platform\Identity\Models\User;
 use App\Platform\Identity\Models\UserDevice;
 use App\Platform\Identity\Policies\DevicePolicy;
 use App\Platform\Identity\Policies\RolePolicy;
+use App\Platform\Identity\Policies\SocialAccountPolicy;
+use App\Platform\Identity\Policies\SsoDomainMappingPolicy;
 use App\Platform\Identity\Policies\UserPolicy;
 use App\Platform\Identity\Services\ImpersonationManager;
 use App\Platform\Identity\Tenancy\RoleBasedTenancyBypassPolicy;
@@ -44,7 +48,7 @@ use Spatie\Permission\Models\Role;
  */
 class IdentityServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php', 'routes/privacy.php', 'routes/developer.php'];
+    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php', 'routes/privacy.php', 'routes/developer.php', 'routes/sso.php'];
 
     protected function domainPath(): string
     {
@@ -56,6 +60,8 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
         User::class => UserPolicy::class,
         UserDevice::class => DevicePolicy::class,
         Role::class => RolePolicy::class,
+        SocialAccount::class => SocialAccountPolicy::class,
+        SsoDomainMapping::class => SsoDomainMappingPolicy::class,
     ];
 
     public function register(): void
