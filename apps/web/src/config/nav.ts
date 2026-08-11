@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
-  Presentation, LineChart, Film, Receipt, CreditCard,
+  Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload,
 } from "lucide-react";
 
 /**
@@ -47,6 +47,16 @@ export const organizationNav: NavItem[] = [
   { labelKey: "nav.organization", href: "/org", icon: Building2 },
   { labelKey: "nav.organizations", href: "/org/organizations", icon: Building },
   { labelKey: "nav.consulting", href: "/org/consulting", icon: Headset },
+];
+
+// Enterprise Manager Portal: self-serve org operation, gated to org manager/admin. Separate from the
+// marketing enterprise-lead form and from the broader organization surface.
+export const managerNav: NavItem[] = [
+  { labelKey: "nav.managerPortal", href: "/manager", icon: LayoutDashboard },
+  { labelKey: "nav.managerMembers", href: "/manager/members", icon: Users },
+  { labelKey: "nav.managerDepartments", href: "/manager/departments", icon: FolderTree },
+  { labelKey: "nav.managerSeats", href: "/manager/seats", icon: Armchair },
+  { labelKey: "nav.managerImport", href: "/manager/import", icon: Upload },
 ];
 
 export const crmNav: NavItem[] = [
