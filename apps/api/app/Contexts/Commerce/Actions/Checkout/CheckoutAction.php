@@ -12,6 +12,8 @@ use App\Contexts\Commerce\Events\OrderPlaced;
 use App\Contexts\Commerce\Exceptions\CartEmptyException;
 use App\Contexts\Commerce\Exceptions\CheckoutInProgressException;
 use App\Contexts\Commerce\Exceptions\CouponExhaustedException;
+use App\Contexts\Commerce\Exceptions\CouponExpiredException;
+use App\Contexts\Commerce\Exceptions\CouponInvalidException;
 use App\Contexts\Commerce\Models\Coupon;
 use App\Contexts\Commerce\Models\CouponRedemption;
 use App\Contexts\Commerce\Models\Invoice;
@@ -93,8 +95,16 @@ class CheckoutAction extends BaseAction
             if ($cartCoupon !== null) {
                 $coupon = Coupon::query()->whereKey($cartCoupon->getKey())->lockForUpdate()->first();
 
-                // Re-validate under the lock: the counter may have moved since it was applied.
-                if ($coupon === null || $coupon->isExhausted()) {
+                // Re-validate under the lock: since the coupon was applied to the cart it may have been
+                // deactivated or moved out of its validity window (a persisted cart.coupon_id would
+                // otherwise still discount at checkout — a revenue leak), or its counter may have moved.
+                if ($coupon === null || ! $coupon->is_active) {
+                    throw new CouponInvalidException;
+                }
+                if (! $coupon->isWithinWindow()) {
+                    throw new CouponExpiredException;
+                }
+                if ($coupon->isExhausted()) {
                     throw new CouponExhaustedException;
                 }
 
