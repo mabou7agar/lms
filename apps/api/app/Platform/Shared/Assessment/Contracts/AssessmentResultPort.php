@@ -32,4 +32,15 @@ interface AssessmentResultPort
      * @return list<int>
      */
     public function requiredAssessmentIdsForCourse(int $courseId): array;
+
+    /**
+     * Graded-attempt PASS/FAIL tallies across the given learner user ids — a bounded aggregate for the
+     * enterprise manager report. Counts graded attempts only (passed = true / passed = false; not-yet-
+     * graded null attempts are excluded from both). Empty ids => zeroes. The user ids MUST already be
+     * authorization-scoped (an organization roster) by the caller.
+     *
+     * @param  list<int>  $userIds
+     * @return array{passed: int, failed: int}
+     */
+    public function outcomeCountsForUsers(array $userIds): array;
 }

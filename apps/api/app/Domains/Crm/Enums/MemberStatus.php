@@ -6,6 +6,7 @@ enum MemberStatus: string
 {
     case Invited = 'invited';
     case Active = 'active';
+    case Inactive = 'inactive';
     case Removed = 'removed';
 
     /** @return array<int, string> */

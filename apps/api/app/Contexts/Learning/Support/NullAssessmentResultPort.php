@@ -28,4 +28,13 @@ final class NullAssessmentResultPort implements AssessmentResultPort
     {
         return [];
     }
+
+    /**
+     * @param  list<int>  $userIds
+     * @return array{passed: int, failed: int}
+     */
+    public function outcomeCountsForUsers(array $userIds): array
+    {
+        return ['passed' => 0, 'failed' => 0];
+    }
 }

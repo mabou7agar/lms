@@ -33,4 +33,16 @@ class CertificateStatusAdapter implements CertificateStatusPort
             ->where('status', CertificateStatus::Issued->value)
             ->count();
     }
+
+    public function issuedCountForUsers(array $userIds): int
+    {
+        if ($userIds === []) {
+            return 0;
+        }
+
+        return Certificate::query()
+            ->whereIn('user_id', $userIds)
+            ->where('status', CertificateStatus::Issued->value)
+            ->count();
+    }
 }

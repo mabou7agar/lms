@@ -8,14 +8,20 @@ use App\Domains\Crm\Listeners\LogConsultingRequestActivity;
 use App\Domains\Crm\Listeners\LogLeadCreatedActivity;
 use App\Domains\Crm\Models\ConsultingRequest;
 use App\Domains\Crm\Models\CrmTask;
+use App\Domains\Crm\Models\Department;
 use App\Domains\Crm\Models\Lead;
 use App\Domains\Crm\Models\Opportunity;
 use App\Domains\Crm\Models\Organization;
+use App\Domains\Crm\Models\OrganizationMember;
+use App\Domains\Crm\Models\Team;
 use App\Domains\Crm\Policies\ConsultingRequestPolicy;
 use App\Domains\Crm\Policies\CrmTaskPolicy;
+use App\Domains\Crm\Policies\DepartmentPolicy;
 use App\Domains\Crm\Policies\LeadPolicy;
 use App\Domains\Crm\Policies\OpportunityPolicy;
+use App\Domains\Crm\Policies\OrganizationMemberPolicy;
 use App\Domains\Crm\Policies\OrganizationPolicy;
+use App\Domains\Crm\Policies\TeamPolicy;
 use App\Domains\Crm\Ports\SeatProvisioningAdapter;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
@@ -30,7 +36,7 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 class CrmServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/crm.php', 'routes/crm_public.php'];
+    protected array $routeFiles = ['routes/crm.php', 'routes/crm_public.php', 'routes/enterprise.php'];
 
     /** @var array<class-string, class-string> */
     protected array $policies = [
@@ -39,6 +45,9 @@ class CrmServiceProvider extends BaseDomainServiceProvider
         Opportunity::class => OpportunityPolicy::class,
         CrmTask::class => CrmTaskPolicy::class,
         ConsultingRequest::class => ConsultingRequestPolicy::class,
+        OrganizationMember::class => OrganizationMemberPolicy::class,
+        Department::class => DepartmentPolicy::class,
+        Team::class => TeamPolicy::class,
     ];
 
     protected function domainPath(): string

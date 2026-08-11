@@ -14,7 +14,10 @@ class OrganizationMember extends Model
     use BelongsToTenant;
     use HasPublicId;
 
-    protected $fillable = ['organization_id', 'user_id', 'email', 'role', 'status', 'invited_at', 'joined_at'];
+    protected $fillable = [
+        'organization_id', 'department_id', 'user_id', 'email', 'role', 'status',
+        'invited_at', 'joined_at', 'invitation_token', 'invitation_expires_at',
+    ];
 
     protected function casts(): array
     {
@@ -23,11 +26,24 @@ class OrganizationMember extends Model
             'status' => MemberStatus::class,
             'invited_at' => 'datetime',
             'joined_at' => 'datetime',
+            'invitation_expires_at' => 'datetime',
         ];
     }
+
+    protected $hidden = ['invitation_token'];
 
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === MemberStatus::Active;
     }
 }

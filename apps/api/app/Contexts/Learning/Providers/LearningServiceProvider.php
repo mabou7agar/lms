@@ -5,6 +5,7 @@ namespace App\Contexts\Learning\Providers;
 use App\Contexts\Learning\Adapters\CourseEnrollmentAdapter;
 use App\Contexts\Learning\Adapters\MediaEnrollmentAdapter;
 use App\Contexts\Learning\Analytics\EnrollmentStatsAdapter;
+use App\Contexts\Learning\Analytics\ManagerLearningReport;
 use App\Contexts\Learning\Analytics\WatchTimeAdapter;
 use App\Contexts\Learning\Events\LessonProgressRecorded;
 use App\Contexts\Learning\Listeners\UpdateLearningSession;
@@ -16,6 +17,7 @@ use App\Contexts\Learning\Support\NullCourseNavigationPort;
 use App\Contexts\Learning\Support\NullLessonAvailabilityPort;
 use App\Contexts\Learning\Support\NullLessonRequiredBlocksPort;
 use App\Platform\Shared\Assessment\Contracts\AssessmentResultPort;
+use App\Platform\Shared\Enterprise\Contracts\ManagerReportPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use App\Platform\Shared\Learning\Contracts\CourseNavigationPort;
@@ -69,6 +71,11 @@ class LearningServiceProvider extends BaseDomainServiceProvider
         // video-progress, lesson-progress and learning-session tables; the instructor portal reads
         // them only through this port.
         $this->app->bind(WatchTimePort::class, WatchTimeAdapter::class);
+
+        // Enterprise manager learning report consumed by the CRM enterprise portal through this Shared
+        // port. Learning owns the enrollment/progress tables and reads certificates + assessment
+        // outcomes via their own Shared ports, so no cross-context model is imported.
+        $this->app->bind(ManagerReportPort::class, ManagerLearningReport::class);
 
         // Enrollment surface published to other contexts (Assessment: roster + entitlement).
         $this->app->bind(CourseEnrollmentPort::class, CourseEnrollmentAdapter::class);

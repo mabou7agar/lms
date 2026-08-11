@@ -53,4 +53,31 @@ class AssessmentResultAdapter implements AssessmentResultPort
             ->values()
             ->all();
     }
+
+    /**
+     * @param  list<int>  $userIds
+     * @return array{passed: int, failed: int}
+     */
+    public function outcomeCountsForUsers(array $userIds): array
+    {
+        if ($userIds === []) {
+            return ['passed' => 0, 'failed' => 0];
+        }
+
+        // ONE grouped aggregate over graded attempts (passed is non-null) — no per-learner query.
+        $row = AssessmentAttempt::query()
+            ->whereIn('user_id', $userIds)
+            ->whereNotNull('passed')
+            ->toBase()
+            ->selectRaw('coalesce(sum(case when passed = ? then 1 else 0 end), 0) as passed', [true])
+            ->selectRaw('coalesce(sum(case when passed = ? then 1 else 0 end), 0) as failed', [false])
+            ->first();
+
+        $data = (array) ($row ?? []);
+
+        return [
+            'passed' => (int) ($data['passed'] ?? 0),
+            'failed' => (int) ($data['failed'] ?? 0),
+        ];
+    }
 }

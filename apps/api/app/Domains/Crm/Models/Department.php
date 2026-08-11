@@ -15,7 +15,7 @@ class Department extends Model
 
     protected $table = 'crm_departments';
 
-    protected $fillable = ['organization_id', 'name'];
+    protected $fillable = ['organization_id', 'name', 'manager_id'];
 
     public function organization(): BelongsTo
     {
@@ -25,5 +25,17 @@ class Department extends Model
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(OrganizationMember::class);
+    }
+
+    public function managerId(): ?int
+    {
+        $id = $this->getAttribute('manager_id');
+
+        return $id === null ? null : (int) $id;
     }
 }

@@ -19,4 +19,13 @@ interface CertificateStatusPort
 
     /** Count of VALID certificates issued for the course. */
     public function issuedCountForCourse(int $courseId): int;
+
+    /**
+     * Count of VALID (issued, non-revoked) certificates held across the given learner user ids — a
+     * bounded aggregate for the enterprise manager report. Empty ids => 0. The user ids MUST already
+     * be authorization-scoped (an organization roster) by the caller.
+     *
+     * @param  list<int>  $userIds
+     */
+    public function issuedCountForUsers(array $userIds): int;
 }
