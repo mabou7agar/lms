@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Platform\AI\Http\Controllers\AdminAssistantController;
 use App\Platform\AI\Http\Controllers\CopilotController;
 use App\Platform\AI\Http\Controllers\TutorController;
 use Illuminate\Support\Facades\Route;
@@ -11,10 +12,13 @@ use Illuminate\Support\Facades\Route;
  | resolve at /api/v1/ai/*. Both require an authenticated Sanctum user; role/enrollment/ownership
  | scoping is enforced inside the controllers, and governance + quota inside the AI foundation.
  |
- |  - POST /ai/tutor    STUDENT AI TUTOR   — learner must be enrolled in the course (403 otherwise).
- |  - POST /ai/copilot  INSTRUCTOR COPILOT — instructor must own the course (404 otherwise).
+ |  - POST /ai/tutor            STUDENT AI TUTOR      — learner must be enrolled in the course (403).
+ |  - POST /ai/copilot          INSTRUCTOR COPILOT    — instructor must own the course (404 otherwise).
+ |  - POST /ai/admin-assistant  ADMIN AI ANALYTICS    — administrator holding analytics.view (403 otherwise);
+ |                                                      money figures require analytics.revenue.view.
  */
 Route::prefix('v1/ai')->middleware('auth:sanctum')->group(function (): void {
     Route::post('tutor', [TutorController::class, 'ask']);
     Route::post('copilot', [CopilotController::class, 'assist']);
+    Route::post('admin-assistant', [AdminAssistantController::class, 'ask']);
 });

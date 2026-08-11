@@ -13,6 +13,7 @@ enum AiFeature: string
 {
     case Tutor = 'tutor';
     case Copilot = 'copilot';
+    case AdminAssistant = 'admin_assistant';
     case Analytics = 'analytics';
     case Search = 'search';
     case Embedding = 'embedding';

@@ -15,7 +15,9 @@ use App\Contexts\Analytics\Models\ReportDefinition;
 use App\Contexts\Analytics\Policies\DashboardDefinitionPolicy;
 use App\Contexts\Analytics\Policies\ExportJobPolicy;
 use App\Contexts\Analytics\Policies\ReportDefinitionPolicy;
+use App\Contexts\Analytics\Services\AnalyticsSummaryProvider;
 use App\Contexts\Analytics\Services\ReportCache;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsSummaryPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
 
@@ -54,6 +56,10 @@ class AnalyticsServiceProvider extends BaseDomainServiceProvider
         $this->app->bind(Metric::class, SnapshotMetric::class);
         $this->app->bind(ExportWriter::class, CsvExportWriter::class);
         $this->app->singleton(ExportWriterManager::class, fn ($app) => new ExportWriterManager($app));
+
+        // Shared read port: exposes an aggregate, tenant-scoped KPI summary to the Platform AI layer
+        // (the Admin AI Analytics Assistant) WITHOUT that layer importing the Analytics context.
+        $this->app->bind(AnalyticsSummaryPort::class, AnalyticsSummaryProvider::class);
     }
 
     protected function bootDomain(): void

@@ -102,6 +102,7 @@ return [
     'features' => [
         'tutor' => (bool) env('AI_FEATURE_TUTOR', true),
         'copilot' => (bool) env('AI_FEATURE_COPILOT', true),
+        'admin_assistant' => (bool) env('AI_FEATURE_ADMIN_ASSISTANT', true),
         'analytics' => (bool) env('AI_FEATURE_ANALYTICS', true),
         'search' => (bool) env('AI_FEATURE_SEARCH', true),
         'embedding' => (bool) env('AI_FEATURE_EMBEDDING', true),
@@ -114,6 +115,14 @@ return [
     'retrieval' => [
         'tutor_snippets' => (int) env('AI_TUTOR_SNIPPETS', 5),
         'copilot_snippets' => (int) env('AI_COPILOT_SNIPPETS', 6),
+    ],
+
+    // Admin AI Analytics Assistant grounding knobs. The AGGREGATE KPI summary (via the Shared
+    // AnalyticsSummaryPort) covers the trailing window and lists at most this many top courses.
+    // These bound the grounded context only; tenant scope + money gating are enforced elsewhere.
+    'assistant' => [
+        'summary_window_days' => (int) env('AI_ASSISTANT_SUMMARY_WINDOW_DAYS', 30),
+        'top_courses' => (int) env('AI_ASSISTANT_TOP_COURSES', 5),
     ],
 
     // Per-tenant enable/disable: [organizationId => bool]. Absent => enabled.

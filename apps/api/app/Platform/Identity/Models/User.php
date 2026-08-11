@@ -126,6 +126,14 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
         return $this->checkPermissionTo($permission, 'web');
     }
 
+    /** Actor: the principal's organization (tenant) id, or null when unaffiliated. */
+    public function organizationId(): ?int
+    {
+        $value = $this->getAttribute('organization_id');
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
     /**
      * Actor: boundary-safe projection. Reads only public display fields; never exposes the
      * $hidden secrets or account/PII internals. Uses the loaded profile relation when available.

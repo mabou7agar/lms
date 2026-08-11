@@ -43,6 +43,22 @@ final class AiPromptSeeder extends Seeder
                 .'Provide your suggestion as ready-to-edit draft text.',
             variables: ['task', 'brief', 'context'],
         );
+
+        $this->ensure(
+            key: 'admin.analytics',
+            purpose: 'Answer an administrator\'s analytics question grounded strictly in an aggregate KPI summary.',
+            system: 'You are an AI analytics assistant for platform administrators. Answer the '
+                .'administrator using ONLY the aggregate KPI summary provided below. The summary '
+                .'contains organization-level totals for a tenant scope — it NEVER contains data about '
+                .'any individual learner, and you must never infer, invent, or fabricate figures that '
+                .'are not present in it. If a figure the administrator asks for is not in the summary, '
+                .'say it is not available for this scope or period. Never mention revenue or any money '
+                .'figure unless it appears in the summary. Refer to figures by their metric name.',
+            template: "Aggregate KPI summary (scope: {{ scope }}, period {{ from }} to {{ to }}):\n{{ summary }}\n\n"
+                ."Administrator question:\n{{ question }}\n\n"
+                .'Answer using only the summary above, and state which metrics you used.',
+            variables: ['scope', 'from', 'to', 'summary', 'question'],
+        );
     }
 
     /**

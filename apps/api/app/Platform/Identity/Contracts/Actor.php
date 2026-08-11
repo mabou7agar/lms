@@ -42,6 +42,13 @@ interface Actor extends Authenticatable, Authorizable
      */
     public function hasPermission(string $permission): bool;
 
+    /**
+     * The principal's organization (tenant) id, or null when they belong to no organization (a
+     * platform super-admin or a personal learner). Lets tenant-scoped features resolve the caller's
+     * tenant without importing the User model.
+     */
+    public function organizationId(): ?int;
+
     /** Convenience projection of this principal to a boundary-safe UserRef. */
     public function toUserRef(): UserRef;
 }
