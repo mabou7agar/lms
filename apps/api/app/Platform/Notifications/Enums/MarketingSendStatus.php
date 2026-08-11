@@ -8,6 +8,10 @@ namespace App\Platform\Notifications\Enums;
  */
 enum MarketingSendStatus: string
 {
+    // In-flight claim written BEFORE the provider call so a crash mid-send can never double-send. The
+    // runner overwrites it with the real outcome once the send returns, and treats a leftover Sending
+    // row (from a crashed send) as already handled — the step is advanced, never re-sent.
+    case Sending = 'sending';
     case Sent = 'sent';
     // Inside quiet hours: NOT dropped — the enrollment is re-scheduled to the window end and this
     // send is retried then. Carries a deferred_until on the send row.

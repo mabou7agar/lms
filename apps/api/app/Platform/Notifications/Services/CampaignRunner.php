@@ -94,6 +94,11 @@ class CampaignRunner extends BaseService
             hasConsent: $enrollment->consent_snapshot,
         );
 
+        // Claim the (enrollment, step) as in-flight BEFORE the provider call. A crash between the send
+        // and the outcome write can then never double-send: on the next tick the guard above sees a
+        // non-Deferred row (this Sending claim) and treats the step as already handled.
+        $this->recordSend($enrollment, $step, MarketingSendStatus::Sending, null, null);
+
         $result = $this->dispatcher->send(
             $enrollment->organization_id,
             $recipient,

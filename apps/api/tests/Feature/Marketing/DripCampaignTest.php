@@ -135,6 +135,7 @@ it('does not reload steps per recipient — bounded queries on the advance (no N
     // Steps and campaigns are eager-loaded ONCE regardless of step count or recipient count.
     expect($stepQueries)->toBe(1)
         ->and($campaignQueries)->toBe(1)
-        // Total stays bounded (well below the 3*8 an N+1 over steps would add).
-        ->and(count($log))->toBeLessThanOrEqual(40);
+        // Total stays bounded (well below the 3*8 an N+1 over steps would add). Includes the +1
+        // in-flight "Sending" claim written per advanced step (the double-send crash guard).
+        ->and(count($log))->toBeLessThanOrEqual(48);
 });
