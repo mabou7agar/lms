@@ -16,9 +16,9 @@ describe("Marketing demo content", () => {
 
     const play = screen.getAllByRole("button", { name: /Play preview/i })[0];
     await userEvent.click(play);
-    const iframe = document.querySelector('iframe[title="Course preview"]') as HTMLIFrameElement | null;
-    expect(iframe).not.toBeNull();
-    expect(iframe?.src).toContain("youtube-nocookie.com/embed/");
+    // The preview iframe mounts on a state update after the click — await it (deterministic, no race).
+    const iframe = (await screen.findByTitle("Course preview")) as HTMLIFrameElement;
+    expect(iframe.src).toContain("youtube-nocookie.com/embed/");
   });
 
   it("renders a service page hero + features + highlights", () => {

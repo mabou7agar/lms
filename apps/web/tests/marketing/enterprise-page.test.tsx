@@ -13,11 +13,11 @@ import { EnterprisePage, ENTERPRISE_FAQ } from "@/components/marketing/enterpris
 beforeEach(() => trackMock.mockClear());
 
 describe("enterprise page", () => {
-  it("fires page_view once and routes the demo CTA to the real contact fallback", () => {
+  it("fires page_view once and routes the demo CTA to the in-page lead form", () => {
     renderWithI18n(<EnterprisePage />);
     expect(calls().filter((c) => c[0] === "page_view").length).toBe(1);
     const demo = screen.getAllByRole("link", { name: /Request a demo/i })[0];
-    expect(demo).toHaveAttribute("href", "/contact");
+    expect(demo).toHaveAttribute("href", "#request-demo");
   });
 
   it("emits enterprise_demo_started on the demo CTA and NEVER enterprise_demo_submitted", async () => {

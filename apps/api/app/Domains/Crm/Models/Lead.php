@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lead extends Model
@@ -32,11 +33,24 @@ class Lead extends Model
     protected $fillable = [
         'pipeline_id', 'stage_id', 'company_id', 'contact_id', 'owner_id',
         'name', 'email', 'phone', 'source', 'status', 'value_minor', 'currency',
+        'company_name', 'request_type', 'company_size', 'country',
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'gclid', 'referrer', 'landing_path',
+        'next_follow_up_at', 'last_contacted_at', 'lead_score',
+        'marketing_consent', 'consent_version', 'consented_at', 'consent_ip',
     ];
 
     protected function casts(): array
     {
-        return ['status' => LeadStatus::class, 'value_minor' => 'integer'];
+        return [
+            'status' => LeadStatus::class,
+            'value_minor' => 'integer',
+            'lead_score' => 'integer',
+            'marketing_consent' => 'boolean',
+            'next_follow_up_at' => 'datetime',
+            'last_contacted_at' => 'datetime',
+            'consented_at' => 'datetime',
+        ];
     }
 
     public function pipeline(): BelongsTo
@@ -47,6 +61,12 @@ class Lead extends Model
     public function stage(): BelongsTo
     {
         return $this->belongsTo(Stage::class);
+    }
+
+    /** @return HasMany<Opportunity, $this> */
+    public function opportunities(): HasMany
+    {
+        return $this->hasMany(Opportunity::class);
     }
 
     /**

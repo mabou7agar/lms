@@ -5,7 +5,11 @@ namespace App\Domains\Crm\Policies;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Shared\Policies\BasePolicy;
 
-class LeadPolicy extends BasePolicy
+/**
+ * Opportunities are part of the sales pipeline; they are governed by the same "manage leads"
+ * permission as leads (a sales rep who works leads also works their opportunities).
+ */
+class OpportunityPolicy extends BasePolicy
 {
     public function before(mixed $user, string $ability): ?bool
     {
@@ -27,12 +31,6 @@ class LeadPolicy extends BasePolicy
     }
 
     public function update(Actor $user): bool
-    {
-        return $user->can('crm.leads.manage');
-    }
-
-    /** Convert a lead (to a contact / spin up an opportunity) and move it through the pipeline. */
-    public function convert(Actor $user): bool
     {
         return $user->can('crm.leads.manage');
     }

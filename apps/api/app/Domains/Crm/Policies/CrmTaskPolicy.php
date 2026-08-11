@@ -5,7 +5,10 @@ namespace App\Domains\Crm\Policies;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Shared\Policies\BasePolicy;
 
-class LeadPolicy extends BasePolicy
+/**
+ * CRM tasks (calls/emails/meetings/follow-ups) are sales activity; gated by "manage leads".
+ */
+class CrmTaskPolicy extends BasePolicy
 {
     public function before(mixed $user, string $ability): ?bool
     {
@@ -16,23 +19,12 @@ class LeadPolicy extends BasePolicy
         return null;
     }
 
-    public function viewAny(Actor $user): bool
-    {
-        return $user->can('crm.view') || $user->can('crm.leads.manage');
-    }
-
     public function create(Actor $user): bool
     {
         return $user->can('crm.leads.manage');
     }
 
     public function update(Actor $user): bool
-    {
-        return $user->can('crm.leads.manage');
-    }
-
-    /** Convert a lead (to a contact / spin up an opportunity) and move it through the pipeline. */
-    public function convert(Actor $user): bool
     {
         return $user->can('crm.leads.manage');
     }

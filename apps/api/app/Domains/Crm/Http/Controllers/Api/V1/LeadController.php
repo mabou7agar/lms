@@ -2,10 +2,15 @@
 
 namespace App\Domains\Crm\Http\Controllers\Api\V1;
 
+use App\Domains\Crm\Actions\Lead\ConvertLeadAction;
 use App\Domains\Crm\Actions\Lead\CreateLeadAction;
+use App\Domains\Crm\Actions\Lead\MoveLeadStageAction;
 use App\Domains\Crm\Http\Requests\CreateLeadRequest;
+use App\Domains\Crm\Http\Requests\MoveStageRequest;
+use App\Domains\Crm\Http\Resources\ContactResource;
 use App\Domains\Crm\Http\Resources\LeadResource;
 use App\Domains\Crm\Models\Lead;
+use App\Domains\Crm\Models\Stage;
 use App\Domains\Crm\Services\CrmSearchService;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -31,5 +36,27 @@ class LeadController extends Controller
         $lead = $action->execute($request->validated(), $request->user()->id);
 
         return ApiResponse::created(new LeadResource($lead->load('stage')), 'Lead created.');
+    }
+
+    /** Move a lead to another stage of its pipeline. */
+    public function moveStage(MoveStageRequest $request, Lead $lead, MoveLeadStageAction $action): JsonResponse
+    {
+        Gate::authorize('update', $lead);
+
+        $stage = Stage::where('public_id', $request->validated()['stage'])->firstOrFail();
+
+        $lead = $action->execute($lead, $stage);
+
+        return ApiResponse::updated(new LeadResource($lead->load('stage')), 'Lead stage updated.');
+    }
+
+    /** Convert a qualified lead into a contact (guarded against double-conversion). */
+    public function convert(Lead $lead, ConvertLeadAction $action): JsonResponse
+    {
+        Gate::authorize('convert', $lead);
+
+        $contact = $action->execute($lead);
+
+        return ApiResponse::created(new ContactResource($contact), 'Lead converted.');
     }
 }

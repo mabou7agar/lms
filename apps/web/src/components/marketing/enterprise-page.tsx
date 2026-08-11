@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/landing/reveal";
 import { messaging, localized } from "@/config/messaging";
 import { track } from "@/lib/analytics/track";
+import { EnterpriseLeadForm } from "@/components/marketing/enterprise-lead-form";
 
-/** Contact route used as the real, honest fallback (no public lead-submission endpoint exists yet). */
-const CONTACT = "/contact";
+/** In-page anchor to the real enterprise-lead form (public POST /api/v1/public/leads). */
+const REQUEST_DEMO = "#request-demo";
 
 const T = {
   eyebrow: { en: "For organizations", ar: "للمؤسسات" },
@@ -105,7 +106,7 @@ export function EnterprisePage() {
           <h1 className="mt-3 max-w-3xl font-serif text-3xl font-semibold tracking-tight sm:text-4xl">{T.title[locale]}</h1>
           <p className="mt-4 max-w-2xl text-muted-foreground">{T.lead[locale]}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Button asChild size="lg"><Link href={CONTACT} onClick={onPrimary}>{T.primary[locale]}<ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden /></Link></Button>
+            <Button asChild size="lg"><Link href={REQUEST_DEMO} onClick={onPrimary}>{T.primary[locale]}<ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden /></Link></Button>
             <Button asChild size="lg" variant="outline"><Link href="/compare" onClick={onSecondary}>{T.secondary[locale]}</Link></Button>
           </div>
         </Reveal>
@@ -200,13 +201,13 @@ export function EnterprisePage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="rounded-3xl border border-primary/20 bg-primary/[0.04] p-8 text-center sm:p-12">
+      {/* Final CTA — the real enterprise-lead form (public POST /api/v1/public/leads) */}
+      <section id="request-demo" className="scroll-mt-24 rounded-3xl border border-primary/20 bg-primary/[0.04] p-8 sm:p-12">
         <Reveal>
-          <h2 className="font-serif text-2xl font-semibold sm:text-3xl">{T.finalTitle[locale]}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">{T.finalLead[locale]}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg"><Link href={CONTACT} onClick={onPrimary}>{T.primary[locale]}<ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden /></Link></Button>
+          <h2 className="text-center font-serif text-2xl font-semibold sm:text-3xl">{T.finalTitle[locale]}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-muted-foreground">{T.finalLead[locale]}</p>
+          <div className="mx-auto mt-8 max-w-2xl">
+            <EnterpriseLeadForm />
           </div>
         </Reveal>
       </section>

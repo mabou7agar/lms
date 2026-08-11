@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Domains\Crm\Filament\Resources\ContactResource\Pages;
+
+use App\Domains\Crm\Filament\Resources\ContactResource;
+use Filament\Resources\Pages\CreateRecord;
+
+class CreateContact extends CreateRecord
+{
+    protected static string $resource = ContactResource::class;
+}

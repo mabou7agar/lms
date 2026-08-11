@@ -7,28 +7,37 @@ use App\Domains\Crm\Events\LeadCreated;
 use App\Domains\Crm\Listeners\LogConsultingRequestActivity;
 use App\Domains\Crm\Listeners\LogLeadCreatedActivity;
 use App\Domains\Crm\Models\ConsultingRequest;
+use App\Domains\Crm\Models\CrmTask;
 use App\Domains\Crm\Models\Lead;
+use App\Domains\Crm\Models\Opportunity;
 use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Policies\ConsultingRequestPolicy;
+use App\Domains\Crm\Policies\CrmTaskPolicy;
 use App\Domains\Crm\Policies\LeadPolicy;
+use App\Domains\Crm\Policies\OpportunityPolicy;
 use App\Domains\Crm\Policies\OrganizationPolicy;
 use App\Domains\Crm\Ports\SeatProvisioningAdapter;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * Wires the CRM module: config, migrations, routes, policies, and activity-logging listeners.
- * CRM depends only on Identity — never Learning or Commerce.
+ * Wires the CRM module: config, migrations, routes, policies, rate limiters, and activity-logging
+ * listeners. CRM depends only on Identity — never Learning or Commerce.
  */
 class CrmServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/crm.php'];
+    protected array $routeFiles = ['routes/crm.php', 'routes/crm_public.php'];
 
     /** @var array<class-string, class-string> */
     protected array $policies = [
         Organization::class => OrganizationPolicy::class,
         Lead::class => LeadPolicy::class,
+        Opportunity::class => OpportunityPolicy::class,
+        CrmTask::class => CrmTaskPolicy::class,
         ConsultingRequest::class => ConsultingRequestPolicy::class,
     ];
 
@@ -51,5 +60,14 @@ class CrmServiceProvider extends BaseDomainServiceProvider
     {
         Event::listen(LeadCreated::class, LogLeadCreatedActivity::class);
         Event::listen(ConsultingRequestCreated::class, LogConsultingRequestActivity::class);
+
+        // Public enterprise-lead intake: throttle guest writes by IP + submitted email so a single
+        // origin cannot flood the pipeline. Sized from config (default 10/min).
+        RateLimiter::for('crm-public-lead', static function (Request $request): Limit {
+            $perMinute = (int) config('crm.public_lead.rate_limit_per_minute', 10);
+            $email = mb_strtolower(trim((string) $request->input('work_email', '')));
+
+            return Limit::perMinute($perMinute)->by($request->ip().'|'.$email);
+        });
     }
 }
