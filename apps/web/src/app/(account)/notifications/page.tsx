@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 import { Bell, Check, ShieldAlert } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
@@ -55,7 +55,7 @@ function PreferencesForm() {
   const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC";
   const timezones = useMemo(() => timezoneOptions(), []);
 
-  const { register, handleSubmit, watch } = useForm<PrefValues>({
+  const { register, handleSubmit, control } = useForm<PrefValues>({
     defaultValues: { locale: user?.locale ?? "en", digest_frequency: "daily", timezone: tz },
   });
 
@@ -64,7 +64,8 @@ function PreferencesForm() {
   const [quietEnabled, setQuietEnabled] = useState(false);
   const [quietStart, setQuietStart] = useState("22:00");
   const [quietEnd, setQuietEnd] = useState("07:00");
-  const selectedTz = watch("timezone");
+  // useWatch (not watch()) — the React-Compiler-compatible subscription for the selected timezone.
+  const selectedTz = useWatch({ control, name: "timezone", defaultValue: tz });
 
   const onSubmit = handleSubmit((v) =>
     update.mutate(
