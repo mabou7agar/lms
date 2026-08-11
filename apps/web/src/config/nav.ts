@@ -3,6 +3,7 @@ import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
   Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload,
+  ShieldCheck, KeyRound,
 } from "lucide-react";
 
 /**
@@ -23,6 +24,7 @@ export const learningNav: NavItem[] = [
 // "Settings" domain, so no Settings nav item is exposed (avoids a dead/stub destination).
 export const accountNav: NavItem[] = [
   { labelKey: "nav.profile", href: "/profile", icon: User },
+  { labelKey: "nav.security", href: "/security", icon: ShieldCheck },
   { labelKey: "nav.notifications", href: "/notifications", icon: Bell },
 ];
 
@@ -57,6 +59,7 @@ export const managerNav: NavItem[] = [
   { labelKey: "nav.managerDepartments", href: "/manager/departments", icon: FolderTree },
   { labelKey: "nav.managerSeats", href: "/manager/seats", icon: Armchair },
   { labelKey: "nav.managerImport", href: "/manager/import", icon: Upload },
+  { labelKey: "nav.managerSso", href: "/manager/sso", icon: KeyRound },
 ];
 
 export const crmNav: NavItem[] = [
