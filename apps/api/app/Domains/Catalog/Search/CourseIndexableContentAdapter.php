@@ -74,6 +74,7 @@ final class CourseIndexableContentAdapter implements IndexableContentPort
                     chunkText: $text,
                     version: $version,
                     chunkIndex: count($chunks),
+                    courseId: $id,
                 );
             }
         }

@@ -11,6 +11,7 @@ use App\Domains\Catalog\Database\Seeders\CatalogSeeder;
 use App\Domains\Certification\Database\Seeders\CertificationSeeder;
 use App\Domains\Crm\Database\Seeders\CrmSeeder;
 use App\Domains\Live\Database\Seeders\LiveSeeder;
+use App\Platform\AI\Database\Seeders\AiPromptSeeder;
 use App\Platform\Branding\Database\Seeders\BrandingSeeder;
 use App\Platform\Features\Database\Seeders\FeatureFlagsSeeder;
 use App\Platform\Homepage\Database\Seeders\HomepageSeeder;
@@ -37,6 +38,8 @@ class DatabaseSeeder extends Seeder
             CrmSeeder::class,
             AnalyticsSeeder::class,
             NotificationsSeeder::class,
+            // Versioned library prompts the AI tutor + copilot resolve at runtime (idempotent).
+            AiPromptSeeder::class,
             StaffRoleTemplatesSeeder::class,
             HomepageSeeder::class,
             BrandingSeeder::class,

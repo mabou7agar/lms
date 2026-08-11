@@ -7,6 +7,7 @@ use App\Platform\AI\AiProviderManager;
 use App\Platform\AI\Contracts\ChatModel;
 use App\Platform\AI\Contracts\EmbeddingModel;
 use App\Platform\AI\Governance\AiGovernance;
+use App\Platform\AI\Governance\AssessmentAnswerGuard;
 use App\Platform\AI\Governance\ContentLabeler;
 use App\Platform\AI\Governance\GradingPolicy;
 use App\Platform\AI\Governance\ModelRegistry;
@@ -17,6 +18,7 @@ use App\Platform\AI\Metering\AiUsageSummary;
 use App\Platform\AI\Metering\CostCalculator;
 use App\Platform\AI\Prompts\PromptLibrary;
 use App\Platform\AI\Support\TokenEstimator;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -44,6 +46,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(ContentLabeler::class);
         $this->app->singleton(PromptInjectionGuard::class);
         $this->app->singleton(GradingPolicy::class);
+        $this->app->singleton(AssessmentAnswerGuard::class);
         $this->app->singleton(PromptLibrary::class);
         $this->app->singleton(AiUsageRecorder::class);
         $this->app->singleton(AiQuotaGuard::class);
@@ -59,5 +62,11 @@ class AiServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
+        // Tutor + copilot HTTP endpoints. Mounted under the framework 'api' group so they resolve at
+        // /api/v1/ai/*, mirroring how SearchServiceProvider mounts the search routes.
+        Route::prefix('api')->middleware('api')->group(function (): void {
+            $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
+        });
     }
 }

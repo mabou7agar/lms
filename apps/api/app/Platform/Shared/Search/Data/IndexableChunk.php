@@ -38,5 +38,11 @@ final class IndexableChunk
         public readonly int $version,
         /** Ordinal of this chunk within its source (0-based). */
         public readonly int $chunkIndex = 0,
+        /**
+         * Owning course id, so retrieval can be confined to a single course (RAG tutor/copilot). For a
+         * course chunk this is the course's own id; for a lesson/Q&A chunk it is the course the lesson
+         * or question belongs to. Null when the content is not course-scoped.
+         */
+        public readonly ?int $courseId = null,
     ) {}
 }

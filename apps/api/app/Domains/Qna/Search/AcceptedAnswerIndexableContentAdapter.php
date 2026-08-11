@@ -88,6 +88,7 @@ final class AcceptedAnswerIndexableContentAdapter implements IndexableContentPor
             chunkText: $text,
             version: $updatedAt instanceof DateTimeInterface ? $updatedAt->getTimestamp() : 1,
             chunkIndex: 0,
+            courseId: is_numeric($question->getAttribute('course_id')) ? (int) $question->getAttribute('course_id') : null,
         )];
     }
 

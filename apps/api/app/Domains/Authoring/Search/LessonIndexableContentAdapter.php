@@ -91,6 +91,7 @@ final class LessonIndexableContentAdapter implements IndexableContentPort
             chunkText: $text,
             version: $updatedAt instanceof DateTimeInterface ? $updatedAt->getTimestamp() : 1,
             chunkIndex: 0,
+            courseId: (int) $courseId,
         )];
     }
 

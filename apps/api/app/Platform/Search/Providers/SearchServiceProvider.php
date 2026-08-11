@@ -9,10 +9,12 @@ use App\Platform\Search\Console\BackfillSearchIndexCommand;
 use App\Platform\Search\Contracts\VectorStore;
 use App\Platform\Search\Ingestion\IngestionService;
 use App\Platform\Search\Ingestion\QueueingSearchIndexer;
+use App\Platform\Search\Retrieval\HybridKnowledgeRetriever;
 use App\Platform\Search\Search\HybridSearchService;
 use App\Platform\Search\Stores\PgVectorStore;
 use App\Platform\Search\Stores\PortableVectorStore;
 use App\Platform\Search\Support\TextCanonicalizer;
+use App\Platform\Shared\Search\Contracts\KnowledgeRetrievalPort;
 use App\Platform\Shared\Search\Contracts\SearchIndexer;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -59,6 +61,10 @@ final class SearchServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(HybridSearchService::class);
+
+        // The Shared read-side seam AI features (tutor/copilot) pull RAG grounding through, so they
+        // never import a Search internal. Search implements it over the hybrid retriever.
+        $this->app->singleton(KnowledgeRetrievalPort::class, HybridKnowledgeRetriever::class);
 
         // The write-side hook a content domain calls; replaces Shared's NullSearchIndexer default.
         $this->app->bind(SearchIndexer::class, QueueingSearchIndexer::class);

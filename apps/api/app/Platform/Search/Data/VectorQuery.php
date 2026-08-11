@@ -15,11 +15,13 @@ final class VectorQuery
      * @param  list<string>  $visibilities  allowed audience classes (public|authenticated|private)
      * @param  list<string>  $locales  requested locales ('*' is always additionally matched)
      * @param  list<string>  $sourceTypes  restrict to these source kinds; [] = all
+     * @param  int|null  $courseId  confine the read to a single course's chunks; null = all courses
      */
     public function __construct(
         public readonly ?int $organizationId,
         public readonly array $visibilities,
         public readonly array $locales = [],
         public readonly array $sourceTypes = [],
+        public readonly ?int $courseId = null,
     ) {}
 }

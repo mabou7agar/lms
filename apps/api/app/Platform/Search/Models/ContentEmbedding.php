@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $embeddable_id
  * @property string|null $embeddable_public_id
  * @property int|null $organization_id
+ * @property int|null $course_id
  * @property string $locale
  * @property string $source_type
  * @property string $visibility
@@ -47,6 +48,7 @@ class ContentEmbedding extends Model
             'chunk_index' => 'integer',
             'organization_id' => 'integer',
             'embeddable_id' => 'integer',
+            'course_id' => 'integer',
         ];
     }
 
@@ -58,7 +60,10 @@ class ContentEmbedding extends Model
      *   - visibility:  only the audiences the caller is allowed to see (public search never passes
      *                  'authenticated' or 'private');
      *   - locale:      the requested locales plus the language-agnostic '*' chunks;
-     *   - source_type: the requested content kinds (course / lesson / qna).
+     *   - source_type: the requested content kinds (course / lesson / qna);
+     *   - course:      when set, ONLY chunks belonging to that course (its own course chunk plus its
+     *                  lessons and accepted Q&A). This is what confines the RAG tutor/copilot to a
+     *                  single course so an answer can never be grounded in another course's content.
      *
      * @param  Builder<ContentEmbedding>  $query
      * @return Builder<ContentEmbedding>
@@ -71,6 +76,10 @@ class ContentEmbedding extends Model
                 $w->orWhere('organization_id', $q->organizationId);
             }
         });
+
+        if ($q->courseId !== null) {
+            $query->where('course_id', $q->courseId);
+        }
 
         $query->whereIn('visibility', $q->visibilities !== [] ? $q->visibilities : ['public']);
 

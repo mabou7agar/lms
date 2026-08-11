@@ -115,6 +115,7 @@ final class IngestionService
                 'embeddable_id' => $chunk->embeddableId,
                 'embeddable_public_id' => $chunk->embeddablePublicId,
                 'organization_id' => $chunk->organizationId,
+                'course_id' => $chunk->courseId,
                 'locale' => $chunk->locale,
                 'source_type' => $chunk->sourceType->value,
                 'visibility' => $chunk->visibility->value,

@@ -108,6 +108,14 @@ return [
         'other' => (bool) env('AI_FEATURE_OTHER', true),
     ],
 
+    // RAG grounding: how many retrieved chunks the tutor/copilot feed the model as context +
+    // return as citations. Consumed by TutorService / CopilotService; retrieval itself is always
+    // course-, tenant- and visibility-scoped by the KnowledgeRetrievalPort.
+    'retrieval' => [
+        'tutor_snippets' => (int) env('AI_TUTOR_SNIPPETS', 5),
+        'copilot_snippets' => (int) env('AI_COPILOT_SNIPPETS', 6),
+    ],
+
     // Per-tenant enable/disable: [organizationId => bool]. Absent => enabled.
     'tenant_overrides' => [],
 
