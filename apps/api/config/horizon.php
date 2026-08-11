@@ -77,6 +77,20 @@ return [
             'maxTime' => (int) env('HORIZON_EXPORTS_MAX_TIME', 3600),
             'maxJobs' => (int) env('HORIZON_EXPORTS_MAX_JOBS', 500),
         ],
+        // Outbound customer webhooks. Isolated so a slow/failing customer endpoint (each request can
+        // take up to the 10s HTTP timeout) never starves notifications/exports. DeliverWebhookJob
+        // orchestrates its own retries/backoff on the delivery row, so tries stays 1 here.
+        'supervisor-webhooks' => [
+            'connection' => 'redis',
+            'queue' => ['webhooks'],
+            'balance' => 'auto',
+            'maxProcesses' => (int) env('HORIZON_WEBHOOKS_MAX_PROCESSES', 3),
+            'minProcesses' => 1,
+            'tries' => 1,
+            'timeout' => 30,
+            'maxTime' => (int) env('HORIZON_WEBHOOKS_MAX_TIME', 3600),
+            'maxJobs' => (int) env('HORIZON_WEBHOOKS_MAX_JOBS', 1000),
+        ],
     ],
 
     'environments' => [
@@ -84,11 +98,13 @@ return [
             'supervisor-default' => ['maxProcesses' => (int) env('HORIZON_DEFAULT_MAX_PROCESSES', 6)],
             'supervisor-notifications' => ['maxProcesses' => (int) env('HORIZON_NOTIFICATIONS_MAX_PROCESSES', 10)],
             'supervisor-exports' => ['maxProcesses' => (int) env('HORIZON_EXPORTS_MAX_PROCESSES', 3)],
+            'supervisor-webhooks' => ['maxProcesses' => (int) env('HORIZON_WEBHOOKS_MAX_PROCESSES', 5)],
         ],
         'local' => [
             'supervisor-default' => ['maxProcesses' => 3],
             'supervisor-notifications' => ['maxProcesses' => 3],
             'supervisor-exports' => ['maxProcesses' => 1],
+            'supervisor-webhooks' => ['maxProcesses' => 1],
         ],
     ],
 ];
