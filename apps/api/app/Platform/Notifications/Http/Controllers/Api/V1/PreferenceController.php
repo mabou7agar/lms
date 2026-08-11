@@ -18,6 +18,9 @@ class PreferenceController extends Controller
             'locale' => $setting->locale,
             'digest_frequency' => $setting->digest_frequency->value,
             'timezone' => $setting->timezone,
+            'quiet_hours_enabled' => (bool) $setting->quiet_hours_enabled,
+            'quiet_hours_start' => $setting->quiet_hours_start,
+            'quiet_hours_end' => $setting->quiet_hours_end,
         ], 'Preferences updated.');
     }
 }
