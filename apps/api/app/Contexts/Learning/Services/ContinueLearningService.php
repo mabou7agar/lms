@@ -26,6 +26,10 @@ class ContinueLearningService extends BaseService
             ->where('user_id', $userId)
             ->active()
             ->with('course')
+            // Bound the hottest learner endpoint: only the most-recently-active enrollments feed the
+            // "continue learning" rail, so the per-enrollment next-lesson lookup can't grow unbounded.
+            ->orderByDesc('updated_at')
+            ->limit(24)
             ->get()
             ->map(fn (Enrollment $enrollment) => [
                 'enrollment' => $enrollment,
