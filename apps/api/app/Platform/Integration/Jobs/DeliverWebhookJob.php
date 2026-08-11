@@ -94,7 +94,11 @@ class DeliverWebhookJob implements ShouldQueue
         $startedAt = microtime(true);
 
         try {
+            // Do NOT follow redirects: the SSRF guard validated only the initial URL, so a 3xx to an
+            // internal address (169.254.169.254, ::1, 10.x) would otherwise bypass it. A redirect is
+            // returned as a non-2xx response and recorded as a (permanent) failure below.
             $response = Http::withHeaders($headers)
+                ->withoutRedirecting()
                 ->timeout((int) config('integration.delivery.timeout', 10))
                 ->withBody($body, 'application/json')
                 ->post($endpoint->url);

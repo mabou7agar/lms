@@ -17,6 +17,12 @@ it('rejects loopback, private, link-local and metadata addresses', function (str
     'private 192.168' => ['https://192.168.1.10/hook'],
     'link-local metadata' => ['https://169.254.169.254/latest/meta-data'],
     'ipv6 loopback' => ['https://[::1]/hook'],
+    // Alternate encodings of the metadata/loopback IPs that a naive string check would miss.
+    'decimal metadata (169.254.169.254)' => ['https://2852039166/latest/meta-data'],
+    'octal loopback' => ['https://0177.0.0.1/hook'],
+    'hex loopback' => ['https://0x7f.0.0.1/hook'],
+    'ipv4-mapped ipv6 metadata' => ['https://[::ffff:169.254.169.254]/latest/meta-data'],
+    'ipv4-mapped ipv6 private' => ['https://[::ffff:10.1.2.3]/hook'],
 ]);
 
 it('rejects a non-http(s) scheme', function (): void {

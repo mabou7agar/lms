@@ -53,6 +53,13 @@ final class WebhookUrlGuard
             throw WebhookUrlNotAllowedException::reason('private_host');
         }
 
+        // Reject alternate integer/hex/octal IP encodings (2130706433, 0x7f000001, 0177.0.0.1) that
+        // FILTER_VALIDATE_IP won't accept as a dotted IP but curl/libc will still dial as a literal —
+        // otherwise they slip through the DNS path unresolved and are allowed.
+        if ($this->isNumericHostLiteral($host)) {
+            throw WebhookUrlNotAllowedException::reason('private_host');
+        }
+
         foreach ($this->resolveIps($host) as $ip) {
             if ($this->isBlockedIp($ip)) {
                 throw WebhookUrlNotAllowedException::reason('private_host');
@@ -108,13 +115,59 @@ final class WebhookUrlGuard
         return array_values(array_unique($ips));
     }
 
-    /** True when the IP is private, loopback, link-local or otherwise reserved (not internet-routable). */
+    /**
+     * True when the IP (or, for an IPv4-mapped/compat IPv6, its embedded IPv4) is private, loopback,
+     * link-local or otherwise reserved — not internet-routable.
+     */
     private function isBlockedIp(string $ip): bool
     {
-        return filter_var(
-            $ip,
-            FILTER_VALIDATE_IP,
-            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-        ) === false;
+        foreach ($this->candidateIps($ip) as $candidate) {
+            if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The IP plus, when it is an IPv4-mapped (::ffff:a.b.c.d) or IPv4-compatible (::a.b.c.d) IPv6
+     * literal, the embedded IPv4 — so a private v4 smuggled inside a v6 literal is still caught.
+     *
+     * @return list<string>
+     */
+    private function candidateIps(string $ip): array
+    {
+        $candidates = [$ip];
+
+        $packed = @inet_pton($ip);
+        if ($packed !== false && strlen($packed) === 16) {
+            $prefix = substr($packed, 0, 12);
+            $mapped = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff";
+            $compat = str_repeat("\x00", 12);
+
+            if ($prefix === $mapped || $prefix === $compat) {
+                $v4 = @inet_ntop(substr($packed, 12, 4));
+                if (is_string($v4) && filter_var($v4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                    $candidates[] = $v4;
+                }
+            }
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * True when the host is an alternate integer/hex/octal encoding of an IP (every dot-separated
+     * label is a decimal/hex/octal number) rather than a real hostname — a genuine dotted/colon IP
+     * literal returns false here and is validated by {@see isBlockedIp} instead.
+     */
+    private function isNumericHostLiteral(string $host): bool
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return false;
+        }
+
+        return (bool) preg_match('/^(0x[0-9a-f]+|[0-9]+)(\.(0x[0-9a-f]+|[0-9]+))*$/i', $host);
     }
 }
