@@ -22,6 +22,7 @@ use App\Platform\Media\Providers\MediaServiceProvider;
 use App\Platform\Navigation\Providers\NavigationServiceProvider;
 use App\Platform\Notifications\Providers\NotificationsServiceProvider;
 use App\Platform\Pages\Providers\PagesServiceProvider;
+use App\Platform\Search\Providers\SearchServiceProvider;
 use App\Platform\Seo\Providers\SeoServiceProvider;
 use App\Platform\Shared\Moderation\Providers\ModerationServiceProvider;
 use App\Platform\Shared\Providers\SharedServiceProvider;
@@ -60,6 +61,8 @@ return [
     NotificationsServiceProvider::class,
     // Outbound webhook platform — an event consumer (subscribes to domain events by string name).
     IntegrationServiceProvider::class,
+    // Semantic/hybrid search + RAG ingestion (loads after AI + the content domains it indexes).
+    SearchServiceProvider::class,
     HomepageServiceProvider::class,
     BrandingServiceProvider::class,
     NavigationServiceProvider::class,

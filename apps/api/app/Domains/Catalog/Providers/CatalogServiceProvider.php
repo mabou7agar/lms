@@ -12,6 +12,7 @@ use App\Domains\Catalog\Models\CourseAnnouncement;
 use App\Domains\Catalog\Policies\CategoryPolicy;
 use App\Domains\Catalog\Policies\CourseAnnouncementPolicy;
 use App\Domains\Catalog\Policies\CoursePolicy;
+use App\Domains\Catalog\Search\CourseIndexableContentAdapter;
 /**
  * Wires the Catalog module: config, migrations, public routes, policies, and the default
  * CoursePublishGuard binding (a downstream domain may override it later).
@@ -19,6 +20,8 @@ use App\Domains\Catalog\Policies\CoursePolicy;
 use App\Platform\Identity\Contracts\CourseAccessPort;
 use App\Platform\Shared\Curriculum\Adapters\NullCurriculumForkPort;
 use App\Platform\Shared\Curriculum\Contracts\CurriculumForkPort;
+use App\Platform\Shared\Learning\Adapters\NullLearnerHistoryPort;
+use App\Platform\Shared\Learning\Contracts\LearnerHistoryPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 
 class CatalogServiceProvider extends BaseDomainServiceProvider
@@ -52,6 +55,14 @@ class CatalogServiceProvider extends BaseDomainServiceProvider
         // may not import the model (Assessment). The adapter delegates to the existing
         // authoring.manage-curriculum gate rather than restating the rule.
         $this->app->bind(CourseAccessPort::class, CourseAccessAdapter::class);
+
+        // Search: expose published+public courses to the RAG index via the Shared IndexableContentPort.
+        // Tagged so the Search ingestion service discovers it without referencing Catalog.
+        $this->app->tag([CourseIndexableContentAdapter::class], 'search.indexers');
+
+        // Recommendations read a learner's course history through this Shared port. Default is empty
+        // history (category/tag recommendations do not need it); Learning binds a real adapter later.
+        $this->app->bind(LearnerHistoryPort::class, NullLearnerHistoryPort::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([PublishScheduledCoursesCommand::class]);

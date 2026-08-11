@@ -162,6 +162,9 @@ deptrac:
     Search:
       - Shared
       - IdentityContracts
+      # Semantic search legitimately depends on the AI embedding contract (EmbeddingModel + DTOs);
+      # it imports the AI *contracts* only, never concrete providers.
+      - AI
 
     # Composition root: Shared + Identity CONTRACTS only. Any current reach into Identity
     # implementation or context models (e.g. dashboard widgets, provider wiring, the

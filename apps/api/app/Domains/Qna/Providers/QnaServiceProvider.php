@@ -9,6 +9,7 @@ use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Models\QuestionAnswer;
 use App\Domains\Qna\Policies\CourseQuestionPolicy;
 use App\Domains\Qna\Policies\QuestionAnswerPolicy;
+use App\Domains\Qna\Search\AcceptedAnswerIndexableContentAdapter;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
 
@@ -36,6 +37,13 @@ class QnaServiceProvider extends BaseDomainServiceProvider
     protected function domainPath(): string
     {
         return dirname(__DIR__);
+    }
+
+    public function register(): void
+    {
+        // Search: expose accepted Q&A answers to the RAG index (authenticated-audience knowledge).
+        // Tagged so the Search ingestion service discovers it without referencing Qna.
+        $this->app->tag([AcceptedAnswerIndexableContentAdapter::class], 'search.indexers');
     }
 
     protected function bootDomain(): void

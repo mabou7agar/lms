@@ -16,6 +16,7 @@ use App\Domains\Authoring\Policies\ContentVersionPolicy;
 use App\Domains\Authoring\Policies\LessonPolicy;
 use App\Domains\Authoring\Policies\ModulePolicy;
 use App\Domains\Authoring\Policies\SectionPolicy;
+use App\Domains\Authoring\Search\LessonIndexableContentAdapter;
 use App\Domains\Authoring\Services\CurriculumPublishGuard;
 use App\Domains\Authoring\Support\CourseTenantVisibility;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
@@ -73,6 +74,9 @@ class AuthoringServiceProvider extends BaseDomainServiceProvider
         // materialises its curriculum (via the snapshot fork mechanism). Catalog stays decoupled —
         // it only depends on the Shared contract.
         $this->app->bind(CurriculumForkPort::class, SnapshotCurriculumForkAdapter::class);
+
+        // Search: expose published lesson text to the RAG index (authenticated-audience knowledge).
+        $this->app->tag([LessonIndexableContentAdapter::class], 'search.indexers');
     }
 
     protected function bootDomain(): void
