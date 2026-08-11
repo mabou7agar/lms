@@ -43,6 +43,18 @@ return [
 
     'queue' => env('NOTIFICATIONS_QUEUE', 'notifications'),
     'default_channels' => ['in_app'],
+
+    // Marketing engine (campaigns / drip / automation). Quiet hours apply to the MARKETING category
+    // ONLY: a marketing message due inside [start, end) in the recipient's timezone is deferred to the
+    // window end, never dropped. Transactional/critical messages ignore this entirely. A per-user
+    // quiet-hours preference (user_notification_settings) overrides these defaults for that user.
+    'marketing' => [
+        'quiet_hours' => [
+            'enabled' => (bool) env('MARKETING_QUIET_HOURS_ENABLED', true),
+            'start' => env('MARKETING_QUIET_HOURS_START', '21:00'),
+            'end' => env('MARKETING_QUIET_HOURS_END', '08:00'),
+        ],
+    ],
     'digest' => [
         'enabled' => true,
     ],

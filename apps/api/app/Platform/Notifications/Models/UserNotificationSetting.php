@@ -10,10 +10,16 @@ class UserNotificationSetting extends Model
 {
     use HasPublicId;
 
-    protected $fillable = ['user_id', 'locale', 'digest_frequency', 'timezone'];
+    protected $fillable = [
+        'user_id', 'locale', 'digest_frequency', 'timezone',
+        'quiet_hours_enabled', 'quiet_hours_start', 'quiet_hours_end',
+    ];
 
     protected function casts(): array
     {
-        return ['digest_frequency' => DigestFrequency::class];
+        return [
+            'digest_frequency' => DigestFrequency::class,
+            'quiet_hours_enabled' => 'boolean',
+        ];
     }
 }

@@ -6,15 +6,21 @@ use App\Platform\Notifications\Channels\ProviderManager;
 use App\Platform\Notifications\Contracts\Providers\MailProvider;
 use App\Platform\Notifications\Contracts\Providers\PushProvider;
 use App\Platform\Notifications\Contracts\Providers\SmsProvider;
+use App\Platform\Notifications\Jobs\AdvanceDripCampaignsJob;
 use App\Platform\Notifications\Listeners\NotificationEventSubscriber;
 use App\Platform\Notifications\Listeners\NotificationTelemetrySubscriber;
 use App\Platform\Notifications\Models\Notification;
 use App\Platform\Notifications\Models\NotificationDelivery;
 use App\Platform\Notifications\Observers\NotificationDeliveryObserver;
 use App\Platform\Notifications\Policies\NotificationPolicy;
+use App\Platform\Notifications\Services\AutomationEventCatalog;
+use App\Platform\Notifications\Services\AutomationRunner;
 use App\Platform\Notifications\Services\LearningNotificationService;
+use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
+use App\Platform\Shared\Marketing\NullMarketingAudiencePort;
 use App\Platform\Shared\Notifications\Contracts\LearningNotificationPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -44,6 +50,13 @@ class NotificationsServiceProvider extends BaseDomainServiceProvider
         // wiring those flows introduces no domain<->Notifications Deptrac edge.
         $this->app->bind(LearningNotificationPort::class, LearningNotificationService::class);
 
+        $this->app->singleton(AutomationEventCatalog::class);
+
+        // Marketing audience seam fallback: CRM (registered earlier) binds its lead adapter; this
+        // Null default only applies when the CRM provider is absent (e.g. an isolated test boot), so
+        // a marketing send with no audience source is skipped rather than sent to an unknown address.
+        $this->app->bindIf(MarketingAudiencePort::class, NullMarketingAudiencePort::class);
+
         // Provider selection is config-driven (fake default). Local/test never send for real.
         $this->app->bind(MailProvider::class, fn ($app) => $app->make(ProviderManager::class)->mail());
         $this->app->bind(SmsProvider::class, fn ($app) => $app->make(ProviderManager::class)->sms());
@@ -59,5 +72,41 @@ class NotificationsServiceProvider extends BaseDomainServiceProvider
         // lifecycle event into a structured log line and an idempotent metric.
         NotificationDelivery::observe(NotificationDeliveryObserver::class);
         Event::subscribe(NotificationTelemetrySubscriber::class);
+
+        $this->subscribeAutomationEngine();
+        $this->registerDripSchedule();
+    }
+
+    /**
+     * The marketing workflow engine. Subscribes to each catalogued domain event BY STRING CLASS NAME
+     * (mirroring the outbound-webhook emitter): the listener receives the event as an opaque object
+     * and hands it to the AutomationRunner, so NO domain event class is imported here and the
+     * Deptrac Shared + IdentityContracts ruleset holds with zero new edges.
+     */
+    private function subscribeAutomationEngine(): void
+    {
+        /** @var AutomationEventCatalog $catalog */
+        $catalog = $this->app->make(AutomationEventCatalog::class);
+
+        foreach ($catalog->eventClasses() as $eventClass) {
+            Event::listen($eventClass, function (object $event): void {
+                app(AutomationRunner::class)->handle($event);
+            });
+        }
+    }
+
+    /**
+     * Drip advance tick. Registered from THIS module's own provider (not the kernel/bootstrap), so it
+     * touches no forbidden file. onOneServer()+withoutOverlapping() keep a single tick in flight; the
+     * runner is idempotent and resumable so a restart never double-sends.
+     */
+    private function registerDripSchedule(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->job(new AdvanceDripCampaignsJob)
+                ->everyMinute()
+                ->onOneServer()
+                ->withoutOverlapping();
+        });
     }
 }
