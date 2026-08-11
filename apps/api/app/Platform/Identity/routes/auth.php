@@ -23,6 +23,6 @@ Route::prefix('v1/auth')->group(function (): void {
 
         Route::post('mfa/enable', [MfaController::class, 'enable']);
         Route::post('mfa/verify', [MfaController::class, 'verify'])->middleware('throttle:identity-otp-verify');
-        Route::post('mfa/disable', [MfaController::class, 'disable']);
+        Route::post('mfa/disable', [MfaController::class, 'disable'])->middleware('throttle:identity-otp-verify');
     });
 });
