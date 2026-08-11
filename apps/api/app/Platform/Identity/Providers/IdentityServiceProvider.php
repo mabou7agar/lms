@@ -6,6 +6,7 @@ use App\Platform\Identity\Adapters\CurrentUserAdapter;
 use App\Platform\Identity\Adapters\UserLookupAdapter;
 use App\Platform\Identity\Adapters\UserPermissionAdapter;
 use App\Platform\Identity\Adapters\UserRoleAdapter;
+use App\Platform\Identity\Console\Commands\ExportOpenApiCommand;
 use App\Platform\Identity\Contracts\CurrentUserPort;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Identity\Contracts\UserPermissionPort;
@@ -34,6 +35,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -42,7 +44,7 @@ use Spatie\Permission\Models\Role;
  */
 class IdentityServiceProvider extends BaseDomainServiceProvider
 {
-    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php', 'routes/privacy.php'];
+    protected array $routeFiles = ['routes/auth.php', 'routes/social.php', 'routes/profile.php', 'routes/devices.php', 'routes/privacy.php', 'routes/developer.php'];
 
     protected function domainPath(): string
     {
@@ -71,6 +73,10 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
         $this->app->bind(UserLookupPort::class, UserLookupAdapter::class);
         $this->app->bind(UserPermissionPort::class, UserPermissionAdapter::class);
         $this->app->bind(UserRolePort::class, UserRoleAdapter::class);
+
+        // Public-API OpenAPI export. Registered explicitly (Identity has no auto-discovered
+        // console namespace) so `php artisan identity:openapi-export` is available.
+        $this->commands([ExportOpenApiCommand::class]);
     }
 
     protected function bootDomain(): void
@@ -149,6 +155,17 @@ class IdentityServiceProvider extends BaseDomainServiceProvider
         // Social redirect/callback are public and unauthenticated; key on IP so one source cannot
         // spray provider round-trips (and consume upstream IdP rate budget).
         RateLimiter::for('identity-social', fn (Request $r) => Limit::perMinute(20)->by((string) $r->ip()));
+
+        // Public developer API — throttle PER KEY. Keyed on the acting personal-access-token id so
+        // one developer key cannot exhaust the budget of another, falling back to IP for the
+        // (test-only) transient-token path.
+        RateLimiter::for('developer-api', function (Request $r): Limit {
+            $user = $r->user();
+            $token = $user instanceof User ? $user->currentAccessToken() : null;
+            $key = $token instanceof PersonalAccessToken ? (string) $token->getKey() : (string) $r->ip();
+
+            return Limit::perMinute(60)->by('developer-api|'.$key);
+        });
     }
 
     private function registerListeners(): void
