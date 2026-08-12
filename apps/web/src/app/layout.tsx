@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Inter, Fraunces, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Inter, Fraunces, IBM_Plex_Sans_Arabic, IBM_Plex_Mono } from "next/font/google";
 import { defaultLocale, isLocale, localeCookieName, localeDirection, type Locale } from "@/lib/i18n/config";
 import { siteConfig } from "@/config/site";
 import { getBranding, type Branding } from "@/lib/branding/api";
@@ -25,6 +25,14 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-ibm-plex-arabic",
+  display: "swap",
+});
+// Editorial technical mono for course-cover metadata (codes, coordinates, folio/press marks).
+// Exposed as --font-mono and consumed via Tailwind `font-mono`.
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-ibm-plex-mono",
   display: "swap",
 });
 
@@ -101,7 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {fontHref ? <link rel="stylesheet" href={fontHref} /> : null}
         {fontFamily ? <style id="brand-font" dangerouslySetInnerHTML={{ __html: googleFontCss(fontFamily) }} /> : null}
       </head>
-      <body className={`${inter.variable} ${fraunces.variable} ${ibmPlexArabic.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${fraunces.variable} ${ibmPlexArabic.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
         {/* Static, app-controlled JSON-LD (no user input). */}
         <script
           type="application/ld+json"

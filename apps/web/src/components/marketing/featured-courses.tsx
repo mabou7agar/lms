@@ -10,7 +10,7 @@ import { Section, SectionHeading } from "@/components/landing/section";
 import { Reveal } from "@/components/landing/reveal";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { CoursePreviewCard } from "./course-preview-card";
+import { CourseCover, demoCourseToCover } from "./course-cover";
 
 // Below-the-fold, interaction-gated modal (YouTube iframe embed + focus trap) — code-split so its
 // JS loads only when a preview is opened rather than shipping in the homepage's initial chunk.
@@ -30,9 +30,14 @@ export function FeaturedCourses() {
         title2={pickLocale(featuredHeading.title2, locale)}
         subtitle={pickLocale(featuredHeading.subtitle, locale)}
       />
-      <div className="stagger-in grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {demoCourses.map((c) => (
-          <CoursePreviewCard key={c.id} course={c} onPlay={setVideo} />
+      <div className="stagger-in grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {demoCourses.map((c, i) => (
+          <CourseCover
+            key={c.id}
+            course={demoCourseToCover(c)}
+            index={i}
+            onPreview={() => setVideo(c.youtubeId)}
+          />
         ))}
       </div>
       <Reveal className="mt-10 text-center">

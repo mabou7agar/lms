@@ -174,6 +174,9 @@
   --font-sans: var(--font-inter), var(--font-arabic), system-ui, ui-sans-serif, sans-serif;
   --font-serif: var(--font-fraunces), ui-serif, "Iowan Old Style", Georgia, serif;
   --font-arabic: var(--font-ibm-plex-arabic), "Segoe UI", Tahoma, sans-serif;
+  /* Editorial technical mono — course codes, coordinates, folio/press metadata on the
+     HElbaron course covers. Exposed as Tailwind `font-mono`. */
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 @layer base {
@@ -607,4 +610,199 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .chart-grow, .chart-draw { animation: none !important; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   HElbaron editorial course cover system (marketing). Depth is expressed with
+   transform/opacity only; a small JS hook writes --hb-* custom properties on the
+   stage which these layers consume. All motion is disabled under reduced-motion.
+   ────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  .hb-cover-root { position: relative; display: block; }
+
+  .hb-cover { display: block; border-radius: var(--radius-2xl); outline: none; }
+  .hb-cover:focus-visible .hb-cover-stage {
+    outline: 2px solid var(--ring, #134e4a);
+    outline-offset: 3px;
+  }
+
+  .hb-cover-stage {
+    position: relative;
+    aspect-ratio: 300 / 384;
+    container-type: inline-size;
+    border-radius: var(--radius-2xl);
+    border: 1px solid color-mix(in oklab, #ffffff 9%, transparent);
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transform: perspective(1100px) rotateX(var(--hb-rx, 0deg)) rotateY(var(--hb-ry, 0deg));
+    transition: transform 420ms var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1)),
+      box-shadow 320ms var(--ease-standard, ease);
+    box-shadow: 0 10px 30px -12px rgba(9, 16, 28, 0.55);
+    background-color: #0f1b2e;
+  }
+  .hb-cover-root:hover .hb-cover-stage { box-shadow: 0 22px 46px -18px rgba(9, 16, 28, 0.62); }
+
+  .hb-cover-layer {
+    transform: translate3d(
+      calc(var(--hb-px, 0px) * var(--hb-depth, 0)),
+      calc(var(--hb-py, 0px) * var(--hb-depth, 0)),
+      0
+    );
+    transition: transform 420ms var(--ease-decelerate, cubic-bezier(0, 0, 0.2, 1));
+    will-change: transform;
+  }
+
+  .hb-cover-art { --hb-depth: 0.5; opacity: 0.92; }
+  .hb-cover-carve { height: 42%; }
+  .hb-cover-medallions { --hb-depth: 1; margin-top: -2.1rem; margin-bottom: 0.35rem; }
+
+  .hb-cover-roman {
+    position: absolute;
+    inset-inline-end: 5%;
+    top: 12%;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: clamp(3rem, 23cqw, 6.5rem);
+    line-height: 1;
+    color: color-mix(in oklab, var(--primary-foreground, #f7f1e3) 8%, transparent);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hb-cover-sheen {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    background: radial-gradient(
+      42% 42% at var(--hb-mx, 50%) var(--hb-my, 28%),
+      rgba(255, 255, 255, 0.14),
+      transparent 62%
+    );
+    opacity: var(--hb-active, 0);
+    transition: opacity 300ms ease;
+    mix-blend-mode: soft-light;
+  }
+
+  .hb-cover-content { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; }
+  .hb-cover-field { flex: 1 1 auto; display: flex; flex-direction: column; padding: clamp(0.9rem, 4.5cqw, 1.35rem); }
+
+  .hb-cover-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .hb-cover-code {
+    font-family: var(--font-mono);
+    font-size: clamp(0.62rem, 2.5cqw, 0.74rem);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--primary-foreground, #f7f1e3) 90%, transparent);
+  }
+  .hb-cover-sub-meta {
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 2cqw, 0.6rem);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--primary-foreground, #f7f1e3) 50%, transparent);
+  }
+  .hb-cover-coord { opacity: 0.85; }
+  .hb-cover-press {
+    text-align: end;
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 2cqw, 0.62rem);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--primary-foreground, #f7f1e3) 58%, transparent);
+    white-space: nowrap;
+  }
+  .hb-cover-press .hb-cover-sub-meta { text-align: end; }
+
+  .hb-cover-crosshair {
+    width: 12px;
+    height: 12px;
+    margin-top: 0.85rem;
+    opacity: 0.4;
+    background:
+      linear-gradient(var(--primary-foreground, #f7f1e3), var(--primary-foreground, #f7f1e3)) center / 100% 1px no-repeat,
+      linear-gradient(var(--primary-foreground, #f7f1e3), var(--primary-foreground, #f7f1e3)) center / 1px 100% no-repeat;
+  }
+
+  .hb-cover-title-block { margin-top: auto; }
+  .hb-cover-title {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: clamp(1.3rem, 7.6cqw, 2rem);
+    line-height: 1.04;
+    letter-spacing: -0.012em;
+    color: var(--primary-foreground, #f7f1e3);
+    text-wrap: balance;
+  }
+  :root[dir="rtl"] .hb-cover-title,
+  [dir="rtl"] .hb-cover-title { font-family: var(--font-arabic); font-weight: 600; }
+  .hb-cover-subtitle {
+    margin-top: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: clamp(0.56rem, 2.3cqw, 0.66rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--primary-foreground, #f7f1e3) 62%, transparent);
+  }
+  :root[dir="rtl"] .hb-cover-subtitle,
+  [dir="rtl"] .hb-cover-subtitle { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; }
+
+  .hb-cover-cream {
+    position: relative;
+    height: 33%;
+    padding: 0 clamp(0.9rem, 4.5cqw, 1.35rem) 0.85rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .hb-cover-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 2cqw, 0.58rem);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--foreground, #21302e) 55%, transparent);
+  }
+
+  .hb-medallions { display: flex; align-items: center; }
+  .hb-medallion-slot { position: relative; display: block; width: clamp(2.4rem, 13cqw, 3.3rem); }
+  .hb-medallion-slot + .hb-medallion-slot { margin-inline-start: -0.85rem; }
+  .hb-medallion { display: block; width: 100%; height: auto; border-radius: 9999px; filter: drop-shadow(0 3px 6px rgba(9, 16, 28, 0.32)); }
+
+  .hb-cover-play {
+    position: absolute;
+    top: 34%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%);
+    width: 3.1rem;
+    height: 3.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--background, #f7f1e3) 92%, transparent);
+    color: var(--primary, #134e4a);
+    box-shadow: 0 8px 20px -8px rgba(9, 16, 28, 0.5);
+    opacity: 0;
+    z-index: 20;
+    transition: opacity 240ms ease, transform 240ms ease;
+  }
+  :root[dir="rtl"] .hb-cover-play { transform: translate(50%, -50%); }
+  .hb-cover-root:hover .hb-cover-play,
+  .hb-cover-root:focus-within .hb-cover-play { opacity: 1; }
+  .hb-cover-play:hover { transform: translate(-50%, -50%) scale(1.06); }
+  :root[dir="rtl"] .hb-cover-play:hover { transform: translate(50%, -50%) scale(1.06); }
+  .hb-cover-play:focus-visible { outline: 2px solid var(--ring, #134e4a); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-cover-stage { transition: box-shadow 320ms ease; }
+  .hb-cover-stage,
+  .hb-cover-layer { transform: none !important; }
+  .hb-cover-layer { transition: none !important; }
+  .hb-cover-sheen { display: none; }
 }
