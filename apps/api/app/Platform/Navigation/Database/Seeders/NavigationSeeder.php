@@ -95,12 +95,13 @@ class NavigationSeeder extends Seeder
                     'position' => 10, 'url' => '#', 'label' => ['en' => 'Learn', 'ar' => 'تعلّم'],
                     'children' => [
                         ['position' => 10, 'label' => ['en' => 'Courses', 'ar' => 'الدورات'], 'url' => '/courses'],
-                        ['position' => 20, 'label' => ['en' => 'Live cohorts', 'ar' => 'الأفواج'], 'url' => '/cohorts'],
-                        ['position' => 30, 'label' => ['en' => 'Workshops', 'ar' => 'الورش'], 'url' => '/workshops'],
-                        ['position' => 40, 'label' => ['en' => 'Events', 'ar' => 'الفعاليات'], 'url' => '/events'],
-                        ['position' => 50, 'label' => ['en' => 'Certificates', 'ar' => 'الشهادات'], 'url' => '/certificates'],
-                        ['position' => 60, 'label' => ['en' => 'Pricing', 'ar' => 'الأسعار'], 'url' => '/pricing'],
-                        ['position' => 70, 'label' => ['en' => 'Become an instructor', 'ar' => 'كن مدرّبًا'], 'url' => '/trainers'],
+                        ['position' => 20, 'label' => ['en' => 'Products', 'ar' => 'المنتجات'], 'url' => '/products'],
+                        ['position' => 30, 'label' => ['en' => 'Live cohorts', 'ar' => 'الأفواج'], 'url' => '/cohorts'],
+                        ['position' => 40, 'label' => ['en' => 'Workshops', 'ar' => 'الورش'], 'url' => '/workshops'],
+                        ['position' => 50, 'label' => ['en' => 'Events', 'ar' => 'الفعاليات'], 'url' => '/events'],
+                        ['position' => 60, 'label' => ['en' => 'Certificates', 'ar' => 'الشهادات'], 'url' => '/verify'],
+                        ['position' => 70, 'label' => ['en' => 'Pricing', 'ar' => 'الأسعار'], 'url' => '/pricing'],
+                        ['position' => 80, 'label' => ['en' => 'Become an instructor', 'ar' => 'كن مدرّبًا'], 'url' => '/teach/apply'],
                     ],
                 ],
                 [
@@ -116,9 +117,10 @@ class NavigationSeeder extends Seeder
                     'position' => 30, 'url' => '#', 'label' => ['en' => 'Company', 'ar' => 'الشركة'],
                     'children' => [
                         ['position' => 10, 'label' => ['en' => 'About', 'ar' => 'من نحن'], 'url' => '/about'],
-                        ['position' => 20, 'label' => ['en' => 'Organizations', 'ar' => 'المؤسسات'], 'url' => '/org'],
-                        ['position' => 30, 'label' => ['en' => 'Trainers', 'ar' => 'المدرّبون'], 'url' => '/trainers'],
-                        ['position' => 40, 'label' => ['en' => 'Contact', 'ar' => 'تواصل'], 'url' => '/contact'],
+                        ['position' => 20, 'label' => ['en' => 'Solutions', 'ar' => 'الحلول'], 'url' => '/solutions'],
+                        ['position' => 30, 'label' => ['en' => 'Organizations', 'ar' => 'المؤسسات'], 'url' => '/enterprise'],
+                        ['position' => 40, 'label' => ['en' => 'Trainers', 'ar' => 'المدرّبون'], 'url' => '/trainers'],
+                        ['position' => 50, 'label' => ['en' => 'Contact', 'ar' => 'تواصل'], 'url' => '/contact'],
                     ],
                 ],
             ],
@@ -135,8 +137,9 @@ class NavigationSeeder extends Seeder
             MenuLocation::InstructorSidebar->value => [
                 ['position' => 10, 'label' => ['en' => 'Dashboard', 'ar' => 'لوحة التدريس'], 'url' => '/teach', 'icon' => 'LayoutDashboard'],
                 ['position' => 20, 'label' => ['en' => 'My Courses', 'ar' => 'دوراتي'], 'url' => '/teach/courses', 'icon' => 'Presentation'],
-                ['position' => 30, 'label' => ['en' => 'Students', 'ar' => 'الطلاب'], 'url' => '/teach/students', 'icon' => 'Users'],
-                ['position' => 40, 'label' => ['en' => 'Profile', 'ar' => 'الملف الشخصي'], 'url' => '/profile', 'icon' => 'User'],
+                ['position' => 30, 'label' => ['en' => 'Media', 'ar' => 'الوسائط'], 'url' => '/teach/media', 'icon' => 'Film'],
+                ['position' => 40, 'label' => ['en' => 'Students', 'ar' => 'الطلاب'], 'url' => '/teach/students', 'icon' => 'Users'],
+                ['position' => 70, 'label' => ['en' => 'Profile', 'ar' => 'الملف الشخصي'], 'url' => '/profile', 'icon' => 'User'],
             ],
 
             // nav.ts organizationNav

@@ -39,6 +39,15 @@ export function LandingFooter({ content }: { content?: FooterContent }) {
   type RenderColumn = { key: string; title: string; links: RenderLink[] };
 
   const cmsFooter = useNavigation("public-footer");
+  const cmsLegal = useNavigation("legal-menu");
+
+  // Legal strip. Precedence: admin CMS legal menu → built-in brandTheme legal links. CMS nodes carry
+  // `url`/`id`; theme items carry `href` — normalize both to a single render shape.
+  const legalItems = (cmsLegal ?? f.legal).map((l, i) => ({
+    key: "id" in l ? l.id : `${l.href}-${i}`,
+    href: "url" in l ? l.url : l.href,
+    label: pickLocale(l.label, locale),
+  }));
 
   const fromLocalized = (links: LinkItem[]): RenderLink[] =>
     links.map((l, i) => ({ key: `${l.href}-${i}`, href: l.href, label: pickLocale(l.label, locale), external: false }));
@@ -137,9 +146,9 @@ export function LandingFooter({ content }: { content?: FooterContent }) {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/15 pt-6 text-sm text-primary-foreground/70 sm:flex-row">
           <p>© {new Date().getFullYear()} {brandName}. {copyright}</p>
           <div className="flex flex-wrap items-center gap-4">
-            {f.legal.map((l) => (
-              <Link key={l.href} href={l.href} className="transition-colors hover:text-primary-foreground">
-                {pickLocale(l.label, locale)}
+            {legalItems.map((l) => (
+              <Link key={l.key} href={l.href} className="transition-colors hover:text-primary-foreground">
+                {l.label}
               </Link>
             ))}
           </div>
