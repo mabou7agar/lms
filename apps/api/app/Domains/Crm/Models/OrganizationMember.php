@@ -8,6 +8,7 @@ use App\Platform\Shared\Tenancy\Concerns\BelongsToTenant;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class OrganizationMember extends Model
 {
@@ -32,18 +33,26 @@ class OrganizationMember extends Model
 
     protected $hidden = ['invitation_token'];
 
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return BelongsTo<Department, $this> */
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
     }
 
+    /** @return BelongsToMany<Team, $this> */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'crm_team_members', 'member_id', 'team_id')->withPivot('role');
+    }
+
     public function isActive(): bool
     {
-        return $this->status === MemberStatus::Active;
+        return $this->getAttribute('status') === MemberStatus::Active;
     }
 }

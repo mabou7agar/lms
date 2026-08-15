@@ -33,7 +33,14 @@ function RequireAuthInner({ children, redirectTo = "/login", roles }: { children
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const authorized = status === "authenticated" && (!roles || roles.some((r) => user?.roles?.includes(r)));
+  // `org_manager` is not a Spatie role — enterprise manager authority is org-membership-based
+  // (backend ManagerScope). The profile exposes `is_org_manager`, so treat that virtual role as
+  // satisfied by the capability flag. All other roles are matched against the real role list.
+  const authorized =
+    status === "authenticated" &&
+    (!roles ||
+      roles.some((r) => user?.roles?.includes(r)) ||
+      (roles.includes("org_manager") && user?.is_org_manager === true));
 
   useEffect(() => {
     if (status !== "guest") return;

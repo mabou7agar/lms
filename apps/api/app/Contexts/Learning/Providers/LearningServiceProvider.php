@@ -3,6 +3,7 @@
 namespace App\Contexts\Learning\Providers;
 
 use App\Contexts\Learning\Adapters\CourseEnrollmentAdapter;
+use App\Contexts\Learning\Adapters\EnrollmentGrantAdapter;
 use App\Contexts\Learning\Adapters\MediaEnrollmentAdapter;
 use App\Contexts\Learning\Analytics\EnrollmentStatsAdapter;
 use App\Contexts\Learning\Analytics\ManagerLearningReport;
@@ -20,6 +21,7 @@ use App\Platform\Shared\Assessment\Contracts\AssessmentResultPort;
 use App\Platform\Shared\Enterprise\Contracts\ManagerReportPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use App\Platform\Shared\Learning\Contracts\EnrollmentGrantPort;
 use App\Platform\Shared\Learning\Contracts\CourseNavigationPort;
 use App\Platform\Shared\Learning\Contracts\EnrollmentStatsPort;
 use App\Platform\Shared\Learning\Contracts\LessonAvailabilityPort;
@@ -79,6 +81,9 @@ class LearningServiceProvider extends BaseDomainServiceProvider
 
         // Enrollment surface published to other contexts (Assessment: roster + entitlement).
         $this->app->bind(CourseEnrollmentPort::class, CourseEnrollmentAdapter::class);
+        // Administrative/enterprise course grant seam (CRM assigns catalog courses to org members
+        // through this Shared port, so CRM never imports GrantEnrollmentAction / EnrollmentSource).
+        $this->app->bind(EnrollmentGrantPort::class, EnrollmentGrantAdapter::class);
 
         // Learning owns enrollment/publication, so it provides the real course-media access rule,
         // overriding the Media platform's deny-by-default NullMediaEnrollmentPort.

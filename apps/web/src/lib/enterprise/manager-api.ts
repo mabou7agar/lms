@@ -62,6 +62,20 @@ export type Team = {
   created_at: string | null;
 };
 
+export type CourseAssignmentTargetType = "organization" | "member" | "department" | "team";
+
+export type CourseAssignmentResult = {
+  course: { id: string; title: string };
+  target: { type: CourseAssignmentTargetType; id: string | null };
+  summary: {
+    matched_members: number;
+    eligible_members: number;
+    assigned: number;
+    already_assigned: number;
+    skipped_without_account: number;
+  };
+};
+
 /** SeatAssignmentResource. */
 export type SeatAssignment = {
   id: string;
@@ -210,6 +224,12 @@ export const deleteTeam = (id: string) => api.del<ApiSuccess<null>>(`enterprise/
 /** POST /enterprise/teams/{team}/manager — assign (or clear) a manager. */
 export const assignTeamManager = (id: string, memberId: string | null) =>
   api.post<ApiSuccess<Team>>(`enterprise/teams/${id}/manager`, { member_id: memberId });
+
+export const assignCourse = (body: {
+  course_id: string;
+  target_type: CourseAssignmentTargetType;
+  target_id?: string | null;
+}) => api.data<CourseAssignmentResult>("enterprise/course-assignments", { method: "POST", body });
 
 // ── Invitations (token-authorized) ────────────────────────────────────────────────────────────────
 

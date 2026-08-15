@@ -3,6 +3,7 @@
 namespace App\Domains\Catalog\Providers;
 
 use App\Domains\Catalog\Access\CourseAccessAdapter;
+use App\Domains\Catalog\Adapters\CourseLookupAdapter;
 use App\Domains\Catalog\Console\Commands\PublishScheduledCoursesCommand;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Contracts\NullCoursePublishGuard;
@@ -18,6 +19,7 @@ use App\Domains\Catalog\Search\CourseIndexableContentAdapter;
  * CoursePublishGuard binding (a downstream domain may override it later).
  */
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Catalog\Contracts\CourseLookupPort;
 use App\Platform\Shared\Curriculum\Adapters\NullCurriculumForkPort;
 use App\Platform\Shared\Curriculum\Contracts\CurriculumForkPort;
 use App\Platform\Shared\Learning\Adapters\NullLearnerHistoryPort;
@@ -55,6 +57,10 @@ class CatalogServiceProvider extends BaseDomainServiceProvider
         // may not import the model (Assessment). The adapter delegates to the existing
         // authoring.manage-curriculum gate rather than restating the rule.
         $this->app->bind(CourseAccessPort::class, CourseAccessAdapter::class);
+
+        // Published course lookup for other contexts that need a scalar course foreign key without
+        // importing Catalog's Eloquent model.
+        $this->app->bind(CourseLookupPort::class, CourseLookupAdapter::class);
 
         // Search: expose published+public courses to the RAG index via the Shared IndexableContentPort.
         // Tagged so the Search ingestion service discovers it without referencing Catalog.

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptInvitation,
   analyzeImport,
+  assignCourse,
   assignDepartmentManager,
   assignSeat,
   assignTeamManager,
@@ -26,6 +27,7 @@ import {
   resizeSeats,
   updateDepartment,
   updateTeam,
+  type CourseAssignmentTargetType,
   type MemberRole,
   type ReportScope,
 } from "./manager-api";
@@ -181,6 +183,17 @@ export function useAssignTeamManager() {
   return useMutation({
     mutationFn: ({ id, memberId }: { id: string; memberId: string | null }) => assignTeamManager(id, memberId),
     onSuccess: invalidate,
+  });
+}
+
+export function useAssignCourse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { course_id: string; target_type: CourseAssignmentTargetType; target_id?: string | null }) =>
+      assignCourse(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["enterprise", "report"] });
+    },
   });
 }
 

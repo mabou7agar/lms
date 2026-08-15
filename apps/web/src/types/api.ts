@@ -23,6 +23,8 @@ export type AuthUser = {
   email: string;
   locale: "en" | "ar";
   roles: string[];
+  /** Enterprise manager-portal capability hint (owner/admin or dept/team manager in any org). */
+  is_org_manager?: boolean;
   email_verified: boolean;
   mfa_enabled: boolean;
 };

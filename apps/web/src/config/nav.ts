@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
-  Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload,
+  Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload, BookOpenCheck,
   ShieldCheck, KeyRound, Palette,
 } from "lucide-react";
 
@@ -57,6 +57,7 @@ export const managerNav: NavItem[] = [
   { labelKey: "nav.managerPortal", href: "/manager", icon: LayoutDashboard },
   { labelKey: "nav.managerMembers", href: "/manager/members", icon: Users },
   { labelKey: "nav.managerDepartments", href: "/manager/departments", icon: FolderTree },
+  { labelKey: "nav.managerTraining", href: "/manager/training", icon: BookOpenCheck },
   { labelKey: "nav.managerSeats", href: "/manager/seats", icon: Armchair },
   { labelKey: "nav.managerImport", href: "/manager/import", icon: Upload },
   { labelKey: "nav.managerSso", href: "/manager/sso", icon: KeyRound },

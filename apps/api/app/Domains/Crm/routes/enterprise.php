@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\CourseAssignmentController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\DepartmentController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\EmployeeImportController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\InvitationController;
@@ -68,6 +69,9 @@ Route::prefix('v1/enterprise')->middleware('auth:sanctum')->group(function (): v
 
     // Reusable CSV import framework — reference importer: bulk member import (dry-run by default).
     Route::post('imports/members', [MemberImportController::class, 'import']);
+
+    // Course assignment: owner/admin grants published catalog courses to members/scopes.
+    Route::post('course-assignments', [CourseAssignmentController::class, 'store']);
 
     // Org BI/data export: queue a bundle, list, and inspect (download URLs are signed, in `show`).
     Route::get('exports', [OrgDataExportController::class, 'index']);

@@ -23,7 +23,9 @@ use App\Domains\Crm\Policies\OrganizationMemberPolicy;
 use App\Domains\Crm\Policies\OrganizationPolicy;
 use App\Domains\Crm\Policies\TeamPolicy;
 use App\Domains\Crm\Ports\CrmMarketingAudienceAdapter;
+use App\Domains\Crm\Ports\OrgManagerCheckAdapter;
 use App\Domains\Crm\Ports\SeatProvisioningAdapter;
+use App\Platform\Shared\Enterprise\Contracts\OrgManagerCheckPort;
 use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
@@ -71,6 +73,11 @@ class CrmServiceProvider extends BaseDomainServiceProvider
         // crosses into Notifications. CRM registers before Notifications, so this binding wins over
         // the Null default Notifications falls back to when CRM is absent.
         $this->app->bind(MarketingAudiencePort::class, CrmMarketingAudienceAdapter::class);
+
+        // Enterprise manager capability seam: Identity's profile payload exposes an `is_org_manager`
+        // UI hint for the manager-portal route guard through this Shared port, so Identity never imports
+        // a CRM model. Authority itself stays with OrganizationMemberPolicy / ManagerScope.
+        $this->app->bind(OrgManagerCheckPort::class, OrgManagerCheckAdapter::class);
     }
 
     protected function bootDomain(): void
