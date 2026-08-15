@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { Users, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useOrganizations } from "@/lib/org/hooks";
 import { PageHeader } from "@/components/student/page-header";
@@ -50,7 +50,14 @@ export default function CrmOrganizationsPage() {
                         </span>
                       </div>
                       <Button asChild size="sm" variant="outline" className="w-full">
-                        <Link href={`/org/organizations/${o.id}`}>{t("crm.organizations.view")}</Link>
+                        <Link
+                          href={`/org/organizations/${o.id}`}
+                          aria-label={t("crm.organizations.openWorkspace")}
+                          title={t("crm.organizations.openWorkspace")}
+                        >
+                          {t("crm.organizations.view")}
+                          <ArrowUpRight className="size-4" aria-hidden />
+                        </Link>
                       </Button>
                     </CardContent>
                   </Card>

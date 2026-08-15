@@ -4,8 +4,10 @@ import { use, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
-import { useLeads } from "@/lib/crm/hooks";
+import { useConvertLead, useLeads } from "@/lib/crm/hooks";
+import { errorMessage } from "@/lib/api/errors";
 import { formatMoney } from "@/lib/format";
+import { toast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/student/page-header";
 import { QueryState } from "@/components/student/query-state";
 import { SectionCard } from "@/components/org/section-card";
@@ -20,6 +22,14 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ public_i
   // No GET /leads/{lead} endpoint exists; resolve the lead from a wide list query by public_id.
   const query = useLeads({ per_page: 100 });
   const lead = useMemo(() => (query.data?.data ?? []).find((l) => l.id === public_id), [query.data, public_id]);
+  const convert = useConvertLead();
+
+  const onConvert = () => {
+    convert.mutate(public_id, {
+      onSuccess: () => toast.success(t("crm.details.convertSuccess")),
+      onError: (err) => toast.error(errorMessage(err, t("crm.details.convertError"))),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -86,11 +96,16 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ public_i
 
                 <div className="lg:col-span-1">
                   <SectionCard title={t("crm.details.convert")}>
-                    {/* No convert endpoint exists yet — action disabled. */}
-                    <Button disabled className="w-full">
-                      {t("crm.details.convert")}
+                    <Button
+                      className="w-full"
+                      onClick={onConvert}
+                      disabled={convert.isPending || lead.status === "converted"}
+                    >
+                      {convert.isPending ? t("crm.details.converting") : t("crm.details.convert")}
                     </Button>
-                    <p className="mt-2 text-xs text-muted-foreground">{t("crm.notAvailable")}</p>
+                    {lead.status === "converted" ? (
+                      <p className="mt-2 text-xs text-muted-foreground">{t("crm.details.alreadyConverted")}</p>
+                    ) : null}
                   </SectionCard>
                 </div>
               </div>

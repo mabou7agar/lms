@@ -39,3 +39,18 @@ export const getLeads = (filters: LeadFilters = {}) => {
 
 /** POST /leads — create a lead. */
 export const createLead = (body: CreateLeadInput) => api.post<ApiSuccess<Lead>>("leads", body);
+
+/** A contact created by converting a lead. */
+export type Contact = {
+  id: string; // public_id
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  title: string | null;
+  created_at: string | null;
+};
+
+/** POST /leads/{public_id}/convert — convert a qualified lead into a contact. */
+export const convertLead = (publicId: string) =>
+  api.post<ApiSuccess<Contact>>(`leads/${publicId}/convert`);
