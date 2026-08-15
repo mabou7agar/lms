@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ENTERPRISE_FAQ } from "./enterprise-faq";
 import Link from "next/link";
 import {
   Building2, Users, BarChart3, GraduationCap, CalendarClock, ClipboardCheck, Award,
@@ -76,12 +77,8 @@ const STEPS: { title: { en: string; ar: string }; body: { en: string; ar: string
   { title: { en: "Launch & report", ar: "الإطلاق والتقارير" }, body: { en: "Learners start, and you report on completion and outcomes.", ar: "يبدأ المتعلّمون، وترفع تقارير الإتمام والنتائج." } },
 ];
 
-const FAQS: { q: { en: string; ar: string }; a: { en: string; ar: string } }[] = [
-  { q: { en: "Can we administer many learners and teams?", ar: "هل يمكننا إدارة عدد كبير من المتعلّمين والفِرق؟" }, a: { en: "Yes — organization and member administration is built in, with reporting.", ar: "نعم — إدارة المؤسسة والأعضاء مدمجة، مع التقارير." } },
-  { q: { en: "Do you support Arabic for the whole experience?", ar: "هل تدعمون العربية للتجربة بالكامل؟" }, a: { en: "Arabic is first-class with full right-to-left support across the product.", ar: "العربية من الدرجة الأولى مع دعم كامل للاتجاه من اليمين إلى اليسار عبر المنتج." } },
-  { q: { en: "How is pricing determined?", ar: "كيف يُحدَّد التسعير؟" }, a: { en: "Enterprise programs are scoped and quoted to your size and needs — talk to our team.", ar: "تُحدَّد برامج المؤسسات وتُسعَّر حسب حجمك واحتياجك — تحدّث إلى فريقنا." } },
-  { q: { en: "Do you claim ISO or SOC 2 certification?", ar: "هل تدّعون اعتماد ISO أو SOC 2؟" }, a: { en: "No. We describe how the platform is actually built (roles, MFA, tenant isolation, audit logs) and do not claim certifications we don't hold.", ar: "لا. نصف كيف بُنيت المنصّة فعليًا (الأدوار، المصادقة متعدّدة العوامل، عزل المستأجرين، سجلّات التدقيق) ولا نَدّعي اعتمادات لا نملكها." } },
-];
+// FAQ data lives in the server-safe ./enterprise-faq module (imported above) so the server page can
+// emit FAQPage JSON-LD from the same source without importing this "use client" component.
 
 export function EnterprisePage() {
   const { locale } = useI18n();
@@ -189,7 +186,7 @@ export function EnterprisePage() {
       <section aria-labelledby="ent-faq">
         <Reveal><h2 id="ent-faq" className="font-serif text-2xl font-semibold">{T.faqTitle[locale]}</h2></Reveal>
         <div className="mt-6 divide-y divide-border/60 rounded-2xl border border-border/70">
-          {FAQS.map((f, i) => (
+          {ENTERPRISE_FAQ.map((f, i) => (
             <details key={i} className="group p-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {f.q[locale]}
@@ -215,5 +212,3 @@ export function EnterprisePage() {
   );
 }
 
-/** Visible enterprise FAQ, exported so the server page can emit matching FAQPage JSON-LD. */
-export const ENTERPRISE_FAQ = FAQS;

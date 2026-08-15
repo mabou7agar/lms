@@ -8,7 +8,8 @@ const trackMock = vi.fn((..._a: unknown[]) => ({ event: "x", v: 1, props: {} }))
 vi.mock("@/lib/analytics/track", () => ({ track: (...a: unknown[]) => trackMock(...a) }));
 const calls = (): unknown[][] => trackMock.mock.calls as unknown as unknown[][];
 
-import { EnterprisePage, ENTERPRISE_FAQ } from "@/components/marketing/enterprise-page";
+import { EnterprisePage } from "@/components/marketing/enterprise-page";
+import { ENTERPRISE_FAQ } from "@/components/marketing/enterprise-faq";
 
 beforeEach(() => trackMock.mockClear());
 

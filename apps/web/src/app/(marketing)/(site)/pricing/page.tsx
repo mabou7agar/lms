@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/seo/json-ld";
-import { PricingPage, PRICING_FAQ } from "@/components/marketing/pricing-page";
+import { PricingPage } from "@/components/marketing/pricing-page";
+import { PRICING_FAQ } from "@/components/marketing/pricing-faq";
 
 const TITLE = "Pricing — HElbaron";
 const DESCRIPTION =

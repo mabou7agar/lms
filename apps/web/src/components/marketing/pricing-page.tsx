@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PRICING_FAQ } from "./pricing-faq";
 import Link from "next/link";
 import { Gift, BookOpen, CalendarClock, Building2, Check, CircleDot, ChevronRight, ArrowRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -90,11 +91,8 @@ const COMPARE: { dim: L; individual: Cell; org: Cell }[] = [
   { dim: { en: "Reporting & analytics", ar: "التقارير والتحليلات" }, individual: "varies", org: "yes" },
 ];
 
-const FAQS: { q: L; a: L }[] = [
-  { q: { en: "How much does a course cost?", ar: "كم تكلفة الدورة؟" }, a: { en: "Each paid course shows its own price on its course page; many courses are free.", ar: "كل دورة مدفوعة تعرض سعرها على صفحتها؛ والعديد من الدورات مجانية." } },
-  { q: { en: "Do you offer a subscription?", ar: "هل تقدّمون اشتراكًا؟" }, a: { en: "Purchasing is per course, per program, or by enterprise agreement — we don't advertise a public subscription price here.", ar: "الشراء يكون لكل دورة أو لكل برنامج أو باتفاق مؤسسي — ولا نعلن سعر اشتراك عام هنا." } },
-  { q: { en: "How do refunds, taxes, and invoices work?", ar: "كيف تعمل المبالغ المستردّة والضرائب والفواتير؟" }, a: { en: "Applicable taxes and invoicing are handled at checkout, and any refund follows the terms shown at checkout and in our Terms.", ar: "تُعالَج الضرائب والفوترة المطبّقة عند الدفع، وأي استرداد يتبع الشروط المعروضة عند الدفع وفي شروطنا." } },
-];
+// FAQ data lives in the server-safe ./pricing-faq module (imported above) so the server page can emit
+// FAQPage JSON-LD from the same source without importing this "use client" component.
 
 function CompareBadge({ cell }: { cell: Cell }) {
   const { locale } = useI18n();
@@ -196,7 +194,7 @@ export function PricingPage() {
       <section aria-labelledby="pr-faq">
         <Reveal><h2 id="pr-faq" className="font-serif text-2xl font-semibold">{T.faqTitle[locale]}</h2></Reveal>
         <div className="mt-6 divide-y divide-border/60 rounded-2xl border border-border/70">
-          {FAQS.map((f, i) => (
+          {PRICING_FAQ.map((f, i) => (
             <details key={i} className="group p-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {f.q[locale]}
@@ -211,4 +209,3 @@ export function PricingPage() {
   );
 }
 
-export const PRICING_FAQ = FAQS;

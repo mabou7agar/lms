@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/seo/json-ld";
-import { EnterprisePage, ENTERPRISE_FAQ } from "@/components/marketing/enterprise-page";
+import { EnterprisePage } from "@/components/marketing/enterprise-page";
+import { ENTERPRISE_FAQ } from "@/components/marketing/enterprise-faq";
 
 const TITLE = "Enterprise learning for organizations — HElbaron";
 const DESCRIPTION =
