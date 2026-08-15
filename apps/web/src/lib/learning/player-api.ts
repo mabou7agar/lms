@@ -203,6 +203,18 @@ export interface LessonContent {
   assignment?: { id: string; title: string; status?: string } | null;
 }
 
+interface LessonPayload {
+  id?: unknown;
+  title?: unknown;
+  type?: unknown;
+  content?: unknown;
+  blocks?: unknown;
+  progress?: { position_seconds?: unknown } | null;
+  playback?: { duration_seconds?: unknown } | null;
+  assessment?: unknown;
+  assignment?: unknown;
+}
+
 // ---------------------------------------------------------------------------
 // Frozen endpoint calls
 // ---------------------------------------------------------------------------
@@ -267,8 +279,41 @@ export function fetchLessonPlayback(lessonPublicId: string): Promise<PlaybackTic
 }
 
 /** ASSUMED: GET v1/lessons/{lesson} -> LessonContent (blocks + launch pointers). */
-export function fetchLessonContent(lessonPublicId: string): Promise<LessonContent> {
-  return api.data<LessonContent>(lessonBase(lessonPublicId));
+export async function fetchLessonContent(lessonPublicId: string): Promise<LessonContent> {
+  const payload = await api.data<LessonPayload>(lessonBase(lessonPublicId));
+  return normalizeLessonContent(payload, lessonPublicId);
+}
+
+export function normalizeLessonContent(payload: LessonPayload, fallbackId = ''): LessonContent {
+  const content = payload.content;
+  const contentObject = content && !Array.isArray(content) && typeof content === 'object'
+    ? content as Record<string, unknown>
+    : null;
+  const blocks = Array.isArray(payload.blocks)
+    ? payload.blocks
+    : Array.isArray(contentObject?.blocks)
+      ? contentObject.blocks
+      : [];
+  const video = payload.playback || payload.progress
+    ? {
+        position_seconds: typeof payload.progress?.position_seconds === 'number'
+          ? payload.progress.position_seconds
+          : null,
+        duration_seconds: typeof payload.playback?.duration_seconds === 'number'
+          ? payload.playback.duration_seconds
+          : null,
+      }
+    : null;
+
+  return {
+    id: typeof payload.id === 'string' ? payload.id : fallbackId,
+    title: typeof payload.title === 'string' ? payload.title : '',
+    type: typeof payload.type === 'string' ? payload.type : 'text',
+    blocks: blocks as LessonBlock[],
+    video,
+    assessment: payload.assessment as LessonContent['assessment'],
+    assignment: payload.assignment as LessonContent['assignment'],
+  };
 }
 
 // ---------------------------------------------------------------------------

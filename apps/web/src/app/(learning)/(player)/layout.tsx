@@ -1,15 +1,16 @@
 import type { ReactNode } from "react";
-import { AnnouncementBar } from "@/components/landing/announcement-bar";
-import { LandingHeader } from "@/components/landing/landing-header";
-import { LandingFooter } from "@/components/landing/landing-footer";
+import { LearnerFrameHeader } from "@/components/learning/learner-frame-header";
 
+/**
+ * Player surface frame. The marketing chrome (AnnouncementBar / LandingHeader /
+ * LandingFooter) is intentionally gone here — the learner player gets a slim,
+ * focused frame instead. Auth is enforced per-page (RequireAuth), not in the layout.
+ */
 export default function PlayerLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <AnnouncementBar />
-      <LandingHeader />
+      <LearnerFrameHeader />
       <main id="main-content" className="flex-1">{children}</main>
-      <LandingFooter />
     </div>
   );
 }
