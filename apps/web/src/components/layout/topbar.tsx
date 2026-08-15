@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { Menu, ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,11 @@ export function Topbar({ onMenuClick, start, menuExpanded, menuControlsId }: Top
         {start}
       </div>
       <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label={t("commerce.nav.cart")} asChild>
+          <Link href="/cart">
+            <ShoppingCart className="size-5" aria-hidden />
+          </Link>
+        </Button>
         <LangToggle />
         <ThemeToggle />
         <UserMenu />

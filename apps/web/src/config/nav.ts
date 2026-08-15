@@ -3,7 +3,7 @@ import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
   Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
   Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload, BookOpenCheck,
-  ShieldCheck, KeyRound, Palette,
+  ShieldCheck, KeyRound, Palette, Ticket, ReceiptText,
 } from "lucide-react";
 
 /**
@@ -43,6 +43,15 @@ export const instructorNav: NavItem[] = [
   { labelKey: "nav.teachMedia", href: "/teach/media", icon: Film },
   { labelKey: "nav.teachStudents", href: "/teach/students", icon: Users },
   { labelKey: "nav.profile", href: "/profile", icon: User },
+];
+
+// Commerce admin console: platform-wide commerce operations, gated by AdminGuard. Surfaced through a
+// dedicated admin AppShell (see (commerce)/admin/layout.tsx) with its own sidebar.
+export const adminNav: NavItem[] = [
+  { labelKey: "nav.adminAnalytics", href: "/admin/analytics", icon: BarChart3 },
+  { labelKey: "nav.adminOrders", href: "/admin/orders", icon: ShoppingCart },
+  { labelKey: "nav.adminCoupons", href: "/admin/coupons", icon: Ticket },
+  { labelKey: "nav.adminCreditNotes", href: "/admin/credit-notes", icon: ReceiptText },
 ];
 
 export const organizationNav: NavItem[] = [
