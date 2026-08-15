@@ -82,6 +82,15 @@ class MediaPicker extends Field
 
     protected bool | Closure $isSearchable = true;
 
+    /** Interactive crop/zoom/rotate editor in the upload modal (images only; no-op for other types). */
+    protected bool | Closure $hasImageEditor = true;
+
+    /** Round the crop viewport (avatars). Also pins a 1:1 aspect unless imageAspectRatios overrides it. */
+    protected bool | Closure $isCircleCrop = false;
+
+    /** @var array<int, string>|Closure|null Allowed editor aspect ratios, e.g. ['1:1'] or ['16:9']. */
+    protected array | Closure | null $imageAspectRatios = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -89,6 +98,7 @@ class MediaPicker extends Field
         $this->registerActions([
             fn (MediaPicker $component): Action => $component->selectAction(),
             fn (MediaPicker $component): Action => $component->uploadAction(),
+            fn (MediaPicker $component): Action => $component->pasteUrlAction(),
             fn (MediaPicker $component): Action => $component->removeAction(),
         ]);
 
@@ -168,6 +178,30 @@ class MediaPicker extends Field
         return $this;
     }
 
+    /** Toggle the crop/zoom/rotate editor shown before an uploaded image is sent (default on). */
+    public function imageEditor(bool | Closure $condition = true): static
+    {
+        $this->hasImageEditor = $condition;
+
+        return $this;
+    }
+
+    /** Circular crop viewport for avatar-style fields; implies a 1:1 aspect unless overridden. */
+    public function circleCrop(bool | Closure $condition = true): static
+    {
+        $this->isCircleCrop = $condition;
+
+        return $this;
+    }
+
+    /** @param array<int, string>|Closure|null $ratios e.g. ['1:1'], ['16:9', '4:3'] */
+    public function imageAspectRatios(array | Closure | null $ratios): static
+    {
+        $this->imageAspectRatios = $ratios;
+
+        return $this;
+    }
+
     // ── Configuration accessors (used by the view + actions) ──────────────────────────────────────
 
     /** @return list<string> */
@@ -206,6 +240,24 @@ class MediaPicker extends Field
     public function isSearchable(): bool
     {
         return (bool) $this->evaluate($this->isSearchable);
+    }
+
+    public function hasImageEditor(): bool
+    {
+        return (bool) $this->evaluate($this->hasImageEditor);
+    }
+
+    public function isCircleCrop(): bool
+    {
+        return (bool) $this->evaluate($this->isCircleCrop);
+    }
+
+    /** @return array<int, string>|null */
+    public function getImageAspectRatios(): ?array
+    {
+        $ratios = $this->evaluate($this->imageAspectRatios);
+
+        return is_array($ratios) ? $ratios : null;
     }
 
     // ── State classification + preview (dual-read) ────────────────────────────────────────────────
@@ -268,7 +320,7 @@ class MediaPicker extends Field
     public function getSelectionLabel(): ?string
     {
         return match ($this->getStateKind()) {
-            'reference' => $this->getSelectedReference()?->originalFilename ?? (string) $this->getState(),
+            'reference' => $this->getSelectedReference()->originalFilename ?? (string) $this->getState(),
             'legacy' => $this->getLegacyValue(),
             default => null,
         };
@@ -337,7 +389,7 @@ class MediaPicker extends Field
                     ->getSearchResultsUsing(fn (string $search): array => $component->searchAssets($search))
                     ->options(fn (): array => $component->searchAssets(null))
                     ->getOptionLabelUsing(fn ($value): ?string => app(MediaReferencePort::class)
-                        ->reference((string) $value)?->originalFilename ?? $value),
+                        ->reference((string) $value)->originalFilename ?? $value),
             ])
             ->action(function (MediaPicker $component, array $data): void {
                 $publicId = (string) ($data['media_asset'] ?? '');
@@ -364,11 +416,41 @@ class MediaPicker extends Field
             ->visible(fn (MediaPicker $component): bool => $component->getPurpose() !== null)
             ->modalHeading('Upload new media')
             ->modalSubmitActionLabel('Upload')
-            ->schema([
-                FileUpload::make('file')
-                    ->label('File')
-                    ->required()
-                    ->storeFiles(false),
+            ->schema(fn (MediaPicker $component): array => [
+                (function () use ($component): FileUpload {
+                    $file = FileUpload::make('file')
+                        ->label('File')
+                        ->required()
+                        ->storeFiles(false);
+
+                    // The crop/zoom/rotate editor only makes sense for images. Enable image mode + the editor
+                    // ONLY for an image-only picker, so document/video pickers (e.g. a promo trailer) keep
+                    // accepting their own types.
+                    if ($component->hasImageEditor() && $component->getAcceptedTypes() === ['image']) {
+                        $file->image()->imageEditor();
+
+                        if ($component->isCircleCrop()) {
+                            $file->circleCropper();
+                        }
+
+                        // A single fixed crop ratio (a circular avatar is always 1:1) lets us AUTO-OPEN the
+                        // crop/zoom/rotate editor the moment an image is chosen — the social-media profile
+                        // photo experience — instead of relying on the operator finding a manual edit handle.
+                        // Several selectable ratios fall back to the manually-opened editor.
+                        $ratios = $component->getImageAspectRatios();
+                        $single = $component->isCircleCrop()
+                            ? '1:1'
+                            : (is_array($ratios) && count($ratios) === 1 ? $ratios[0] : null);
+
+                        if ($single !== null) {
+                            $file->imageAspectRatio($single)->automaticallyOpenImageEditorForAspectRatio();
+                        } elseif (is_array($ratios) && $ratios !== []) {
+                            $file->imageEditorAspectRatios($ratios);
+                        }
+                    }
+
+                    return $file;
+                })(),
             ])
             ->action(function (MediaPicker $component, array $data): void {
                 $purpose = $component->getPurpose();
@@ -397,6 +479,40 @@ class MediaPicker extends Field
                 );
 
                 $component->state($publicId);
+            });
+    }
+
+    /**
+     * "Paste URL" — set the field to an EXTERNAL media URL (a legacy-URL write): an embeddable video
+     * link (YouTube, Vimeo, Wistia, Loom, Dailymotion) or a direct file URL. Complements upload/select
+     * so a promo trailer can be an external link OR an uploaded asset. Only shown when the field allows
+     * legacy URLs. The stored string is a plain URL (classifyValue === 'legacy'), which the public
+     * resolver passes through unchanged and the frontend VideoEmbed renders.
+     */
+    public function pasteUrlAction(): Action
+    {
+        return Action::make('pasteUrl')
+            ->label('Paste URL')
+            ->icon('heroicon-o-link')
+            ->color('gray')
+            ->visible(fn (MediaPicker $component): bool => $component->allowsLegacyUrl())
+            ->modalHeading('Paste a media URL')
+            ->modalDescription('Link an external video (YouTube, Vimeo, Wistia, Loom, Dailymotion) or a direct file URL.')
+            ->modalSubmitActionLabel('Use this URL')
+            ->form([
+                \Filament\Forms\Components\TextInput::make('url')
+                    ->label('URL')
+                    ->url()
+                    ->required()
+                    ->placeholder('https://')
+                    ->helperText('Paste a public video link or a direct media URL.'),
+            ])
+            ->action(function (MediaPicker $component, array $data): void {
+                $url = trim((string) ($data['url'] ?? ''));
+
+                if ($url !== '') {
+                    $component->state($url);
+                }
             });
     }
 

@@ -5,12 +5,15 @@ namespace App\Platform\Media\Ports;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Services\MediaAdminUploadService;
 use App\Platform\Media\Services\MediaPickerAssetValidator;
+use App\Platform\Media\Services\MediaVisibilityService;
 use App\Platform\Shared\Media\Contracts\MediaPickerPort;
 use App\Platform\Shared\Media\Contracts\PlaybackPort;
+use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaType;
 use App\Platform\Shared\Media\Exceptions\MediaUnavailableException;
 use App\Platform\Shared\Tenancy\TenantContext;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Media's implementation of the Shared MediaPickerPort — the seam the reusable Filament MediaPicker
@@ -32,6 +35,7 @@ class MediaPickerAdapter implements MediaPickerPort
         private readonly MediaAssetRefResolver $refs,
         private readonly PlaybackPort $playback,
         private readonly TenantContext $tenant,
+        private readonly MediaVisibilityService $visibility,
     ) {}
 
     public function searchAssets(int $actorId, array $acceptedTypes, ?string $search): array
@@ -72,6 +76,12 @@ class MediaPickerAdapter implements MediaPickerPort
 
         if ($asset === null || ! $asset->status->isPlayable() || ! $this->visibleToActiveTenant($asset)) {
             return null;
+        }
+
+        // Dev local store: objects are publicly served off the local disk, so there is nothing to sign —
+        // hand back the plain disk URL. (The playback signer targets Mux/S3 and has no local backend.)
+        if ($asset->provider === MediaProvider::Local && $asset->storage_key !== null) {
+            return Storage::disk((string) config('media.local.disk', 'media_local'))->url($asset->storage_key);
         }
 
         try {
@@ -134,6 +144,11 @@ class MediaPickerAdapter implements MediaPickerPort
             sizeBytes: $sizeBytes,
             contents: $contents,
         );
+
+        // The picker is an admin surface for public-facing display fields (avatars, thumbnails, logos).
+        // Publish freshly-uploaded IMAGES so the public URL resolver can serve them; the service is
+        // owner-only + image-only and no-ops for non-images, so this never widens a non-display asset.
+        $asset = $this->visibility->markPublicForOwner($asset, $actorId);
 
         return (string) $asset->public_id;
     }

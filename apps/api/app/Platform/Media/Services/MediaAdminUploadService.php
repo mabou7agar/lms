@@ -10,6 +10,7 @@ use App\Platform\Shared\Media\Enums\MediaType;
 use RuntimeException;
 use Throwable;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -138,6 +139,15 @@ class MediaAdminUploadService
      */
     private function pushBytes(DirectUploadInstructions $instructions, string $contents, string $mimeType): void
     {
+        // Dev local provider: write straight to the disk. The admin upload originates on the server, and
+        // the dev API is a single `artisan serve` worker, so a loopback HTTP PUT would deadlock. This is the
+        // one path that skips the network — every hosted provider (Mux/S3) still forwards over HTTP below.
+        if ($instructions->localDisk !== null && $instructions->localKey !== null) {
+            Storage::disk($instructions->localDisk)->put($instructions->localKey, $contents);
+
+            return;
+        }
+
         $headers = $instructions->headers;
 
         $request = Http::withHeaders($headers);

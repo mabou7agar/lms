@@ -9,10 +9,18 @@
 return [
 
     'ingestion' => [
-        // fake (default) | mux | s3. `fake` forces every type onto the credential-free adapter so
-        // local/dev/test never contact a vendor. Any other value routes streamed types (video/
-        // audio) to Mux and stored types (document/file/image) to S3.
+        // fake (default) | local | mux | s3. `fake` forces every type onto the credential-free adapter so
+        // local/dev/test never contact a vendor (but stores no real bytes). `local` is the dev store: it
+        // persists REAL uploaded bytes on the local disk and serves them back, so admin uploads display —
+        // stored types (image/document/file) go local, streamed types (video/audio) fall back to fake. Any
+        // other value routes streamed types to Mux and stored types to S3.
         'default' => env('MEDIA_INGESTION_PROVIDER', 'fake'),
+    ],
+
+    // Local disk ingestion for development (see 'ingestion.default' = 'local'). Points at a framework
+    // filesystem disk whose objects are publicly served; never used in production.
+    'local' => [
+        'disk' => env('MEDIA_LOCAL_DISK', 'media_local'),
     ],
 
     'upload' => [

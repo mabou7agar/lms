@@ -3,6 +3,7 @@
 namespace App\Platform\Media\Ingestion;
 
 use App\Platform\Media\Ingestion\Providers\FakeIngestionProvider;
+use App\Platform\Media\Ingestion\Providers\LocalIngestionProvider;
 use App\Platform\Media\Ingestion\Providers\MuxIngestionProvider;
 use App\Platform\Media\Ingestion\Providers\S3IngestionProvider;
 use App\Platform\Shared\Media\Contracts\IngestionProvider;
@@ -32,6 +33,14 @@ class IngestionProviderManager
             return MediaProvider::Fake;
         }
 
+        // Dev local disk: persist EVERY type's bytes on the local disk. Streamed types (video/audio) are
+        // stored locally too rather than falling back to the credential-free fake adapter — the fake path
+        // POSTs to an unreachable host (upload.fake.test), which only 500s an admin upload in local dev.
+        // Nothing goes to Fake while ingestion is 'local'. Production is unaffected (default is s3/mux there).
+        if ($default === MediaProvider::Local) {
+            return MediaProvider::Local;
+        }
+
         return $type->isStreamed() ? MediaProvider::Mux : MediaProvider::S3;
     }
 
@@ -47,6 +56,7 @@ class IngestionProviderManager
         return match ($provider) {
             MediaProvider::Mux => new MuxIngestionProvider((array) config('media.mux')),
             MediaProvider::S3 => new S3IngestionProvider((array) config('media.s3')),
+            MediaProvider::Local => new LocalIngestionProvider((array) config('media.local')),
             MediaProvider::Fake => $this->app->make(FakeIngestionProvider::class),
             MediaProvider::External => throw new InvalidArgumentException('External media is not ingested.'),
         };

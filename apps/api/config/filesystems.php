@@ -25,6 +25,18 @@ return [
             // CloudFront domain used to build signed delivery URLs.
             'cloudfront_url' => env('CLOUDFRONT_URL'),
         ],
+
+        // Dev-only public media store (MEDIA_INGESTION_PROVIDER=local). Publicly readable objects under
+        // storage/app/public/media, served at APP_URL/storage/media via the storage:link symlink below.
+        // Never used in production, where media lives on S3/Mux.
+        'media_local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/media'),
+            'url' => env('APP_URL', 'http://localhost:8000').'/storage/media',
+            'visibility' => 'public',
+            'serve' => true,
+            'throw' => false,
+        ],
     ],
 
     'links' => [

@@ -1,8 +1,10 @@
+import { proxyMediaUrl } from "@/lib/media/proxy";
 import { cn } from "@/lib/utils";
 
 /**
- * Branded SVG course cover. thumbnail_path is a private storage key (served via signed URL later),
- * so we render a designed placeholder in the brand palette — deterministic per title.
+ * Course cover. When a real thumbnail URL is supplied (a published MediaAsset resolved server-side by
+ * PublicAssetUrlResolver, or a legacy URL), it renders that image. Otherwise it falls back to a
+ * designed, brand-palette SVG placeholder — deterministic per title — so a card is never blank.
  */
 const PALETTES: [string, string][] = [
   ["var(--primary)", "oklch(0.27 0.04 190)"],
@@ -11,7 +13,23 @@ const PALETTES: [string, string][] = [
   ["oklch(0.30 0.045 190)", "var(--primary)"],
 ];
 
-export function CourseMedia({ title, className }: { title: string; className?: string }) {
+export function CourseMedia({ title, src, className }: { title: string; src?: string | null; className?: string }) {
+  const resolvedSrc = proxyMediaUrl(src);
+  if (resolvedSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- resolved public/CDN URL; next/image adds no value on a decorative 16:9 cover
+      <img
+        src={resolvedSrc}
+        alt=""
+        width={400}
+        height={225}
+        className={cn("aspect-video w-full object-cover", className)}
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+
   const hash = Array.from(title).reduce((a, c) => a + c.charCodeAt(0), 0);
   const [c1, c2] = PALETTES[hash % PALETTES.length];
   const initial = title.trim().charAt(0).toUpperCase() || "H";

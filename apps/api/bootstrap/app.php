@@ -5,6 +5,7 @@ use App\Http\Middleware\EnforceApiTokenScope;
 use App\Http\Middleware\ForceJsonForApi;
 use App\Http\Middleware\SecurityHeaders;
 use App\Platform\Features\Http\Middleware\EnsureFeatureEnabled;
+use App\Platform\Media\Http\Controllers\PublicMediaController;
 use App\Platform\Shared\Http\Middleware\ResolveTenant;
 use App\Platform\Shared\Http\Middleware\SetLocale;
 use App\Platform\Shared\Support\ApiResponse;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Sentry\Laravel\Integration;
 
 /*
@@ -27,6 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Public media delivery is registered here (not in routes/web.php) so it receives ONLY global
+        // middleware — never the `web` group's session/cookie stack. The endpoint is stateless, public,
+        // and immutably cacheable (fingerprinted ?v= URL): it must not read or write a session. Besides
+        // being architecturally correct, this removes the per-request Redis session read+decrypt+write
+        // (SESSION_ENCRYPT) that serialised the browser's concurrent thumbnail/avatar burst and made
+        // FrankenPHP/Octane return 503 under load (the `api` group, which has no session, never 503s).
+        // This is a plain bare-route registration, NOT a `->withoutMiddleware(...)` strip of a web route.
+        then: static function (): void {
+            Route::get('/media/public/{publicId}', PublicMediaController::class)->name('media.public.show');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind ALB/CloudFront: trust forwarded headers so isSecure()/host are correct.

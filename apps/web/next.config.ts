@@ -24,11 +24,15 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   scriptSrc,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  // Public media (course thumbnails, instructor avatars) is served by the API origin, not same-origin,
+  // so it must be allowed here as well as by `https:` — in dev the API is http://localhost:8000.
+  `img-src 'self' data: blob: https: ${apiOrigin()}`,
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin()}`,
-  "frame-src https://www.youtube-nocookie.com https://player.mux.com",
-  "media-src 'self' blob: https:",
+  // Video trailer embeds: YouTube (nocookie + canonical), Vimeo, Wistia, Loom, Dailymotion, plus Mux.
+  "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://fast.wistia.net https://www.loom.com https://geo.dailymotion.com https://player.mux.com",
+  // Uploaded/local trailer files play from the API media origin (dev) or a CDN (`https:`); blob: covers object URLs.
+  `media-src 'self' blob: https: ${apiOrigin()}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -83,6 +87,19 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
+  },
+  async rewrites() {
+    // Dev-only same-origin media proxy. Public media (course thumbnails, instructor avatars) is served
+    // by the API origin (http://localhost:8000). Chromium's concurrent cross-origin <img> burst against
+    // that origin fails on the local Windows/Docker/FrankenPHP setup (hangs/503), even though every
+    // non-browser client gets 200. Serving the SAME path from this Next origin — which proxies to the
+    // API server-side over Node — removes the cross-origin variable and renders reliably. Paired with
+    // proxyMediaUrl() (src/lib/media/proxy.ts), which rewrites absolute API media URLs to this path in
+    // dev. In production media comes from a CDN (absolute, different origin) so nothing matches here.
+    if (isDev) {
+      return [{ source: "/media/public/:path*", destination: `${apiOrigin()}/media/public/:path*` }];
+    }
+    return [];
   },
   async redirects() {
     return [
