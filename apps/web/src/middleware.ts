@@ -36,8 +36,19 @@ const PROTECTED_PREFIXES = [
   "/dashboards",
 ];
 
+// Public carve-outs INSIDE an otherwise-protected prefix. `/teach/apply` is the public instructor
+// application funnel (a marketing CTA), so it must stay reachable by guests even though every other
+// `/teach/*` route is protected. Matched exactly (and as a sub-path) so `/teach`, `/teach/courses`,
+// `/teach/media`, `/teach/students`, etc. remain guarded.
+const PUBLIC_EXCEPTIONS = ["/teach/apply"];
+
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
+
+  const isPublicException = PUBLIC_EXCEPTIONS.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  if (isPublicException) return NextResponse.next();
 
   const isProtected = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

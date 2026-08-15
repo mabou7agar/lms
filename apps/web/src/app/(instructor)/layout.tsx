@@ -4,23 +4,34 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { RequireAuth } from "@/lib/auth/guards";
 import { AppShell } from "@/components/layout/app-shell";
-import { accountNav, instructorNav } from "@/config/nav";
+import { AnnouncementBar } from "@/components/landing/announcement-bar";
+import { LandingHeader } from "@/components/landing/landing-header";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { PageTransition } from "@/components/layout/page-transition";
+import { instructorNav } from "@/config/nav";
 
 /**
- * Instructor portal. Teaching surfaces require an instructor/admin role, but the "apply to teach"
- * page must be reachable by any authenticated learner who wants to become an instructor — otherwise
- * the application funnel is walled off from exactly the people it is for. On that one route the
- * guard is auth-only AND the instructor-only sidebar is replaced with the neutral account nav, so a
- * non-instructor is never shown (or dead-ended into) teaching surfaces they cannot open.
+ * Instructor portal. Every teaching surface requires an instructor/admin role — except the public
+ * "become an instructor" application at /teach/apply. That page is the top of the recruitment funnel
+ * and must be reachable by anyone (guests included), so it is rendered as a public marketing page
+ * with the landing header/footer chrome instead of being wrapped in RequireAuth + the account shell.
+ * This mirrors how (commerce)/layout.tsx special-cases /admin to a different treatment. Keeping the
+ * branch keyed on the exact pathname ensures the authenticated /teach dashboard and all other
+ * /teach/* routes stay guarded exactly as before.
  */
 export default function InstructorLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   if (pathname === "/teach/apply") {
     return (
-      <RequireAuth>
-        <AppShell nav={accountNav}>{children}</AppShell>
-      </RequireAuth>
+      <div className="flex min-h-dvh flex-col">
+        <AnnouncementBar />
+        <LandingHeader />
+        <main id="main-content" className="flex-1">
+          <PageTransition className="mx-auto w-full max-w-6xl px-4 py-10">{children}</PageTransition>
+        </main>
+        <LandingFooter />
+      </div>
     );
   }
 
