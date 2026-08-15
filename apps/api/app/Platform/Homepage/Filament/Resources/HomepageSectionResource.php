@@ -353,7 +353,41 @@ class HomepageSectionResource extends Resource
                             TextInput::make('ar')->label('Cell (AR)'),
                         ])->defaultItems(2),
                 ])->reorderable()->collapsible()->defaultItems(1),
+
+            // --- Brand section (presentational bridge to a built-in home section) ---
+            ...self::visibleGroup(BlockType::BrandSection, [
+                Select::make('content.key')->label('Built-in section')
+                    ->options(self::brandSectionKeys())
+                    ->required()
+                    ->native(false)
+                    ->helperText('Renders the matching bespoke brand home section as-is (no content editing).'),
+            ]),
         ]);
+    }
+
+    /**
+     * The built-in brand home sections a Brand Section block may render, mirroring the frontend
+     * BrandSectionBlock key map. Chrome sections (persona paths / analytics / footer) are excluded —
+     * they are rendered by the page shell, not the CMS body.
+     *
+     * @return array<string, string>
+     */
+    private static function brandSectionKeys(): array
+    {
+        return [
+            'hero' => 'Hero',
+            'proof_band' => 'Proof band',
+            'trusted_by' => 'Trusted by (logos)',
+            'product_modes' => 'Product modes',
+            'why_helbaron' => 'Why HElbaron',
+            'learning_experience' => 'Learning experience',
+            'learning_journey' => 'Learning journey',
+            'featured_courses' => 'Featured courses',
+            'testimonials' => 'Testimonials',
+            'instructors' => 'Instructors',
+            'enterprise_trust' => 'Enterprise trust',
+            'final_cta' => 'Final CTA',
+        ];
     }
 
     /**

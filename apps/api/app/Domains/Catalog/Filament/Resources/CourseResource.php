@@ -124,7 +124,9 @@ class CourseResource extends Resource
                 ->acceptedTypes(['image'])
                 ->allowLegacyUrl()
                 ->searchable()
-                ->helperText('Pick from the media library or upload a new image. Existing URLs are kept until replaced.'),
+                // Course cards render a 16:9 thumbnail — crop to that frame on upload.
+                ->imageAspectRatios(['16:9'])
+                ->helperText('Pick from the media library or upload a new image. Crop to the 16:9 card frame. Existing URLs are kept until replaced.'),
             Section::make('SEO')->columns(2)->schema([
                 TextInput::make('seo.meta_title')->label('Meta title')->maxLength(255),
                 TextInput::make('seo.canonical')->label('Canonical URL')->maxLength(2048)->url(),

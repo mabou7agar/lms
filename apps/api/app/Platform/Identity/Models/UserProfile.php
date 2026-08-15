@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * legacy path/URL — never a resolved/signed URL. i18n uses the shared HasTranslations pattern, so the
  * legacy scalar `bio` column stays synced from `bio_i18n` on write.
  *
+ * @property-read string $public_id
  * @property string|null $bio
  * @property string|null $avatar_path
  * @property string|null $profile_photo
@@ -60,6 +61,7 @@ class UserProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

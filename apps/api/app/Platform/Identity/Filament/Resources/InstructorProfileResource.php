@@ -7,8 +7,8 @@ use App\Platform\Identity\Models\UserProfile;
 use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -17,6 +17,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * U4 - Admin editing surface for instructor profiles. Operates over the shared UserProfile row but is
@@ -44,6 +45,22 @@ class InstructorProfileResource extends Resource
     protected static ?string $recordTitleAttribute = 'public_id';
 
     protected static ?string $recordRouteKeyName = 'public_id';
+
+    /**
+     * Show the instructor's NAME in the edit heading / breadcrumb instead of the raw public_id UUID.
+     * Prefers the profile's first + last name and falls back to the linked user's name — which always
+     * exists here, since getEloquentQuery() only surfaces profiles whose user holds the instructor role.
+     */
+    public static function getRecordTitle(?Model $record): ?string
+    {
+        if (! $record instanceof UserProfile) {
+            return null;
+        }
+
+        $name = trim(($record->first_name ?? '').' '.($record->last_name ?? ''));
+
+        return $name !== '' ? $name : $record->user->name;
+    }
 
     /** Only surface profiles that belong to instructor users. */
     public static function getEloquentQuery(): Builder
@@ -82,14 +99,18 @@ class InstructorProfileResource extends Resource
                     ->allowLegacyUrl()
                     ->reusable()
                     ->searchable()
-                    ->helperText('Pick from the media library or upload. Existing paths are kept until replaced.'),
+                    // Round crop for the avatar — the admin frames the visible circle before upload.
+                    ->circleCrop()
+                    ->helperText('Pick from the media library or upload. Crop to frame the circular avatar. Existing paths are kept until replaced.'),
                 MediaPicker::make('cover_photo')
                     ->label('Cover photo')
                     ->purpose('lesson_image')
                     ->acceptedTypes(['image'])
                     ->allowLegacyUrl()
                     ->reusable()
-                    ->searchable(),
+                    ->searchable()
+                    // Wide banner crop for the cover.
+                    ->imageAspectRatios(['3:1', '16:9']),
             ]),
             Section::make('Details')->columns(2)->schema([
                 TagsInput::make('specialties')->label('Specialties')->columnSpanFull(),
