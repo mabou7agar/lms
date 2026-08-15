@@ -13,6 +13,7 @@ use App\Domains\Live\Providers\LiveServiceProvider;
 use App\Domains\Qna\Providers\QnaServiceProvider;
 use App\Domains\Reviews\Providers\ReviewsServiceProvider;
 use App\Platform\AI\Providers\AiServiceProvider;
+use App\Platform\Blog\Providers\BlogServiceProvider;
 use App\Platform\Branding\Providers\BrandingServiceProvider;
 use App\Platform\Features\Providers\FeaturesServiceProvider;
 use App\Platform\Homepage\Providers\HomepageServiceProvider;
@@ -67,6 +68,7 @@ return [
     BrandingServiceProvider::class,
     NavigationServiceProvider::class,
     PagesServiceProvider::class,
+    BlogServiceProvider::class,
     FeaturesServiceProvider::class,
     SeoServiceProvider::class,
 

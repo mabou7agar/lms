@@ -44,6 +44,7 @@ export const brandTheme = {
     { label: { en: "Events", ar: "الفعاليات" }, href: "/events" },
     { label: { en: "B2B / B2G Training", ar: "تدريب المؤسسات" }, href: "/enterprise" },
     { label: { en: "Consulting", ar: "الاستشارات" }, href: "/advisory" },
+    { label: { en: "Blog", ar: "المدوّنة" }, href: "/blog" },
   ] as LinkItem[],
 
   hero: {

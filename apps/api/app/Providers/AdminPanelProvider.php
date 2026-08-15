@@ -43,6 +43,7 @@ class AdminPanelProvider extends PanelProvider
         'App\\Platform\\Branding\\Filament\\Resources' => 'Platform/Branding/Filament/Resources',
         'App\\Platform\\Navigation\\Filament\\Resources' => 'Platform/Navigation/Filament/Resources',
         'App\\Platform\\Pages\\Filament\\Resources' => 'Platform/Pages/Filament/Resources',
+        'App\\Platform\\Blog\\Filament\\Resources' => 'Platform/Blog/Filament/Resources',
         'App\\Platform\\Features\\Filament\\Resources' => 'Platform/Features/Filament/Resources',
         'App\\Platform\\Seo\\Filament\\Resources' => 'Platform/Seo/Filament/Resources',
         'App\\Contexts\\Learning\\Filament\\Resources' => 'Contexts/Learning/Filament/Resources',
