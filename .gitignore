@@ -44,3 +44,19 @@ apps/web/.env.production
 apps/api/.env.production.*
 apps/web/.env.production.*
 docs/verification/w09/evidence/
+
+# --- Post-Wave-2 consolidation: QA artifacts, generated GA evidence, runtime uploads, temp scripts (never commit) ---
+# Local QA screenshots / sweep outputs (new runs). NOTE: 44 legacy artifacts remain tracked from an
+# earlier commit; this only hides NEW untracked ones.
+artifacts/
+# Generated GA verification-run evidence bundles (container logs, gate outputs, scans) — mirrors the
+# already-ignored w09/evidence. Authored docs under docs/ (e.g. docs/audits/*.md) stay tracked.
+docs/verification/ga/evidence/
+# Runtime uploaded media + Livewire temp uploads (local media store), and Octane runtime state.
+apps/api/storage/app/public/media/
+apps/api/storage/app/private/livewire-tmp/
+apps/api/storage/logs/*.json
+# One-off local SQL + QA scripts that must never ship.
+_relink.sql
+_update_courses.sql
+apps/api/qa_role_map.php
