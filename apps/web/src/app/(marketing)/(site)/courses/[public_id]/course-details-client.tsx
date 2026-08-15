@@ -13,9 +13,11 @@ import { QueryState } from "@/components/student/query-state";
 import { ReviewsSection } from "@/components/community/reviews-section";
 import { CourseCard } from "@/components/catalog/course-card";
 import { CourseMedia } from "@/components/catalog/course-media";
+import { VideoEmbed, hasEmbeddableVideo } from "@/components/media/video-embed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { proxyMediaUrl } from "@/lib/media/proxy";
 import { Reveal } from "@/components/landing/reveal";
 import { toast } from "@/components/ui/toast";
 
@@ -104,6 +106,7 @@ export function CourseDetailsClient() {
                         <div className="flex -space-x-2 rtl:space-x-reverse">
                           {course.trainers.slice(0, 4).map((tr) => (
                             <Avatar key={tr.id} className="size-9 border-2 border-card">
+                              {tr.avatar_path ? <AvatarImage src={proxyMediaUrl(tr.avatar_path)} alt={tr.name} /> : null}
                               <AvatarFallback className="text-[0.7rem]">
                                 {tr.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
                               </AvatarFallback>
@@ -123,12 +126,27 @@ export function CourseDetailsClient() {
                   <Reveal delay={120}>
                     <div className="rounded-2xl border border-border/70 bg-surface/50 p-2 shadow-xl shadow-primary/10">
                       <div className="overflow-hidden rounded-xl">
-                        <CourseMedia title={course.title} />
+                        <CourseMedia src={course.thumbnail_path} title={course.title} />
                       </div>
                     </div>
                   </Reveal>
                 </div>
               </section>
+
+              {/* PREVIEW — promo/trailer video (uploaded file OR external YouTube/Vimeo/Wistia/Loom/Dailymotion). */}
+              {course.trailer_path && hasEmbeddableVideo(course.trailer_path) ? (
+                <Reveal as="section">
+                  <h2 className="text-h2 font-serif">{L("Preview", "معاينة")}</h2>
+                  <div className="mt-4 h-px w-16 bg-copper/40" aria-hidden />
+                  <div className="mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+                    <VideoEmbed
+                      url={course.trailer_path}
+                      title={course.title}
+                      poster={proxyMediaUrl(course.thumbnail_path)}
+                    />
+                  </div>
+                </Reveal>
+              ) : null}
 
               <div className="grid gap-10 lg:grid-cols-3">
                 <div className="space-y-12 lg:col-span-2">
@@ -150,6 +168,7 @@ export function CourseDetailsClient() {
                         {course.trainers.map((tr) => (
                           <div key={tr.id} className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
                             <Avatar className="size-12">
+                              {tr.avatar_path ? <AvatarImage src={proxyMediaUrl(tr.avatar_path)} alt={tr.name} /> : null}
                               <AvatarFallback>{tr.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div>
@@ -179,7 +198,7 @@ export function CourseDetailsClient() {
                     <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
                       <div className="p-2">
                         <div className="overflow-hidden rounded-xl">
-                          <CourseMedia title={course.title} />
+                          <CourseMedia src={course.thumbnail_path} title={course.title} />
                         </div>
                       </div>
                       <div className="space-y-5 p-5">
