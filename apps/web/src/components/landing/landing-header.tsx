@@ -15,10 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { LangToggle } from "@/components/layout/lang-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+/** Two-letter initials for the avatar fallback. */
+const initials = (name: string): string => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
 export function LandingHeader() {
   const { t, locale } = useI18n();
-  const { status } = useAuth();
+  const { status, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -111,12 +116,20 @@ export function LandingHeader() {
             <ThemeToggle />
           </div>
           <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
-          <Button asChild size="sm" variant="ghost" className="hidden font-medium sm:inline-flex">
-            <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
-          </Button>
-          <Button asChild size="sm" className="shine relative hidden overflow-hidden shadow-sm sm:inline-flex">
-            <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
-          </Button>
+          {authed ? (
+            <div className="hidden sm:block">
+              <UserMenu showName />
+            </div>
+          ) : (
+            <>
+              <Button asChild size="sm" variant="ghost" className="hidden font-medium sm:inline-flex">
+                <Link href="/login">{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
+              </Button>
+              <Button asChild size="sm" className="shine relative hidden overflow-hidden shadow-sm sm:inline-flex">
+                <Link href="/register">{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
+              </Button>
+            </>
+          )}
 
           <Button
             type="button"
@@ -168,12 +181,40 @@ export function LandingHeader() {
             <ThemeToggle />
           </div>
           <div className="mt-4 flex flex-col gap-2">
-            <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
-              <Link href={authed ? "/dashboard" : "/login"}>{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
-            </Button>
-            <Button asChild className="shine relative overflow-hidden" onClick={() => setMenuOpen(false)}>
-              <Link href={authed ? "/dashboard" : "/register"}>{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
-            </Button>
+            {authed && user ? (
+              <>
+                <div className="flex items-center gap-2.5 rounded-lg px-1 py-1.5">
+                  <Avatar className="size-9">
+                    <AvatarFallback>{initials(user.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-medium">{user.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                  </div>
+                </div>
+                <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
+                  <Link href="/dashboard">{t("nav.dashboard")}</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void logout();
+                  }}
+                >
+                  {t("common.signOut")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
+                  <Link href="/login">{pickLocale(brandTheme.ctas.signIn, locale)}</Link>
+                </Button>
+                <Button asChild className="shine relative overflow-hidden" onClick={() => setMenuOpen(false)}>
+                  <Link href="/register">{pickLocale(brandTheme.ctas.startFree, locale)}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
