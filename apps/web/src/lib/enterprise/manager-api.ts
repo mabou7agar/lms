@@ -284,7 +284,7 @@ export const analyzeImport = async (file: File): Promise<ImportDryRun> => {
 export const commitImport = async (file: File, invite: boolean): Promise<ImportCommit> => {
   const form = new FormData();
   form.append("file", file);
-  form.append("commit", "true");
-  form.append("invite", invite ? "true" : "false");
+  form.append("commit", "1");
+  form.append("invite", invite ? "1" : "0");
   return (await postForm<ApiSuccess<ImportCommit>>("enterprise/employees/import", form)).data;
 };
