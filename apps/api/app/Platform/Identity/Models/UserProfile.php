@@ -17,6 +17,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Media fields store a MediaAsset public_id reference (the value the shared MediaPicker stores) OR a
  * legacy path/URL — never a resolved/signed URL. i18n uses the shared HasTranslations pattern, so the
  * legacy scalar `bio` column stays synced from `bio_i18n` on write.
+ *
+ * @property string|null $bio
+ * @property string|null $avatar_path
+ * @property string|null $profile_photo
+ * @property string|null $cover_photo
+ * @property string|null $website
+ * @property array<string, string>|null $headline_i18n
+ * @property array<string, string>|null $bio_i18n
+ * @property array<int, string>|null $specialties
+ * @property array<string, string>|null $social_links
+ * @property int $display_order
  */
 class UserProfile extends Model
 {

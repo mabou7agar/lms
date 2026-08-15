@@ -3,6 +3,7 @@
 namespace App\Domains\Catalog\Http\Resources;
 
 use App\Domains\Catalog\Models\Course;
+use App\Domains\Catalog\Models\CourseTag;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Shared\Media\Contracts\PublicAssetUrlResolver;
 use App\Platform\Shared\Resources\BaseResource;
@@ -32,9 +33,12 @@ class CourseResource extends BaseResource
             'visibility' => $this->resource->visibility->value,
             'is_featured' => $this->resource->is_featured,
             'thumbnail_path' => app(PublicAssetUrlResolver::class)->resolve($this->resource->thumbnail_path),
-            // Promo video: same media-safe resolution as thumbnail_path (public_id -> URL, legacy
-            // value passes through, private/missing -> null). Never a raw reference or storage key.
-            'trailer' => app(PublicAssetUrlResolver::class)->resolve($this->resource->trailer_path),
+            // Promo video: same media-safe resolution as thumbnail_path (public_id -> URL, an external
+            // http(s) trailer URL — YouTube/Vimeo/etc. — is a legacy value and passes through UNCHANGED,
+            // private/missing -> null). Never a raw reference or storage key. Exposed as `trailer_path`
+            // (mirrors the DB column + `thumbnail_path`); `trailer` is kept as a back-compat alias.
+            'trailer_path' => $trailer = app(PublicAssetUrlResolver::class)->resolve($this->resource->trailer_path),
+            'trailer' => $trailer,
             'duration_minutes' => $this->resource->duration_minutes,
             // Marketing lists, resolved to the request locale (never the raw {en,ar} map).
             'learning_objectives' => $this->localizedList('learning_objectives'),
@@ -51,7 +55,7 @@ class CourseResource extends BaseResource
                 'code' => $this->resource->language->code,
             ] : null),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
-            'tags' => $this->whenLoaded('tags', fn () => $this->resource->tags->map(fn ($t) => [
+            'tags' => $this->whenLoaded('tags', fn () => $this->resource->tags->map(fn (CourseTag $t) => [
                 'id' => $t->public_id, 'name' => $t->localized('name'), 'slug' => $t->slug,
             ])->values()),
             'trainers' => $this->whenLoaded('trainerLinks', fn () => TrainerResource::collection(

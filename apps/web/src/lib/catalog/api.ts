@@ -7,6 +7,8 @@ export type CourseListItem = {
   slug: string;
   subtitle: string | null;
   thumbnail_path: string | null;
+  /** Instructors on this course (for cover avatars). Empty unless the endpoint attached them. */
+  trainers?: { id: string; name: string; avatar_path: string | null }[];
   is_featured: boolean;
   level?: string | null;
   language?: string | null;
@@ -14,6 +16,22 @@ export type CourseListItem = {
 };
 
 export type Trainer = { id: string; name: string; headline?: string | null; avatar_path?: string | null };
+
+/** Full public instructor profile (GET /trainers/{id}) — mirrors InstructorProfileResource. */
+export type TrainerProfile = {
+  id: string;
+  name: string;
+  headline: string | null;
+  bio: string | null;
+  specialties: string[];
+  social_links: Record<string, string> | null;
+  website: string | null;
+  profile_photo: string | null;
+  cover_photo: string | null;
+  avatar_path: string | null;
+};
+
+export type TrainerProfilePayload = { profile: TrainerProfile; courses: CourseListItem[] };
 export type Tag = { id: string; name: string; slug: string };
 export type Category = {
   id: string;
@@ -34,6 +52,9 @@ export type CourseDetail = {
   visibility: string;
   is_featured: boolean;
   thumbnail_path: string | null;
+  // Promo/trailer video: an uploaded MediaAsset URL or an external platform URL (YouTube, Vimeo, …),
+  // resolved server-side by PublicAssetUrlResolver (external URLs pass through unchanged). Null if unset.
+  trailer_path: string | null;
   seo?: Record<string, unknown> | null;
   level: { id: string; name: string } | null;
   language: { id: string; name: string; code?: string } | null;
@@ -69,6 +90,8 @@ export const getCourse = (publicId: string) =>
   api.data<CourseDetail>(`courses/${publicId}`, { auth: false });
 export const getCategories = () => api.data<Category[]>("categories", { auth: false });
 export const getTrainers = () => api.data<Trainer[]>("trainers", { auth: false });
+export const getTrainer = (publicId: string) =>
+  api.data<TrainerProfilePayload>(`trainers/${publicId}`, { auth: false });
 
 /** Free-course enrollment (real Learning endpoint). Paid courses require checkout (out of scope). */
 export const enrollInCourse = (publicId: string) => api.post(`courses/${publicId}/enroll`);

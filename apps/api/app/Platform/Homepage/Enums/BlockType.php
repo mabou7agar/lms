@@ -53,6 +53,9 @@ enum BlockType: string
     case LogoCloud = 'logo_cloud';
     case ComparisonTable = 'comparison_table';
 
+    // --- Presentational bridge: renders a fixed built-in brand home section (content is just its key) ---
+    case BrandSection = 'brand_section';
+
     public function label(): string
     {
         return match ($this) {
@@ -80,6 +83,7 @@ enum BlockType: string
             self::RichText => 'Rich Text',
             self::LogoCloud => 'Logo Cloud',
             self::ComparisonTable => 'Comparison Table',
+            self::BrandSection => 'Brand Section',
         };
     }
 
@@ -265,6 +269,8 @@ enum BlockType: string
                     ['cells' => [['en' => 'Enterprise SSO', 'ar' => 'دخول موحّد للمؤسسات'], ['en' => 'Yes', 'ar' => 'نعم'], ['en' => 'Limited', 'ar' => 'محدود']]],
                 ],
             ],
+            // Purely presentational: content is only the built-in section key it renders.
+            self::BrandSection => ['key' => 'hero'],
             // Existing blocks are handled above via the seed lookup; unreachable here.
             default => [],
         };

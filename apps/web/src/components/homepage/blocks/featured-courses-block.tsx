@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/i18n-context";
 import { pickLocale } from "@/config/theme";
 import type { FeaturedCoursesContent, HomepageSection } from "@/lib/homepage/api";
 import { BlockShell, BlockHeading } from "@/components/homepage/block-shell";
+import { proxyMediaUrl } from "@/lib/media/proxy";
 import { Button } from "@/components/ui/button";
 
 /** CMS featured-courses grid. Consumes the server-resolved courses (no client fetch). Bilingual, RTL-safe. */
@@ -27,7 +28,7 @@ export function FeaturedCoursesBlock({ section }: { section: HomepageSection }) 
             >
               {course.thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={course.thumbnail} alt="" width={640} height={360} className="aspect-video w-full object-cover" loading="lazy" decoding="async" />
+                <img src={proxyMediaUrl(course.thumbnail)} alt="" width={640} height={360} className="aspect-video w-full object-cover" loading="lazy" decoding="async" />
               ) : (
                 <div className="aspect-video w-full bg-primary/10" aria-hidden />
               )}

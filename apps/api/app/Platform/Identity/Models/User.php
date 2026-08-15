@@ -22,6 +22,10 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * Identity aggregate root. Owns account state, verification flags, lockout, and MFA storage.
  * External references use `public_id`; the bigint id is internal only.
+ *
+ * @property string $public_id
+ * @property string $name
+ * @property \Illuminate\Support\Carbon|null $password_set_at
  */
 class User extends Authenticatable implements Actor, FilamentUser, HasName
 {
@@ -76,6 +80,7 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
         return $this->hasMany(UserDevice::class);
     }
 
+    /** @return HasMany<SocialAccount, $this> */
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
@@ -156,12 +161,19 @@ class User extends Authenticatable implements Actor, FilamentUser, HasName
      */
     public function toUserRef(): UserRef
     {
+        /** @var UserProfile|null $profile */
+        $profile = $this->profile;
+
         return new UserRef(
             id: (int) $this->getKey(),
             publicId: (string) $this->public_id,
             name: (string) $this->name,
-            avatarPath: $this->profile?->avatar_path,
-            headline: $this->profile?->bio,
+            // Effective avatar: prefer the instructor's chosen profile photo (what the admin MediaPicker
+            // writes to `profile_photo`) and fall back to the generic `avatar_path`. Without this, an
+            // avatar uploaded via the admin panel never surfaces on the public trainer list/cards, which
+            // read this ref — the upload lands on profile_photo while this projected only avatar_path.
+            avatarPath: $profile?->profile_photo ?: $profile?->avatar_path,
+            headline: $profile?->bio,
         );
     }
 

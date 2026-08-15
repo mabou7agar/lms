@@ -9,6 +9,10 @@ use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property-read string $public_id
+ * @property-read string $slug
+ */
 class CourseLevel extends Model
 {
     /** @use HasFactory<CourseLevelFactory> */

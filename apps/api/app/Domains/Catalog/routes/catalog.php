@@ -18,5 +18,6 @@ Route::prefix('v1')->middleware('throttle:public-read')->group(function (): void
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('categories/{publicId}/popular', [RecommendationController::class, 'popularInCategory']);
     Route::get('trainers', [TrainerController::class, 'index']);
+    Route::get('trainers/{publicId}', [TrainerController::class, 'show']);
     Route::get('instructors', [InstructorController::class, 'index']);
 });

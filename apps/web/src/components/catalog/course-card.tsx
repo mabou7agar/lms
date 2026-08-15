@@ -18,7 +18,7 @@ export function CourseCard({ course }: { course: CourseListItem }) {
       className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="relative overflow-hidden">
-        <CourseMedia title={course.title} className="transition-transform duration-500 group-hover:scale-[1.04]" />
+        <CourseMedia src={course.thumbnail_path} title={course.title} className="transition-transform duration-500 group-hover:scale-[1.04]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" aria-hidden />
         {course.is_featured ? (
           <Badge variant="warning" className="absolute end-3 top-3 gap-1 shadow-sm">

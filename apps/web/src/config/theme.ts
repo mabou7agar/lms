@@ -145,6 +145,7 @@ export const brandTheme = {
         title: { en: "Learn", ar: "تعلّم" } as Localized,
         links: [
           { label: { en: "Courses", ar: "الدورات" }, href: "/courses" },
+          { label: { en: "Products", ar: "المنتجات" }, href: "/products" },
           { label: { en: "Live cohorts", ar: "الأفواج" }, href: "/cohorts" },
           { label: { en: "Workshops", ar: "الورش" }, href: "/workshops" },
           { label: { en: "Events", ar: "الفعاليات" }, href: "/events" },
@@ -166,6 +167,7 @@ export const brandTheme = {
         title: { en: "Company", ar: "الشركة" } as Localized,
         links: [
           { label: { en: "About", ar: "من نحن" }, href: "/about" },
+          { label: { en: "Solutions", ar: "الحلول" }, href: "/solutions" },
           { label: { en: "Organizations", ar: "المؤسسات" }, href: "/enterprise" },
           { label: { en: "Trainers", ar: "المدرّبون" }, href: "/trainers" },
           { label: { en: "Contact", ar: "تواصل" }, href: "/contact" },

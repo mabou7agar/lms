@@ -44,6 +44,13 @@ interface UserLookupPort
      */
     public function instructorProfiles(): array;
 
+    /**
+     * Resolve a single active instructor's public profile by external public id, or null. Carries the
+     * profile plus its media as REFERENCES (never resolved URLs), like instructorProfiles(). Used by the
+     * public trainer profile page. Does not require is_public so every listed trainer has a working page.
+     */
+    public function instructorProfileByPublicId(string $publicId): ?InstructorProfileRef;
+
     /** Total number of user accounts (reproduces User::query()->count()). */
     public function totalCount(): int;
 

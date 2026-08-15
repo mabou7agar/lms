@@ -33,6 +33,7 @@ import { NewsletterBlock } from "@/components/homepage/blocks/newsletter-block";
 import { ContactStripBlock } from "@/components/homepage/blocks/contact-strip-block";
 import { RichTextBlock } from "@/components/homepage/blocks/rich-text-block";
 import { ComparisonTableBlock } from "@/components/homepage/blocks/comparison-table-block";
+import { BrandSectionBlock } from "@/components/homepage/blocks/brand-section-block";
 
 export type BlockProps = { section: HomepageSection };
 
@@ -83,6 +84,7 @@ export const blockRegistry: Partial<Record<HomepageBlockType, ComponentType<Bloc
   contact_strip: ContactStripBlock,
   rich_text: RichTextBlock,
   comparison_table: ComparisonTableBlock,
+  brand_section: BrandSectionBlock,
 };
 
 /** Resolve the renderer for a section, or null when the block type is unknown/unsupported. */

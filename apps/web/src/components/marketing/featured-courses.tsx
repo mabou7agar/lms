@@ -1,54 +1,54 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { useI18n } from "@/lib/i18n/i18n-context";
-import { pickLocale } from "@/config/theme";
-import { DEMO_ENABLED, demoCourses, featuredHeading } from "@/config/demo";
-import { Section, SectionHeading } from "@/components/landing/section";
-import { Reveal } from "@/components/landing/reveal";
-import { Button } from "@/components/ui/button";
-import dynamic from "next/dynamic";
-import { CourseCover, demoCourseToCover } from "./course-cover";
+import { useSearchParams } from "next/navigation";
+import { useFeaturedCourses } from "@/lib/catalog/hooks";
+import { CourseCover, courseListItemToCover } from "@/components/marketing/course-cover";
+import { FeaturedShell } from "./featured-shell";
+import { CourseCardsCinematic } from "./course-cards-cinematic";
+import { CourseCardsPaths } from "./course-cards-paths";
 
-// Below-the-fold, interaction-gated modal (YouTube iframe embed + focus trap) — code-split so its
-// JS loads only when a preview is opened rather than shipping in the homepage's initial chunk.
-const VideoModal = dynamic(() => import("./video-modal").then((m) => m.VideoModal), { ssr: false });
+/** Selectable homepage card treatment, chosen client-side via `?courseCards=`. */
+type CardsVariant = "editorial" | "cinematic" | "paths";
 
+function readVariant(value: string | null): CardsVariant {
+  return value === "cinematic" || value === "paths" ? value : "editorial";
+}
+
+/**
+ * Homepage featured-courses surface. Renders the REAL published courses flagged `is_featured` in one
+ * of three selectable visual treatments, chosen client-side via the `?courseCards=` query param
+ * (editorial | cinematic | paths; default + unknown → editorial). The section heading and CTA are
+ * shared across variants via <FeaturedShell>; only ONE grid renders at a time. Renders nothing while
+ * loading or when there are no courses, so the homepage is never blank-with-error.
+ */
 export function FeaturedCourses() {
-  const { locale } = useI18n();
-  const [video, setVideo] = useState<string | null>(null);
+  const variant = readVariant(useSearchParams().get("courseCards"));
 
-  if (!DEMO_ENABLED || demoCourses.length === 0) return null;
+  // The program-path variant is driven by the full published catalog (not just featured) and owns its
+  // own data + empty handling, so it renders the shell itself.
+  if (variant === "paths") return <CourseCardsPaths />;
+
+  return <FeaturedCoursesFeatured variant={variant} />;
+}
+
+/** Editorial + cinematic share the featured-courses query; the shell wraps whichever grid renders. */
+function FeaturedCoursesFeatured({ variant }: { variant: "editorial" | "cinematic" }) {
+  const query = useFeaturedCourses();
+  const courses = query.data?.data ?? [];
+
+  if (courses.length === 0) return null;
 
   return (
-    <Section className="bg-card/40">
-      <SectionHeading
-        eyebrow={pickLocale(featuredHeading.eyebrow, locale)}
-        title1={pickLocale(featuredHeading.title1, locale)}
-        title2={pickLocale(featuredHeading.title2, locale)}
-        subtitle={pickLocale(featuredHeading.subtitle, locale)}
-      />
-      <div className="stagger-in grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {demoCourses.map((c, i) => (
-          <CourseCover
-            key={c.id}
-            course={demoCourseToCover(c)}
-            index={i}
-            onPreview={() => setVideo(c.youtubeId)}
-          />
-        ))}
-      </div>
-      <Reveal className="mt-10 text-center">
-        <Button asChild size="lg" variant="outline">
-          <Link href="/courses">
-            {pickLocale(featuredHeading.cta, locale)}
-            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
-          </Link>
-        </Button>
-      </Reveal>
-      <VideoModal videoId={video} onClose={() => setVideo(null)} />
-    </Section>
+    <FeaturedShell>
+      {variant === "cinematic" ? (
+        <CourseCardsCinematic courses={courses} />
+      ) : (
+        <div className="stagger-in grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course, i) => (
+            <CourseCover key={course.id} course={courseListItemToCover(course)} wave="cradle" index={i + 1} minimal />
+          ))}
+        </div>
+      )}
+    </FeaturedShell>
   );
 }

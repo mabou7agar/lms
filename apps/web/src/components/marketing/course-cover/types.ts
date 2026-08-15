@@ -1,13 +1,17 @@
 import type { Localized } from "@/config/theme";
 
 /**
- * Artwork family — drives which deterministic technical illustration fills the cover field.
+ * Artwork family — drives which deterministic technical illustration fills the cover image field
+ * when no real course thumbnail is supplied.
  * ai = neural constellations; data = vector fields / signals; governance = institutional
- * architecture / archival grids; leadership = decision architecture / thresholds.
+ * architecture; leadership = decision architecture.
  */
 export type CoverFamily = "ai" | "data" | "governance" | "leadership";
 
-/** Editorial faculty-medallion palette derived from the HElbaron cover references. */
+/** Wave shape carved between the thumbnail and the cream footer. */
+export type CoverWave = "cradle" | "flow";
+
+/** Fallback fill palette for an instructor avatar when no photo is available. */
 export type MedallionKey =
   | "navy"
   | "indigo"
@@ -18,27 +22,33 @@ export type MedallionKey =
   | "burgundy"
   | "slate";
 
-export type CoverFaculty = { initials: string; key: MedallionKey };
+/**
+ * An instructor shown as a clickable avatar on the cover. `avatarUrl` renders the real photo;
+ * absent, the initials + `key` fill are used. `href` links to the instructor's profile.
+ */
+export type CoverInstructor = {
+  initials: string;
+  name: string;
+  href: string;
+  avatarUrl?: string | null;
+  key: MedallionKey;
+};
 
 /**
- * View-model consumed by <CourseCover>. Intentionally decoupled from any specific API/demo shape;
- * adapters map real (or demo) course data onto this. All human-readable strings are bilingual.
+ * View-model consumed by <CourseCover>. Decoupled from any API/demo shape; adapters map real (or
+ * demo) course data onto this. All human-readable strings are bilingual.
  */
 export type CoverCourse = {
   id: string;
-  /** Short discipline code shown at the top-start (e.g. "AI", "SLD"). */
   code: string;
-  /** Full press mark shown as the technical header (e.g. "HEL / AIE / 502"). Falls back to code. */
-  pressCode?: string;
   title: Localized;
   subtitle?: Localized;
   family: CoverFamily;
-  /** Academic level label (e.g. "Graduate · L7"). */
   level?: Localized;
-  /** School / faculty line for the press footer (e.g. "School of Computation"). */
   school?: Localized;
-  faculty: CoverFaculty[];
+  /** Real course thumbnail image URL. When absent, a branded generative field is drawn instead. */
+  thumbnail?: string | null;
+  instructors: CoverInstructor[];
   href: string;
-  /** Folio number for the press footer (decorative). */
   folio?: number;
 };

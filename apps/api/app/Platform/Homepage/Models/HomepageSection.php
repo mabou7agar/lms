@@ -416,7 +416,7 @@ class HomepageSection extends Model
                                 ['label' => ['en' => 'Courses', 'ar' => 'الدورات'], 'href' => '/courses'],
                                 ['label' => ['en' => 'Live cohorts', 'ar' => 'الأفواج'], 'href' => '/cohorts'],
                                 ['label' => ['en' => 'Workshops', 'ar' => 'الورش'], 'href' => '/workshops'],
-                                ['label' => ['en' => 'Certificates', 'ar' => 'الشهادات'], 'href' => '/certificates'],
+                                ['label' => ['en' => 'Certificates', 'ar' => 'الشهادات'], 'href' => '/verify'],
                                 ['label' => ['en' => 'Pricing', 'ar' => 'الأسعار'], 'href' => '/pricing'],
                             ],
                         ],

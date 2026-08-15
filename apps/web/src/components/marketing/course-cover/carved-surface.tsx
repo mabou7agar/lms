@@ -1,44 +1,29 @@
+import type { CoverWave } from "./types";
+
 /**
- * The carved cream surface at the foot of the cover. Not a flat rectangle: a shallow sculpted lip
- * rises across the width (as in the V3 references), with a fine bright "carve" highlight and a soft
- * inner shadow just beneath it so the cream reads as a physical, milled surface. Decorative only.
+ * The carved cream wave that cuts up into the course thumbnail. The instructor avatars ride this
+ * wave. Two shapes: `cradle` rises into a central bump that hugs the avatars (homepage);
+ * `flow` is the asymmetric editorial carve from the cover references (courses page). Decorative.
  */
-export function CarvedSurface({ className }: { className?: string }) {
+const TOP: Record<CoverWave, string> = {
+  cradle: "M0 72 C 60 72 96 34 150 34 C 204 34 240 72 300 72",
+  flow: "M0 44 C 90 84 175 20 300 52",
+};
+
+export function CarvedSurface({ wave, className }: { wave: CoverWave; className?: string }) {
+  const top = TOP[wave];
   return (
     <svg
       className={className}
-      viewBox="0 0 300 130"
+      viewBox="0 0 300 180"
       preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
     >
-      {/* soft shadow cast by the field onto the lip */}
-      <path
-        d="M0 30 C 70 12 150 34 220 22 S 300 12 300 16 L300 130 L0 130 Z"
-        fill="#000000"
-        fillOpacity="0.16"
-      />
-      {/* the cream body */}
-      <path
-        d="M0 33 C 70 15 150 37 220 25 S 300 15 300 19 L300 130 L0 130 Z"
-        fill="var(--card, #fffdf7)"
-      />
-      {/* bright carved edge */}
-      <path
-        d="M0 33 C 70 15 150 37 220 25 S 300 15 300 19"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity="0.7"
-        strokeWidth="1.1"
-      />
-      {/* thin inner shadow beneath the edge for depth */}
-      <path
-        d="M0 35 C 70 17 150 39 220 27 S 300 17 300 21"
-        fill="none"
-        stroke="#8a7a5a"
-        strokeOpacity="0.18"
-        strokeWidth="1"
-      />
+      <path d={`${top} L300 180 L0 180 Z`} fill="#000000" opacity="0.14" transform="translate(0,-4)" />
+      <path d={`${top} L300 180 L0 180 Z`} fill="var(--card, #fffdf7)" />
+      <path d={top} fill="none" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.4" />
+      <path d={top} fill="none" stroke="#8a7a5a" strokeOpacity="0.16" strokeWidth="1" transform="translate(0,1.6)" />
     </svg>
   );
 }

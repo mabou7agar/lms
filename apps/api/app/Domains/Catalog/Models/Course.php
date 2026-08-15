@@ -23,6 +23,14 @@ use Illuminate\Support\Facades\DB;
 /**
  * Catalog course aggregate. Owns metadata, taxonomy links, visibility, featuring and publish
  * lifecycle. Curriculum (sections/lessons) belongs to Authoring — not here.
+ *
+ * @property string|null $trailer_path
+ * @property int|null $duration_minutes
+ *
+ * @property-read list<\App\Platform\Identity\Contracts\Data\UserRef>|null $trainer_refs Boundary-safe
+ *   trainer display refs, resolved via UserLookupPort and stashed by CourseController::attachTrainerRefs
+ *   for the API listing resource. NOT a column and NOT an Eloquent relation — trainer ids live on the
+ *   course_trainer pivot (CourseTrainer); the Catalog context never imports Identity's User model.
  */
 class Course extends Model
 {
@@ -99,27 +107,31 @@ class Course extends Model
 
     // ----- Relations -----
 
+    /** @return BelongsTo<CourseLevel, $this> */
     public function level(): BelongsTo
     {
         return $this->belongsTo(CourseLevel::class, 'level_id');
     }
 
+    /** @return BelongsTo<CourseLanguage, $this> */
     public function language(): BelongsTo
     {
         return $this->belongsTo(CourseLanguage::class, 'language_id');
     }
 
+    /** @return BelongsToMany<Category, $this> */
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'course_category');
     }
 
+    /** @return BelongsToMany<CourseTag, $this> */
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(CourseTag::class, 'course_tag', 'course_id', 'tag_id');
     }
 
-    /** @return HasMany<CourseTrainer> Pivot links to trainer user ids (no Identity model reference). */
+    /** @return HasMany<CourseTrainer, $this> Pivot links to trainer user ids (no Identity model reference). */
     public function trainerLinks(): HasMany
     {
         return $this->hasMany(CourseTrainer::class, 'course_id');
@@ -176,6 +188,9 @@ class Course extends Model
     /**
      * Scheduled courses whose publish time has arrived. The scheduler reads this each minute and
      * publishes each (still subject to the readiness guard) via the CourseLifecycle state machine.
+     *
+     * @param  Builder<Course>  $query
+     * @return Builder<Course>
      */
     public function scopeScheduledDue(Builder $query): Builder
     {

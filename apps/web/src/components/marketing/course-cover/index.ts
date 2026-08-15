@@ -1,6 +1,6 @@
 export { CourseCover } from "./course-cover";
 export { CoverArt } from "./cover-art";
-export { FacultyMedallions } from "./faculty-medallions";
+export { InstructorAvatars } from "./instructor-avatars";
 export { CarvedSurface } from "./carved-surface";
-export { demoCourseToCover, deriveFamily, deriveInitials, keyFromSeed } from "./adapter";
-export type { CoverCourse, CoverFamily, CoverFaculty, MedallionKey } from "./types";
+export { demoCourseToCover, courseListItemToCover, courseFamily, deriveFamily, deriveInitials, derivePressCode, deriveTier, toRoman } from "./adapter";
+export type { CoverCourse, CoverFamily, CoverWave, CoverInstructor, MedallionKey } from "./types";

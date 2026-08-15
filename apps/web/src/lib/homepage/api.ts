@@ -38,7 +38,8 @@ export type HomepageBlockType =
   | "contact_strip"
   | "rich_text"
   | "logo_cloud"
-  | "comparison_table";
+  | "comparison_table"
+  | "brand_section";
 
 // ----- Original block content shapes -----
 

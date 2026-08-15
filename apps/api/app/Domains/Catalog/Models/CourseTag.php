@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property-read string $public_id
+ * @property-read string $slug
+ */
 class CourseTag extends Model
 {
     /** @use HasFactory<CourseTagFactory> */

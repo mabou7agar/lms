@@ -75,7 +75,19 @@ final class UserLookupAdapter implements UserLookupPort
                 => [$a->displayOrder, $a->name] <=> [$b->displayOrder, $b->name],
         );
 
-        return array_values($refs);
+        return $refs;
+    }
+
+    public function instructorProfileByPublicId(string $publicId): ?InstructorProfileRef
+    {
+        $user = User::query()
+            ->where('is_active', true)
+            ->where('public_id', $publicId)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'instructor'))
+            ->with('profile')
+            ->first();
+
+        return $user === null ? null : $this->toInstructorProfileRef($user);
     }
 
     private function toInstructorProfileRef(User $user): InstructorProfileRef
@@ -99,7 +111,7 @@ final class UserLookupAdapter implements UserLookupPort
             profilePhoto: $profile?->profile_photo,
             coverPhoto: $profile?->cover_photo,
             avatarPath: $profile?->avatar_path,
-            displayOrder: (int) ($profile?->display_order ?? 0),
+            displayOrder: $profile !== null ? (int) $profile->display_order : 0,
         );
     }
 

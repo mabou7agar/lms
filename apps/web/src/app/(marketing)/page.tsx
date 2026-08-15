@@ -88,6 +88,17 @@ export default async function LandingPage({
   const footer = byType.get("footer");
   const footerContent = footer ? (footer.content as FooterContent) : undefined;
 
+  // Single source of truth for the course grid: when the CMS publishes a featured-courses block with
+  // real (server-resolved) courses, it OWNS that surface. The static demo grid is a fallback only — it
+  // renders when there is no CMS course data, and is never shown alongside the real block.
+  const hasCmsFeaturedCourses = bodyBlocks.some(
+    (b) =>
+      (b.type === "featured_courses" && (b.resolved?.courses?.length ?? 0) > 0) ||
+      // A brand_section pointing at the built-in featured-courses component already renders the grid,
+      // so the trailing fallback <FeaturedCourses /> must be suppressed to avoid a duplicate section.
+      (b.type === "brand_section" && b.content?.key === "featured_courses"),
+  );
+
   // Never render an empty homepage: if the API is unreachable, fall back to the built-in brand
   // sections (the block components default to brand content when no CMS content is supplied).
   // Otherwise every ordered block is rendered dynamically through the block registry — no hardcoded
@@ -96,7 +107,8 @@ export default async function LandingPage({
     bodyBlocks.length > 0 ? (
       <>
         {bodyBlocks.map((section) => <BlockRenderer key={section.key} section={section} />)}
-        <FeaturedCourses />
+        {/* Fallback only — suppressed when a CMS featured-courses block already provides real courses. */}
+        {!hasCmsFeaturedCourses && <FeaturedCourses />}
       </>
     ) : (
       // Built-in premium brand homepage (rendered when the CMS has no published blocks).
