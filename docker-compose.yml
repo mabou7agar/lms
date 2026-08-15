@@ -43,6 +43,14 @@ services:
     container_name: helbaron-api
     restart: unless-stopped
     working_dir: /var/www/html
+    # DEV-ONLY concurrent runtime. `php artisan serve` (PHP's built-in server) serialises requests even
+    # with PHP_CLI_SERVER_WORKERS, so a page that loads a dozen thumbnails/avatars at once 503s/hangs.
+    # Laravel Octane + FrankenPHP gives true parallel workers (installed via `composer require
+    # laravel/octane` + `php artisan octane:install --server=frankenphp`). This overrides the image CMD
+    # for local dev ONLY — the production image/entrypoint is unchanged and never runs this command.
+    # NOTE: Octane keeps the app booted in memory, so after editing PHP code run
+    # `docker compose exec api php artisan octane:reload` (or restart the container) to pick it up.
+    command: ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8000", "--workers=20", "--max-requests=500"]
     volumes:
       - ./apps/api:/var/www/html
       - ./docker/php/zz-variables-order.ini:/usr/local/etc/php/conf.d/zz-variables-order.ini:ro
