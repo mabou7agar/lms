@@ -11,21 +11,25 @@ use App\Contexts\Commerce\Enums\TransactionType;
 use App\Contexts\Commerce\Events\OrderPlaced;
 use App\Contexts\Commerce\Exceptions\CartEmptyException;
 use App\Contexts\Commerce\Exceptions\CheckoutInProgressException;
+use App\Contexts\Commerce\Exceptions\CompanyBuyerRequiredException;
 use App\Contexts\Commerce\Exceptions\CouponExhaustedException;
 use App\Contexts\Commerce\Exceptions\CouponExpiredException;
 use App\Contexts\Commerce\Exceptions\CouponInvalidException;
+use App\Contexts\Commerce\Models\Cart;
 use App\Contexts\Commerce\Models\Coupon;
 use App\Contexts\Commerce\Models\CouponRedemption;
 use App\Contexts\Commerce\Models\Invoice;
 use App\Contexts\Commerce\Models\Order;
 use App\Contexts\Commerce\Models\OrderItem;
 use App\Contexts\Commerce\Models\PaymentTransaction;
+use App\Contexts\Commerce\Models\Product;
 use App\Contexts\Commerce\Payments\Data\ChargeRequest;
 use App\Contexts\Commerce\Services\CartService;
 use App\Contexts\Commerce\Services\ContractService;
 use App\Contexts\Commerce\Services\CouponService;
 use App\Contexts\Commerce\Services\InvoiceNumberService;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Enterprise\Contracts\OrganizationLookupPort;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
@@ -55,6 +59,7 @@ class CheckoutAction extends BaseAction
         private readonly PaymentGateway $gateway,
         private readonly TaxCalculator $tax,
         private readonly CouponService $coupons,
+        private readonly OrganizationLookupPort $organizations,
     ) {}
 
     /**
@@ -65,21 +70,58 @@ class CheckoutAction extends BaseAction
      * CartEmptyException (never a second charge). A caller that cannot acquire the lock within the
      * block window gets a 409 CheckoutInProgressException instead of proceeding.
      *
+     * @param  array<string, mixed>  $billing  billing identity confirmed at checkout
      * @return array{order: Order, contract: mixed, charge: mixed}
      */
-    public function executeByUserId(int $userId): array
+    public function executeByUserId(int $userId, array $billing = []): array
     {
         $lock = Cache::lock("commerce:checkout:user:{$userId}", 30);
 
         try {
-            return $lock->block(5, fn (): array => $this->run($userId));
+            return $lock->block(5, fn (): array => $this->run($userId, $billing));
         } catch (LockTimeoutException) {
             throw new CheckoutInProgressException;
         }
     }
 
-    /** @return array{order: Order, contract: mixed, charge: mixed} */
-    private function run(int $userId): array
+    /**
+     * Fill the billing identity the invoice is issued to.
+     *
+     * A company purchase defaults to the organization's registered profile so the invoice carries the
+     * company's legal name and tax registration rather than the buyer's personal details. Anything
+     * the buyer confirmed at checkout wins, so a one-off address can still be supplied.
+     *
+     * @param  array<string, mixed>  $billing
+     * @return array<string, mixed>
+     */
+    private function resolveBilling(Cart $cart, array $billing): array
+    {
+        if (! $cart->buyerType()->isCompany() || $cart->organization_id === null) {
+            return $billing;
+        }
+
+        $organization = $this->organizations->organizationRef((int) $cart->organization_id);
+
+        if ($organization === null) {
+            return $billing;
+        }
+
+        return array_filter([
+            'company_name' => $organization->name,
+            'billing_name' => $billing['billing_name'] ?? $organization->name,
+            'billing_email' => $billing['billing_email'] ?? null,
+            'billing_phone' => $billing['billing_phone'] ?? $organization->phone,
+            'billing_country' => $billing['billing_country'] ?? $organization->country,
+            'billing_tax_id' => $billing['billing_tax_id'] ?? $organization->taxId,
+            'billing_address' => $billing['billing_address'] ?? $organization->billingAddress,
+        ], static fn ($v): bool => $v !== null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $billing
+     * @return array{order: Order, contract: mixed, charge: mixed}
+     */
+    private function run(int $userId, array $billing = []): array
     {
         $cart = $this->carts->currentByUserId($userId)->load(['items.product', 'coupon']);
 
@@ -87,8 +129,26 @@ class CheckoutAction extends BaseAction
             throw new CartEmptyException;
         }
 
+        // A company purchase must name the organization it belongs to — without it the order could
+        // not be turned into seats, and the invoice would have no one to be issued to.
+        if ($cart->buyerType()->isCompany() && $cart->organization_id === null) {
+            throw new CompanyBuyerRequiredException;
+        }
+
+        // Re-check every item against the buyer: the audience rule was applied when each item was
+        // added, but the buyer type can change afterwards, and a product's audience can be edited
+        // by an admin while the cart sits idle.
+        foreach ($cart->items as $item) {
+            $product = $item->getRelation('product');
+            if ($product instanceof Product) {
+                $this->carts->assertAudienceAllows($cart, $product);
+            }
+        }
+
+        $billing = $this->resolveBilling($cart, $billing);
+
         // Phase 1: create the order, invoice, coupon redemption, and contract; COMMIT first.
-        [$order, $contract] = $this->transaction(function () use ($userId, $cart): array {
+        [$order, $contract] = $this->transaction(function () use ($userId, $cart, $billing): array {
             // Lock the coupon row to serialize redemption counting; re-load as a typed Coupon.
             $cartCoupon = $cart->coupon;
             $coupon = null;
@@ -138,6 +198,18 @@ class CheckoutAction extends BaseAction
                 'total_minor' => $tax->grossMinor,
                 'coupon_id' => $coupon?->getKey(),
                 'placed_at' => now(),
+                // Carry buyer ownership from the cart onto the order. From here it is history: the
+                // seat wave reads it to decide who receives the licences, and the invoice keeps the
+                // billing identity that was true on the day it was issued.
+                'buyer_type' => $cart->buyerType()->value,
+                'organization_id' => $cart->organization_id,
+                'company_name' => $billing['company_name'] ?? null,
+                'billing_name' => $billing['billing_name'] ?? null,
+                'billing_email' => $billing['billing_email'] ?? null,
+                'billing_phone' => $billing['billing_phone'] ?? null,
+                'billing_country' => $billing['billing_country'] ?? null,
+                'billing_tax_id' => $billing['billing_tax_id'] ?? null,
+                'billing_address' => $billing['billing_address'] ?? null,
             ]);
 
             foreach ($cart->items as $item) {

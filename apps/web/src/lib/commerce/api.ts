@@ -45,8 +45,13 @@ export type Product = {
   };
 };
 export type CartItem = { id: string; product_id: string; title: string; unit_amount_minor: number };
+export type BuyerType = "individual" | "company";
+
 export type Cart = {
   id: string;
+  /** Who this cart is being bought by; drives which products may be in it. */
+  buyer_type?: BuyerType;
+  organization_id?: number | null;
   currency: string;
   coupon: string | null;
   items: CartItem[];
@@ -59,6 +64,9 @@ export type Cart = {
 export type Order = {
   id: string;
   status: string;
+  /** Who the purchase belongs to; a company order becomes seats rather than direct enrolment. */
+  buyer_type?: BuyerType | null;
+  company_name?: string | null;
   currency: string;
   subtotal_minor: number;
   discount_minor: number;
@@ -139,6 +147,12 @@ export const addToCart = (body: { product: string; coupon_code?: string }) =>
 export const removeCartItem = (productPublicId: string) =>
   api.del<ApiSuccess<Cart>>(`cart/items/${productPublicId}`);
 export const clearCart = () => api.del("cart");
+/**
+ * Switch the cart between an individual and a company purchase. The organization is resolved
+ * server-side from the caller's membership — it is never sent from the browser.
+ */
+export const setCartBuyer = (buyerType: BuyerType) =>
+  api.put<ApiSuccess<Cart>>("cart/buyer", { buyer_type: buyerType });
 export const checkout = () => api.post<ApiSuccess<CheckoutResult>>("checkout");
 export const getOrders = (page = 1) => api.get<Paginated<Order>>(`orders?page=${page}`);
 export const getOrder = (id: string) => api.data<OrderDetail>(`orders/${id}`);

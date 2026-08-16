@@ -3,6 +3,7 @@
 namespace App\Contexts\Commerce\Models;
 
 use App\Contexts\Commerce\Database\Factories\OrderFactory;
+use App\Contexts\Commerce\Enums\BuyerType;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\RefundStatus;
 use App\Platform\Shared\Traits\HasPublicId;
@@ -13,6 +14,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Buyer ownership fields are nullable: an order placed before buyer ownership existed carries no
+ * value, and a model that has not been persisted has none in memory either.
+ *
+ * @property BuyerType|null $buyer_type
+ * @property int|null $organization_id
+ * @property string|null $company_name
+ * @property string|null $billing_name
+ * @property string|null $billing_email
+ * @property string|null $billing_phone
+ * @property string|null $billing_country
+ * @property string|null $billing_tax_id
+ * @property string|null $billing_address
+ */
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
@@ -24,12 +39,16 @@ class Order extends Model
     protected $fillable = [
         'user_id', 'status', 'currency', 'subtotal_minor', 'discount_minor', 'tax_minor', 'total_minor',
         'coupon_id', 'placed_at', 'paid_at', 'fulfilled_at', 'refunded_at',
+        // Buyer ownership + the billing identity the invoice was issued to, snapshotted at purchase.
+        'buyer_type', 'organization_id', 'company_name',
+        'billing_name', 'billing_email', 'billing_phone', 'billing_country', 'billing_tax_id', 'billing_address',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => OrderStatus::class,
+            'buyer_type' => BuyerType::class,
             'subtotal_minor' => 'integer',
             'discount_minor' => 'integer',
             'tax_minor' => 'integer',

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -25,8 +26,10 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @property string $public_id
  * @property string $name
+ * @property string $email
+ * @property int|null $organization_id
  * @property string|null $timezone
- * @property \Illuminate\Support\Carbon|null $password_set_at
+ * @property Carbon|null $password_set_at
  */
 class User extends Authenticatable implements Actor, FilamentUser, HasName
 {

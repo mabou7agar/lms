@@ -4381,12 +4381,6 @@ parameters:
 			path: app/Platform/Identity/Actions/Auth/LoginAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Actions/Auth/VerifyEmailAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$phone\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4567,18 +4561,6 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/UserResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$email_verified_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$is_active\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4597,12 +4579,6 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/UserResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$phone\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4615,22 +4591,10 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/UserResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
 			message: '#^Method App\\Platform\\Identity\\Http\\Resources\\UserResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Listeners/SendEmailOtpOnRegistration.php
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$is_active\.$#'
@@ -4751,12 +4715,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: app/Platform/Identity/Services/DeviceService.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Services/MfaService.php
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$mfa_enabled\.$#'

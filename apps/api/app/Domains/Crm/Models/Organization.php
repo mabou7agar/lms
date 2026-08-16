@@ -31,7 +31,11 @@ class Organization extends Model
 
     protected $table = 'crm_organizations';
 
-    protected $fillable = ['name', 'slug', 'status', 'size', 'website', 'locale', 'timezone'];
+    protected $fillable = [
+        'name', 'slug', 'status', 'size', 'website', 'locale', 'timezone',
+        // Buyer profile, captured when a company registers itself (see CompanyRegistrationAdapter).
+        'country', 'industry', 'phone', 'tax_id', 'billing_address',
+    ];
 
     protected function casts(): array
     {

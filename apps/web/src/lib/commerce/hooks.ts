@@ -14,8 +14,10 @@ import {
   getProduct,
   getProducts,
   removeCartItem,
+  setCartBuyer,
   validateCoupon,
 } from "./api";
+import type { BuyerType } from "./api";
 
 export const useProducts = (page: number) =>
   useQuery({ queryKey: ["products", page], queryFn: () => getProducts(page) });
@@ -33,6 +35,13 @@ export function useAddToCart() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { product: string; coupon_code?: string }) => addToCart(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
+  });
+}
+export function useSetCartBuyer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (buyerType: BuyerType) => setCartBuyer(buyerType),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
   });
 }

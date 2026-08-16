@@ -20,6 +20,15 @@ class OrderResource extends BaseResource
             'subtotal_minor' => $this->resource->subtotal_minor,
             'discount_minor' => $this->resource->discount_minor,
             'total_minor' => $this->resource->total_minor,
+            // Buyer ownership + the billing identity this order was invoiced to.
+            'buyer_type' => $this->resource->buyer_type?->value,
+            'company_name' => $this->resource->company_name,
+            'billing' => [
+                'name' => $this->resource->billing_name,
+                'email' => $this->resource->billing_email,
+                'country' => $this->resource->billing_country,
+                'tax_id' => $this->resource->billing_tax_id,
+            ],
             'placed_at' => $this->resource->placed_at?->toIso8601String(),
             'paid_at' => $this->resource->paid_at?->toIso8601String(),
             'fulfilled_at' => $this->resource->fulfilled_at?->toIso8601String(),

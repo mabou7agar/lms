@@ -2,6 +2,8 @@
 
 namespace App\Domains\Crm\Providers;
 
+use App\Domains\Crm\Adapters\CompanyRegistrationAdapter;
+use App\Domains\Crm\Adapters\OrganizationLookupAdapter;
 use App\Domains\Crm\Events\ConsultingRequestCreated;
 use App\Domains\Crm\Events\LeadCreated;
 use App\Domains\Crm\Listeners\LogConsultingRequestActivity;
@@ -25,6 +27,8 @@ use App\Domains\Crm\Policies\TeamPolicy;
 use App\Domains\Crm\Ports\CrmMarketingAudienceAdapter;
 use App\Domains\Crm\Ports\OrgManagerCheckAdapter;
 use App\Domains\Crm\Ports\SeatProvisioningAdapter;
+use App\Platform\Shared\Enterprise\Contracts\CompanyRegistrationPort;
+use App\Platform\Shared\Enterprise\Contracts\OrganizationLookupPort;
 use App\Platform\Shared\Enterprise\Contracts\OrgManagerCheckPort;
 use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
@@ -78,6 +82,8 @@ class CrmServiceProvider extends BaseDomainServiceProvider
         // UI hint for the manager-portal route guard through this Shared port, so Identity never imports
         // a CRM model. Authority itself stays with OrganizationMemberPolicy / ManagerScope.
         $this->app->bind(OrgManagerCheckPort::class, OrgManagerCheckAdapter::class);
+        $this->app->bind(CompanyRegistrationPort::class, CompanyRegistrationAdapter::class);
+        $this->app->bind(OrganizationLookupPort::class, OrganizationLookupAdapter::class);
     }
 
     protected function bootDomain(): void

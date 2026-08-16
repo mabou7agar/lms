@@ -2,6 +2,20 @@ import { api } from "@/lib/api/client";
 import type { ApiSuccess, AuthUser } from "@/types/api";
 import type { Locale } from "@/lib/i18n/config";
 
+/**
+ * The company an account is registered on behalf of. Only the name is required — the rest can be
+ * completed later from the manager portal, so a signup is never blocked on a tax id.
+ */
+export type CompanyRegistrationInput = {
+  name: string;
+  size?: string;
+  country?: string;
+  industry?: string;
+  phone?: string;
+  tax_id?: string;
+  billing_address?: string;
+};
+
 export type RegisterInput = {
   name: string;
   email: string;
@@ -9,6 +23,9 @@ export type RegisterInput = {
   password: string;
   password_confirmation: string;
   locale?: Locale;
+  /** Omitted for a personal account; `company` registers the organization in the same step. */
+  account_type?: "personal" | "company";
+  company?: CompanyRegistrationInput;
 };
 
 /** POST /auth/register — creates the account and emits the email OTP. Returns the user (no token). */

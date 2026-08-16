@@ -57,6 +57,7 @@ Route::prefix('v1')->group(function (): void {
         // Cart
         Route::get('cart', [CartController::class, 'show'])->name('commerce.cart.show');
         Route::post('cart', [CartController::class, 'store'])->name('commerce.cart.store');
+        Route::put('cart/buyer', [CartController::class, 'setBuyer'])->name('commerce.cart.buyer');
         Route::delete('cart/items/{product}', [CartController::class, 'removeItem'])->name('commerce.cart.items.destroy');
         Route::delete('cart', [CartController::class, 'clear'])->name('commerce.cart.clear');
 

@@ -2,6 +2,8 @@
 
 namespace App\Contexts\Commerce\Services;
 
+use App\Contexts\Commerce\Enums\BuyerType;
+use App\Contexts\Commerce\Exceptions\BuyerAudienceMismatchException;
 use App\Contexts\Commerce\Exceptions\ProductUnavailableException;
 use App\Contexts\Commerce\Models\Cart;
 use App\Contexts\Commerce\Models\CartItem;
@@ -32,6 +34,11 @@ class CartService extends BaseService
             throw new ProductUnavailableException;
         }
 
+        // The audience rule is enforced here rather than only in the UI: this is the single path by
+        // which anything enters a cart, so a company-only licence cannot be added by an individual
+        // (or the reverse) by calling the API directly.
+        $this->assertAudienceAllows($cart, $product);
+
         $amount = $this->pricing->effectiveMinor($product, $cart->currency);
 
         if ($amount === null) {
@@ -42,6 +49,58 @@ class CartService extends BaseService
             ['cart_id' => $cart->id, 'product_id' => $product->id],
             ['unit_amount_minor' => $amount],
         );
+    }
+
+    /**
+     * Refuse a product this cart's buyer is not sold to.
+     *
+     * A product with no audience recorded (created before the commercial-policy wave) is treated as
+     * sold to everyone, so an older catalogue keeps working instead of becoming unbuyable.
+     */
+    public function assertAudienceAllows(Cart $cart, Product $product): void
+    {
+        $audience = $product->audience;
+
+        if ($audience === null) {
+            return;
+        }
+
+        $allowed = $cart->buyerType()->isCompany()
+            ? $audience->allowsCompany()
+            : $audience->allowsIndividual();
+
+        if (! $allowed) {
+            throw new BuyerAudienceMismatchException(
+                $cart->buyerType()->isCompany()
+                    ? 'This product is sold to individuals only.'
+                    : 'This product is sold to companies only. Switch to a company purchase to buy it.',
+            );
+        }
+    }
+
+    /**
+     * Whether every item already in the cart may be bought by the given buyer type. Used before
+     * switching a cart between individual and company so the switch cannot strand an item.
+     */
+    public function isCompatibleWithBuyerType(Cart $cart, BuyerType $buyerType): bool
+    {
+        foreach ($cart->items()->with('product')->get() as $item) {
+            $product = $item->getRelation('product');
+            if (! $product instanceof Product) {
+                continue;
+            }
+
+            $audience = $product->audience;
+            if ($audience === null) {
+                continue;
+            }
+            $allowed = $buyerType->isCompany() ? $audience->allowsCompany() : $audience->allowsIndividual();
+            if (! $allowed) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function removeProduct(Cart $cart, Product $product): void

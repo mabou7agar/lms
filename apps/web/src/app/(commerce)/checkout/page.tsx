@@ -141,6 +141,15 @@ function CheckoutFlow() {
           </CardHeader>
           <CardContent className="space-y-4">
             {error ? <FormAlert>{error}</FormAlert> : null}
+            {/* State plainly who the invoice will be made out to before the order is placed. */}
+            <p className="rounded-lg bg-surface/60 p-3 text-sm text-muted-foreground">
+              {t("commerce.cart.invoicedTo")}:{" "}
+              <span className="font-medium text-foreground">
+                {cart.buyer_type === "company"
+                  ? t("commerce.cart.buyForCompany")
+                  : t("commerce.cart.buyForMyself")}
+              </span>
+            </p>
             <Summary cart={cart} />
             <CouponField currency={cart.currency} onApplied={() => qc.invalidateQueries({ queryKey: ["cart"] })} />
             <Button className="w-full" loading={checkout.isPending} onClick={onPlaceOrder}>

@@ -11,6 +11,8 @@ vi.mock("@/lib/commerce/hooks", () => ({
   useAddToCart: () => ({ mutate: applyMutate, isPending: false }),
   useRemoveCartItem: () => ({ mutate: removeMutate, isPending: false, variables: undefined }),
   useClearCart: () => ({ mutate: clearMutate, isPending: false }),
+  // The cart now shows who the purchase is for; the switch is exercised by its own test.
+  useSetCartBuyer: () => ({ mutate: vi.fn(), isPending: false, isError: false, variables: undefined }),
 }));
 
 import CartPage from "@/app/(commerce)/cart/page";

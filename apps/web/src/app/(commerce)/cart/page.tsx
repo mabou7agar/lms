@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/states/empty-state";
+import { BuyerModeSwitch } from "@/components/commerce/buyer-mode-switch";
 import { toast } from "@/components/ui/toast";
 
 function CartView({ cart }: { cart: Cart }) {
@@ -50,6 +51,8 @@ function CartView({ cart }: { cart: Cart }) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-3 lg:col-span-2">
+        {/* Who this purchase belongs to — it decides what may be in the cart and who is invoiced. */}
+        <BuyerModeSwitch buyerType={cart.buyer_type ?? "individual"} />
         {cart.items.map((item) => (
           <Card key={item.id}>
             <CardContent className="flex items-center justify-between gap-3 p-4">

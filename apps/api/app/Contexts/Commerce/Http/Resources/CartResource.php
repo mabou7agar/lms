@@ -19,6 +19,10 @@ class CartResource extends BaseResource
             'id' => $cart->public_id,
             'currency' => $cart->currency,
             'coupon' => $cart->coupon?->code,
+            // Who this cart is being bought by. The UI shows it and offers the switch; the server
+            // decides whether the switch is allowed.
+            'buyer_type' => $cart->buyerType()->value,
+            'organization_id' => $cart->organization_id,
             'items' => $cart->items->map(fn ($item) => [
                 'id' => $item->public_id,
                 'product_id' => $item->product->public_id,
