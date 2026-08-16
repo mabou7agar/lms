@@ -751,80 +751,14 @@ parameters:
 			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$slug\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sale_amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:effectiveMinor\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:onSale\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
 			message: '#^Method App\\Contexts\\Commerce\\Http\\Resources\\ProductResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
 			count: 1
 			path: app/Contexts/Commerce/Http/Resources/ProductResource.php
 
@@ -1039,12 +973,6 @@ parameters:
 			path: app/Contexts/Commerce/Models/PaymentTransaction.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Product\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Models/Product.php
-
-		-
 			message: '#^Cross\-context Model reference\: ''App\\Domains\\Catalog\\Models\\Course'' is used from context ''Commerce''\. Access another context''s data through a Port or a published read model, not its Eloquent Model\.$#'
 			identifier: helbaron.crossContextModel
 			count: 1
@@ -1073,30 +1001,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Contexts/Commerce/Models/Product.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\ProductPrice\:\:\$amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Models/ProductPrice.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\ProductPrice\:\:\$sale_amount_minor\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Contexts/Commerce/Models/ProductPrice.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\ProductPrice\:\:\$sale_ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Models/ProductPrice.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\ProductPrice\:\:\$sale_starts_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Models/ProductPrice.php
 
 		-
 			message: '#^Method App\\Contexts\\Commerce\\Models\\ProductPrice\:\:product\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'

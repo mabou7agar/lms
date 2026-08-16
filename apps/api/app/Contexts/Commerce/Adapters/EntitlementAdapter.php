@@ -29,4 +29,9 @@ class EntitlementAdapter implements EntitlementPort
     {
         return $this->entitlements->entitledCourseIds($userId);
     }
+
+    public function isCoursePurchasable(int $courseId): bool
+    {
+        return $this->entitlements->isCoursePurchasable($courseId);
+    }
 }

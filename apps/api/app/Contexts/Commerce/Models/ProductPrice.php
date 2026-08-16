@@ -7,7 +7,17 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $currency
+ * @property int $amount_minor
+ * @property int|null $sale_amount_minor
+ * @property bool $is_default
+ * @property Carbon|null $sale_starts_at
+ * @property Carbon|null $sale_ends_at
+ */
 class ProductPrice extends Model
 {
     /** @use HasFactory<ProductPriceFactory> */

@@ -25,4 +25,14 @@ interface EntitlementPort
      * @return list<int>
      */
     public function entitledCourseIds(int $userId): array;
+
+    /**
+     * Whether the course is sold commercially — i.e. an ACTIVE product grants it, directly or as
+     * part of a bundle.
+     *
+     * Learning asks this before allowing payment-free self-enrolment: a course that is on sale must
+     * not also be obtainable for nothing by calling the enrol endpoint. Kept on this port (rather
+     * than Learning reading a Commerce model) so the boundary holds; only scalars cross.
+     */
+    public function isCoursePurchasable(int $courseId): bool;
 }

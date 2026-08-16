@@ -5,6 +5,7 @@ namespace App\Contexts\Commerce\Services;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\SubscriptionStatus;
 use App\Contexts\Commerce\Models\OrderCourseGrant;
+use App\Contexts\Commerce\Models\Product;
 use App\Contexts\Commerce\Models\Subscription;
 use App\Contexts\Commerce\Models\SubscriptionPlan;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
@@ -68,6 +69,20 @@ class EntitlementService extends BaseService
         return $this->hasOneOffGrant($userId, $courseId)
             || $this->hasActiveSubscriptionForCourse($userId, $courseId)
             || $this->hasSeatEntitlementForCourse($userId, $courseId);
+    }
+
+    /**
+     * Whether an ACTIVE product sells this course, on its own or inside a bundle.
+     *
+     * Draft and archived products are ignored: a course whose product is still being prepared is not
+     * yet on sale, so it must not be locked away from the payment-free path in the meantime.
+     */
+    public function isCoursePurchasable(int $courseId): bool
+    {
+        return Product::query()
+            ->active()
+            ->whereHas('courses', fn (Builder $q): Builder => $q->whereKey($courseId))
+            ->exists();
     }
 
     /**

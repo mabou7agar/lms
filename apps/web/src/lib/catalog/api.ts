@@ -1,12 +1,46 @@
 import { api } from "@/lib/api/client";
 import type { Paginated } from "@/types/api";
 
+/**
+ * How a course is sold, as returned by the course endpoints. `purchasable: false` means no active
+ * product grants it, which is the only case where a payment-free enrol is accepted — the API refuses
+ * self-enrolment into a purchasable course with 402. The sales UI that consumes the rest of this
+ * shape (price, access and certificate terms, bundle cross-sell) lands in the public sales wave.
+ */
+export type CoursePurchase =
+  | { purchasable: false }
+  | {
+      purchasable: true;
+      product_id: string;
+      product_type: "course" | "bundle";
+      price: {
+        currency: string | null;
+        amount_minor: number | null;
+        effective_minor: number | null;
+        on_sale: boolean;
+      };
+      audience: "individual" | "company" | "both";
+      access: {
+        duration_type: "lifetime" | "fixed_days" | "fixed_months" | "fixed_years" | "fixed_date";
+        duration_value: number | null;
+        ends_at: string | null;
+      };
+      certificate: {
+        enabled: boolean;
+        expiry_type: "none" | "fixed_days" | "fixed_months" | "fixed_years" | "fixed_date";
+        expiry_value: number | null;
+      };
+      included_in_bundles: string[];
+    };
+
 export type CourseListItem = {
   id: string;
   title: string;
   slug: string;
   subtitle: string | null;
   thumbnail_path: string | null;
+  /** Absent when the endpoint did not attach a purchase summary. */
+  purchase?: CoursePurchase | null;
   /** Instructors on this course (for cover avatars). Empty unless the endpoint attached them. */
   trainers?: { id: string; name: string; avatar_path: string | null }[];
   is_featured: boolean;
@@ -62,6 +96,8 @@ export type CourseDetail = {
   tags: Tag[];
   trainers: Trainer[];
   related: CourseListItem[];
+  /** Absent when the endpoint did not attach a purchase summary. */
+  purchase?: CoursePurchase | null;
   published_at: string | null;
 };
 

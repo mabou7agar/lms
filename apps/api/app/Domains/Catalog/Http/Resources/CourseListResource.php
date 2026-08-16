@@ -32,6 +32,9 @@ class CourseListResource extends BaseResource
                 'name' => $ref->name,
                 'avatar_path' => app(PublicAssetUrlResolver::class)->resolve($ref->avatarPath),
             ])->all(),
+            // How the course is sold. Attached by the controller through the Shared
+            // PurchaseSummaryPort (one query for the whole page); absent when not attached.
+            'purchase' => $this->resource->purchase_summary?->toArray(),
             'is_featured' => $this->resource->is_featured,
             'level' => $this->whenLoaded('level', fn () => $this->resource->level?->localized('name')),
             'language' => $this->whenLoaded('language', fn () => $this->resource->language?->localized('name')),

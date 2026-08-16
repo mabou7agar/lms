@@ -31,6 +31,9 @@ class CourseResource extends BaseResource
             'description' => $this->resource->localized('description'),
             'status' => $this->resource->status->value,
             'visibility' => $this->resource->visibility->value,
+            // How the course is sold (price, audience, access and certificate terms), resolved by
+            // the controller through the Shared PurchaseSummaryPort. Absent when not attached.
+            'purchase' => $this->resource->purchase_summary?->toArray(),
             'is_featured' => $this->resource->is_featured,
             'thumbnail_path' => app(PublicAssetUrlResolver::class)->resolve($this->resource->thumbnail_path),
             // Promo video: same media-safe resolution as thumbnail_path (public_id -> URL, an external

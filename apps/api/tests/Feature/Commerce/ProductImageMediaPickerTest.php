@@ -2,6 +2,7 @@
 
 use App\Contexts\Commerce\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Contexts\Commerce\Models\Product;
+use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Database\Seeders\RolePermissionSeeder;
 use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
@@ -48,6 +49,10 @@ it('preserves a legacy product image URL through a save', function () {
         'image_path' => $legacy,
         'title_i18n' => ['en' => 'Legacy Product'],
     ]);
+    // A product is only saveable once it says what it sells and for how much, so give it both —
+    // otherwise the form fails validation before it can round-trip the image path under test.
+    $product->courses()->sync([(int) Course::factory()->create()->id]);
+    $product->prices()->create(['currency' => 'SAR', 'amount_minor' => 19900, 'is_default' => true]);
 
     Livewire::test(EditProduct::class, ['record' => $product->public_id])
         ->assertFormSet(['image_path' => $legacy])

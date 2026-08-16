@@ -9,6 +9,7 @@ use App\Domains\Catalog\Models\Course;
 use App\Domains\Catalog\Services\CourseSearchService;
 use App\Domains\Catalog\Services\RelatedCoursesService;
 use App\Platform\Identity\Contracts\UserLookupPort;
+use App\Platform\Shared\Commerce\Contracts\PurchaseSummaryPort;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CourseController extends Controller
 {
-    public function index(CourseIndexRequest $request, CourseSearchService $search, UserLookupPort $users): JsonResponse
+    public function index(CourseIndexRequest $request, CourseSearchService $search, UserLookupPort $users, PurchaseSummaryPort $purchases): JsonResponse
     {
         $perPage = (int) ($request->validated()['per_page'] ?? config('catalog.pagination.per_page'));
 
@@ -30,8 +31,30 @@ class CourseController extends Controller
         /** @var EloquentCollection<int, Course> $courses */
         $courses = $paginator->getCollection();
         $this->attachTrainerRefs($courses, $users);
+        $this->attachPurchaseSummaries($courses, $purchases);
 
         return ApiResponse::paginated($paginator, CourseListResource::class);
+    }
+
+    /**
+     * Stash how each course is sold, resolved in ONE batched port call for the whole page. Catalog
+     * never touches a Commerce model — only the Shared port and its DTO.
+     *
+     * @param  EloquentCollection<int, Course>  $courses
+     */
+    private function attachPurchaseSummaries(EloquentCollection $courses, PurchaseSummaryPort $purchases): void
+    {
+        if ($courses->isEmpty()) {
+            return;
+        }
+
+        $summaries = $purchases->forCourseIds(
+            $courses->map(fn (Course $c): int => (int) $c->id)->all(),
+        );
+
+        foreach ($courses as $course) {
+            $course->setAttribute('purchase_summary', $summaries[(int) $course->id] ?? null);
+        }
     }
 
     /**
@@ -68,7 +91,7 @@ class CourseController extends Controller
         }
     }
 
-    public function show(string $publicId, RelatedCoursesService $related): JsonResponse
+    public function show(string $publicId, RelatedCoursesService $related, PurchaseSummaryPort $purchases): JsonResponse
     {
         if (! Str::isUuid($publicId)) {
             throw new NotFoundHttpException('Course not found.');
@@ -86,6 +109,7 @@ class CourseController extends Controller
         }
 
         $course->setRelation('related', $related->for($course));
+        $course->setAttribute('purchase_summary', $purchases->forCourse((int) $course->id));
 
         return ApiResponse::success(new CourseResource($course));
     }

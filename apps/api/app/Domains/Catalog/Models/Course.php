@@ -29,6 +29,10 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $trailer_path
  * @property int|null $duration_minutes
  *
+ * @property-read \App\Platform\Shared\Commerce\Data\PurchaseSummary|null $purchase_summary How the
+ *   course is sold, stashed by CourseController from the Shared PurchaseSummaryPort so a listing
+ *   resolves every row in one call. NOT a column and NOT a relation — Catalog never reads a Commerce
+ *   model; only this DTO crosses.
  * @property-read list<\App\Platform\Identity\Contracts\Data\UserRef>|null $trainer_refs Boundary-safe
  *   trainer display refs, resolved via UserLookupPort and stashed by CourseController::attachTrainerRefs
  *   for the API listing resource. NOT a column and NOT an Eloquent relation — trainer ids live on the
