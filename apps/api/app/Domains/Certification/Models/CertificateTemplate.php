@@ -8,6 +8,14 @@ use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $version
+ * @property string|null $html
+ * @property array<string, mixed>|null $html_i18n
+ * @property array<string, mixed>|null $design
+ * @property string|null $orientation
+ * @property bool $is_active
+ */
 class CertificateTemplate extends Model
 {
     /** @use HasFactory<CertificateTemplateFactory> */

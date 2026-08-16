@@ -95,16 +95,22 @@ class CompanyEntitlementService extends BaseService
             'reassignment_progress_threshold' => $product->reassignment_progress_threshold,
             'company_certificate_branding' => $product->company_certificate_branding?->value,
             'employee_access_expires_with_purchase' => $product->employee_access_expires_with_purchase,
+            // Certificates are snapshotted for the same reason seats are: a bundle sold with a
+            // credential must keep offering one even if the product is edited afterwards.
+            'certificate_enabled' => $product->certificate_enabled,
+            'certificate_expiry_type' => $product->certificate_expiry_type?->value,
+            'certificate_expiry_value' => $product->certificate_expiry_value,
+            'certificate_expires_at' => $product->certificate_expires_at,
         ];
     }
 
     /**
      * How many seats the purchase carries. Null means unlimited.
      *
-     * NOTE on `buyer_selects`: checkout does not capture a seat quantity yet (cart and order items
-     * carry no quantity column), so a buyer-selected product falls back to the admin's default count
-     * rather than silently granting one seat. Capturing the buyer's chosen quantity is a checkout
-     * change, not a seat change, and belongs with the purchase flow.
+     * `buyer_selects` cannot reach this point: CartService refuses it at the cart and CheckoutAction
+     * refuses it again at checkout, because nothing captures a chosen quantity and no price row says
+     * what one would cost. The earlier fallback to the admin's default count is gone — it silently
+     * sold a seat count the buyer never picked.
      */
     private function resolveSeatCount(Product $product): ?int
     {

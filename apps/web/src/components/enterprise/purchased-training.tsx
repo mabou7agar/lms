@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Package, ShieldAlert, Users } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import { useI18n } from "@/lib/i18n/i18n-context";
+import { formatExpiry, isExpiringSoon } from "@/lib/commerce/expiry";
+import { ExpiryBanner } from "@/components/commerce/expiry-banner";
 import type { CompanyEntitlement, CourseAssignmentTargetType } from "@/lib/enterprise/manager-api";
 import {
   useAssignEntitlement,
@@ -46,7 +48,26 @@ export function PurchasedTraining() {
         isEmpty={(d) => d.length === 0}
         empty={<p className="text-sm text-muted-foreground">{t("manager.training.purchased.empty")}</p>}
       >
-        {(data) => (
+        {(data) => {
+          // A purchase running out is the manager's problem before it is the employees': they are
+          // the only ones who can renew it, and the seat count tells them how many people it costs.
+          const ending = data.filter((e) => e.status === "active" && isExpiringSoon(e.access_ends_at));
+          const seatsAtRisk = ending.reduce((sum, e) => sum + e.seats.used, 0);
+
+          return (
+          <>
+          {ending.length > 0 ? (
+            <ExpiryBanner
+              className="mb-4"
+              title={t("manager.training.purchased.expiringBanner")
+                .replace("{count}", String(ending.length))
+                .replace("{seats}", String(seatsAtRisk))}
+              detail={ending
+                .map((e) => `${e.product_title} · ${formatExpiry(e.access_ends_at, locale)}`)
+                .join(" · ")}
+            />
+          ) : null}
+
           <ul className="space-y-3">
             {data.map((entitlement) => (
               <li key={entitlement.id}>
@@ -59,7 +80,9 @@ export function PurchasedTraining() {
               </li>
             ))}
           </ul>
-        )}
+          </>
+          );
+        }}
       </QueryState>
     </SectionCard>
   );

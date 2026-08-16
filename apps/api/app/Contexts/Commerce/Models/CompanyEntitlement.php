@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Commerce\Models;
 
+use App\Contexts\Commerce\Enums\CertificateExpiryType;
 use App\Contexts\Commerce\Enums\CompanyEntitlementStatus;
 use App\Contexts\Commerce\Enums\SeatMode;
 use App\Contexts\Commerce\Enums\SeatReassignmentPolicy;
@@ -37,6 +38,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $reassignment_progress_threshold
  * @property string|null $company_certificate_branding
  * @property bool $employee_access_expires_with_purchase
+ * @property bool $certificate_enabled
+ * @property CertificateExpiryType|null $certificate_expiry_type
+ * @property int|null $certificate_expiry_value
+ * @property Carbon|null $certificate_expires_at
  * @property-read Product|null $product
  * @property-read Order|null $order
  * @property-read Collection<int, CompanyEntitlementAssignment> $assignments
@@ -51,6 +56,7 @@ class CompanyEntitlement extends Model
         'access_starts_at', 'access_ends_at', 'status',
         'seat_mode', 'seat_reassignment_policy', 'reassignment_progress_threshold',
         'company_certificate_branding', 'employee_access_expires_with_purchase',
+        'certificate_enabled', 'certificate_expiry_type', 'certificate_expiry_value', 'certificate_expires_at',
     ];
 
     protected function casts(): array
@@ -65,6 +71,10 @@ class CompanyEntitlement extends Model
             'seat_reassignment_policy' => SeatReassignmentPolicy::class,
             'reassignment_progress_threshold' => 'integer',
             'employee_access_expires_with_purchase' => 'boolean',
+            'certificate_enabled' => 'boolean',
+            'certificate_expiry_type' => CertificateExpiryType::class,
+            'certificate_expiry_value' => 'integer',
+            'certificate_expires_at' => 'datetime',
         ];
     }
 
@@ -149,6 +159,26 @@ class CompanyEntitlement extends Model
     public function employeeAccessEndsAt(): ?Carbon
     {
         return $this->employee_access_expires_with_purchase ? $this->access_ends_at : null;
+    }
+
+    /**
+     * When a certificate earned through this purchase at `$issuedAt` stops being valid, per the
+     * policy snapshotted when the company bought. Null means the credential never lapses.
+     *
+     * Deliberately independent of the ACCESS window: an employee can lose the course when the
+     * purchase ends and keep the credential they already earned, which is what a credential is for.
+     */
+    public function certificateExpiresAfter(Carbon $issuedAt): ?Carbon
+    {
+        if (! $this->certificate_enabled) {
+            return null;
+        }
+
+        return ($this->certificate_expiry_type ?? CertificateExpiryType::None)->resolveExpiry(
+            $issuedAt,
+            $this->certificate_expiry_value,
+            $this->certificate_expires_at,
+        );
     }
 
     /**

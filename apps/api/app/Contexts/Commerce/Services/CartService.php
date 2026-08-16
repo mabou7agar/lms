@@ -3,8 +3,10 @@
 namespace App\Contexts\Commerce\Services;
 
 use App\Contexts\Commerce\Enums\BuyerType;
+use App\Contexts\Commerce\Enums\SeatMode;
 use App\Contexts\Commerce\Exceptions\BuyerAudienceMismatchException;
 use App\Contexts\Commerce\Exceptions\ProductUnavailableException;
+use App\Contexts\Commerce\Exceptions\SeatQuantityUnavailableException;
 use App\Contexts\Commerce\Models\Cart;
 use App\Contexts\Commerce\Models\CartItem;
 use App\Contexts\Commerce\Models\Product;
@@ -38,6 +40,7 @@ class CartService extends BaseService
         // which anything enters a cart, so a company-only licence cannot be added by an individual
         // (or the reverse) by calling the API directly.
         $this->assertAudienceAllows($cart, $product);
+        $this->assertSeatQuantitySupported($product);
 
         $amount = $this->pricing->effectiveMinor($product, $cart->currency);
 
@@ -75,6 +78,21 @@ class CartService extends BaseService
                     ? 'This product is sold to individuals only.'
                     : 'This product is sold to companies only. Switch to a company purchase to buy it.',
             );
+        }
+    }
+
+    /**
+     * Refuse a product whose seat count the buyer is supposed to choose.
+     *
+     * Nothing in the purchase flow captures a chosen quantity, and no price row says what a quantity
+     * would cost, so the honest answer is that this product is not yet self-service. It is refused
+     * at the cart — the first point of entry — rather than at checkout, so a company never assembles
+     * an order it cannot complete.
+     */
+    public function assertSeatQuantitySupported(Product $product): void
+    {
+        if ($product->seat_mode === SeatMode::BuyerSelects) {
+            throw new SeatQuantityUnavailableException;
         }
     }
 

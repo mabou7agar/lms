@@ -5,14 +5,19 @@ import { api } from "@/lib/api/client";
  * Issuance facts only — no ids or storage paths are exposed by the backend.
  */
 export type CertificateVerification = {
+  /** Issued, untampered AND still inside its validity window. A lapsed credential is genuine but not current. */
   valid: boolean;
-  /** Certificate status enum value: "issued" | "revoked". */
+  /** Effective status: "issued" | "revoked" | "expired". Expiry is derived from the date, never stored. */
   status: string;
   number: string;
   holder_name: string | null;
   course_title: string | null;
   issued_at: string | null;
+  expires_at: string | null;
   revoked_at: string | null;
+  /** Present only when the branding the certificate was issued under actually names the company. */
+  company_name: string | null;
+  company_logo_url: string | null;
 };
 
 /** Public, unauthenticated verification lookup (throttled server-side per IP). */

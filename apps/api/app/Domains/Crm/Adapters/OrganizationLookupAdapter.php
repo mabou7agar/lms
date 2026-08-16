@@ -48,4 +48,21 @@ class OrganizationLookupAdapter implements OrganizationLookupPort
             billingAddress: $organization->getAttribute('billing_address'),
         );
     }
+
+    /**
+     * @return list<int>
+     */
+    public function managerUserIds(int $organizationId): array
+    {
+        return OrganizationMember::query()
+            ->where('organization_id', $organizationId)
+            ->where('status', MemberStatus::Active->value)
+            ->whereIn('role', [MemberRole::Owner->value, MemberRole::Admin->value])
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
 }

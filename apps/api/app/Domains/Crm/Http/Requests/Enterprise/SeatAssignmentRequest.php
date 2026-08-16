@@ -2,13 +2,11 @@
 
 namespace App\Domains\Crm\Http\Requests\Enterprise;
 
-use App\Domains\Crm\Services\OrganizationTargetResolver;
 use App\Platform\Shared\Requests\BaseFormRequest;
-use Illuminate\Validation\Rule;
 
 /**
- * Handing seats from a purchase to an org scope. Mirrors CourseAssignmentRequest so the manager
- * portal speaks one target vocabulary across both assignment surfaces.
+ * Assigning or releasing a seat in the organization's SUBSCRIPTION seat pool. Purchased-training
+ * seats are a different surface with a different shape — see EntitlementAssignmentRequest.
  */
 class SeatAssignmentRequest extends BaseFormRequest
 {
@@ -16,8 +14,8 @@ class SeatAssignmentRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'target_type' => ['required', 'string', Rule::in(OrganizationTargetResolver::TYPES)],
-            'target_id' => ['nullable', 'uuid', 'required_unless:target_type,organization'],
+            // The member (by public id) to assign/release a seat for.
+            'member_id' => ['required', 'uuid'],
         ];
     }
 }

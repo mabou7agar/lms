@@ -5,6 +5,7 @@ namespace App\Domains\Certification\Support;
 use App\Domains\Certification\Enums\CertificateStatus;
 use App\Domains\Certification\Models\Certificate;
 use App\Platform\Shared\Certification\Contracts\CertificateStatusPort;
+use App\Platform\Shared\Certification\Data\ExpiringCertificate;
 
 /**
  * Certification's implementation of the cross-context certificate-status port. The only place
@@ -44,5 +45,27 @@ class CertificateStatusAdapter implements CertificateStatusPort
             ->whereIn('user_id', $userIds)
             ->where('status', CertificateStatus::Issued->value)
             ->count();
+    }
+
+    /**
+     * @return list<ExpiringCertificate>
+     */
+    public function expiringWithin(int $days): array
+    {
+        return Certificate::query()
+            ->expiringWithin($days)
+            ->with('course')
+            ->orderBy('expires_at')
+            ->get()
+            ->map(fn (Certificate $c): ExpiringCertificate => new ExpiringCertificate(
+                publicId: (string) $c->public_id,
+                number: (string) $c->number,
+                userId: (int) $c->user_id,
+                courseId: (int) $c->course_id,
+                courseTitle: (string) ($c->course?->getAttribute('title') ?? ''),
+                expiresAt: (string) $c->expires_at?->toIso8601String(),
+            ))
+            ->values()
+            ->all();
     }
 }

@@ -15,9 +15,11 @@ use App\Platform\Notifications\Observers\NotificationDeliveryObserver;
 use App\Platform\Notifications\Policies\NotificationPolicy;
 use App\Platform\Notifications\Services\AutomationEventCatalog;
 use App\Platform\Notifications\Services\AutomationRunner;
+use App\Platform\Notifications\Services\ExpiryNotificationService;
 use App\Platform\Notifications\Services\LearningNotificationService;
 use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
 use App\Platform\Shared\Marketing\NullMarketingAudiencePort;
+use App\Platform\Shared\Notifications\Contracts\ExpiryNotificationPort;
 use App\Platform\Shared\Notifications\Contracts\LearningNotificationPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
@@ -49,6 +51,10 @@ class NotificationsServiceProvider extends BaseDomainServiceProvider
         // dispatcher through this Shared contract without importing the Notifications context, so
         // wiring those flows introduces no domain<->Notifications Deptrac edge.
         $this->app->bind(LearningNotificationPort::class, LearningNotificationService::class);
+
+        // Expiry reminders reach recipients through the same seam: Commerce sweeps what is about
+        // to lapse and states the intent; deduplication, channels and delivery are handled here.
+        $this->app->bind(ExpiryNotificationPort::class, ExpiryNotificationService::class);
 
         $this->app->singleton(AutomationEventCatalog::class);
 

@@ -142,6 +142,10 @@ class CheckoutAction extends BaseAction
             $product = $item->getRelation('product');
             if ($product instanceof Product) {
                 $this->carts->assertAudienceAllows($cart, $product);
+                // Same reasoning for the seat count: an admin can switch a product to buyer-selected
+                // seats while the cart sits idle, and that product cannot be sold until quantity
+                // exists. Better a refusal here than an order for a seat count nobody chose.
+                $this->carts->assertSeatQuantitySupported($product);
             }
         }
 

@@ -33,6 +33,9 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 function ResultCard({ data }: { data: CertificateVerification }) {
   const { t, locale } = useI18n();
   const isValid = data.valid && data.status !== "revoked";
+  // A lapsed credential is genuine but no longer current, which is a different answer to a verifier
+  // than "revoked" — the holder really did complete this, the validity window has simply closed.
+  const isExpired = data.status === "expired";
 
   return (
     <Card className={isValid ? "border-primary/30" : "border-destructive/40"}>
@@ -49,10 +52,14 @@ function ResultCard({ data }: { data: CertificateVerification }) {
           </span>
           <div>
             <h2 className={isValid ? "font-serif text-xl font-semibold text-primary" : "font-serif text-xl font-semibold text-destructive"}>
-              {isValid ? t("verify.validTitle") : t("verify.invalidTitle")}
+              {isValid ? t("verify.validTitle") : isExpired ? t("verify.expiredTitle") : t("verify.invalidTitle")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isValid ? t("verify.validDescription") : t("verify.invalidDescription")}
+              {isValid
+                ? t("verify.validDescription")
+                : isExpired
+                  ? t("verify.expiredDescription")
+                  : t("verify.invalidDescription")}
             </p>
           </div>
         </div>
@@ -63,10 +70,20 @@ function ResultCard({ data }: { data: CertificateVerification }) {
           <DetailRow label={t("verify.number")} value={data.number} />
           <DetailRow
             label={t("verify.status")}
-            value={data.status === "revoked" ? t("verify.statusRevoked") : t("verify.statusIssued")}
+            value={
+              data.status === "revoked"
+                ? t("verify.statusRevoked")
+                : isExpired
+                  ? t("verify.statusExpired")
+                  : t("verify.statusIssued")
+            }
           />
           <DetailRow label={t("verify.issued")} value={formatDate(data.issued_at, locale)} />
+          {data.expires_at ? <DetailRow label={t("verify.expires")} value={formatDate(data.expires_at, locale)} /> : null}
           {data.revoked_at ? <DetailRow label={t("verify.revoked")} value={formatDate(data.revoked_at, locale)} /> : null}
+          {/* Shown only when the branding the certificate was issued under actually names the
+              company — a verifier has no business learning who paid otherwise. */}
+          {data.company_name ? <DetailRow label={t("verify.company")} value={data.company_name} /> : null}
         </dl>
       </CardContent>
     </Card>

@@ -2,6 +2,8 @@
 
 namespace App\Platform\Shared\Certification\Contracts;
 
+use App\Platform\Shared\Certification\Data\ExpiringCertificate;
+
 /**
  * Certificate status for reporting surfaces outside the Certification context (the instructor
  * portal's learner drill-down and course analytics). DECLARED here in Shared, IMPLEMENTED by
@@ -28,4 +30,15 @@ interface CertificateStatusPort
      * @param  list<int>  $userIds
      */
     public function issuedCountForUsers(array $userIds): int;
+
+    /**
+     * Valid credentials whose validity window closes inside the next `$days` days, oldest expiry
+     * first. Drives the expiry-reminder sweep, which lives on the commercial side because that is
+     * where the reminder cadence is configured — Certification supplies the facts, not the policy.
+     *
+     * Revoked, already-lapsed and never-expiring credentials are all excluded.
+     *
+     * @return list<ExpiringCertificate>
+     */
+    public function expiringWithin(int $days): array;
 }

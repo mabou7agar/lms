@@ -12,10 +12,19 @@ use App\Domains\Certification\Services\CertificateNumberService;
 use App\Domains\Certification\Services\SignatureService;
 use App\Domains\Certification\Services\VerificationCodeService;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Commerce\Contracts\CertificatePolicyPort;
 
 /**
  * Issues a certificate for a completed course. Idempotent per (user, course): a repeated
  * CourseCompleted never mints a duplicate. PDF is rendered lazily (EnsureCertificatePdfAction).
+ *
+ * Whether a certificate is included at all, when it lapses, and whose marks it carries are
+ * COMMERCIAL facts, so they are asked of the Shared certificate-policy port rather than decided
+ * here. Certification stores the answer and never learns what a product or a seat pool is. A course
+ * nobody sells resolves to the unrestricted default, so free courses behave exactly as before.
+ *
+ * Returns null when the policy says no certificate is included — the caller must treat that as a
+ * legitimate outcome, not a failure.
  */
 class GenerateCertificateAction extends BaseAction
 {
@@ -23,11 +32,15 @@ class GenerateCertificateAction extends BaseAction
         private readonly CertificateNumberService $numbers,
         private readonly VerificationCodeService $codes,
         private readonly SignatureService $signatures,
+        private readonly CertificatePolicyPort $policies,
     ) {}
 
-    public function executeByUserId(int $userId, Course $course, ?int $enrollmentId = null): Certificate
+    public function executeByUserId(int $userId, Course $course, ?int $enrollmentId = null): ?Certificate
     {
-        [$certificate, $created] = $this->transaction(function () use ($userId, $course, $enrollmentId): array {
+        $issuedAt = now();
+        $policy = $this->policies->certificatePolicyFor($userId, (int) $course->id, $issuedAt->toIso8601String());
+
+        [$certificate, $created] = $this->transaction(function () use ($userId, $course, $enrollmentId, $policy, $issuedAt): array {
             $existing = Certificate::where('user_id', $userId)
                 ->where('course_id', $course->id)
                 ->lockForUpdate()
@@ -35,6 +48,13 @@ class GenerateCertificateAction extends BaseAction
 
             if ($existing !== null) {
                 return [$existing, false];
+            }
+
+            // The product this course is sold under does not include a credential. Nothing is
+            // written: an empty certificate would be worse than none, and the learner's course page
+            // says plainly that no certificate is included.
+            if (! $policy->enabled) {
+                return [null, false];
             }
 
             $settings = CertificateSetting::current();
@@ -52,7 +72,14 @@ class GenerateCertificateAction extends BaseAction
                 'signature_name' => $settings->signature_name,
                 'signature_title' => $settings->signature_title,
                 'rendered_snapshot' => $this->snapshotOf($template),
-                'issued_at' => now(),
+                'issued_at' => $issuedAt,
+                'expires_at' => $policy->expiresAt,
+                // Company context, snapshotted: the credential must still name the right company
+                // years later, whatever happens to the organization record afterwards.
+                'organization_id' => $policy->organizationId,
+                'company_name' => $policy->companyName,
+                'company_logo_url' => $policy->companyLogoUrl,
+                'branding_mode' => $policy->brandingMode,
             ]);
 
             // The signature payload is number|verification_code|user_id|course_id|issued_at ONLY —
@@ -62,7 +89,7 @@ class GenerateCertificateAction extends BaseAction
             return [$certificate, true];
         });
 
-        if ($created) {
+        if ($created && $certificate instanceof Certificate) {
             CertificateIssued::dispatch($certificate);
         }
 
@@ -81,7 +108,8 @@ class GenerateCertificateAction extends BaseAction
             return null;
         }
 
-        /** @var array<string, mixed>|string $html */
+        // The template's own property types now say what this is, so the annotation that used to
+        // stand in for them would only be a weaker restatement.
         $html = is_array($template->html_i18n) && $template->html_i18n !== []
             ? $template->html_i18n
             : (string) $template->html;

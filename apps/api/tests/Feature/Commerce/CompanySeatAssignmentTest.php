@@ -458,3 +458,18 @@ it('denies a plain employee the training portal', function (): void {
 
     $this->getJson('/api/v1/enterprise/entitlements')->assertForbidden();
 });
+
+// The purchase portal and the subscription seat pool are two different surfaces that both talk about
+// "seats". This wave's predecessor gave them the same form-request class, and the subscription one —
+// which takes a single member_id, not a target scope — started rejecting every call with a 422.
+it('leaves the subscription seat endpoints speaking their own request shape', function (): void {
+    $org = Organization::factory()->create();
+    Sanctum::actingAs(orgOwner($org));
+    $member = employee($org, 'seat@corp.com');
+
+    // No subscription, so there is no pool: the point is that validation lets the request THROUGH to
+    // the controller (404/409, never a 422 for a body that is perfectly well formed).
+    $response = $this->postJson('/api/v1/enterprise/seats/assign', ['member_id' => $member->public_id]);
+
+    expect($response->status())->not->toBe(422);
+});

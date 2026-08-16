@@ -2,7 +2,7 @@
 
 namespace App\Domains\Crm\Http\Controllers\Api\V1\Enterprise;
 
-use App\Domains\Crm\Http\Requests\Enterprise\SeatAssignmentRequest;
+use App\Domains\Crm\Http\Requests\Enterprise\EntitlementAssignmentRequest;
 use App\Domains\Crm\Http\Requests\Enterprise\SeatRevocationRequest;
 use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Services\OrganizationTargetResolver;
@@ -75,7 +75,7 @@ class CompanyEntitlementController extends EnterpriseController
     }
 
     /** POST /enterprise/entitlements/{entitlement}/assign — give the target's employees a seat each. */
-    public function assign(SeatAssignmentRequest $request, string $entitlement): JsonResponse
+    public function assign(EntitlementAssignmentRequest $request, string $entitlement): JsonResponse
     {
         Gate::authorize('manageMembers', OrganizationMember::class);
 

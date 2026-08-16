@@ -2,11 +2,13 @@
 
 namespace App\Platform\Branding\Providers;
 
+use App\Platform\Branding\Adapters\TenantBrandingAdapter;
 use App\Platform\Branding\Models\CustomDomain;
 use App\Platform\Branding\Models\OrganizationBrandSetting;
 use App\Platform\Branding\Policies\CustomDomainPolicy;
 use App\Platform\Branding\Policies\OrganizationBrandPolicy;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use App\Platform\Shared\Tenancy\Contracts\TenantBrandingProvider;
 
 /**
  * Wires the Branding / white-label module: loads its migrations, the branding route file (public
@@ -29,5 +31,13 @@ class BrandingServiceProvider extends BaseDomainServiceProvider
     protected function domainPath(): string
     {
         return dirname(__DIR__);
+    }
+
+    public function register(): void
+    {
+        // Branding owns the per-organization brand tables, so it provides the Shared read port other
+        // modules use to render a company's marks — a company-branded certificate being the first
+        // real consumer. The port had been declared with no implementation until now.
+        $this->app->bind(TenantBrandingProvider::class, TenantBrandingAdapter::class);
     }
 }

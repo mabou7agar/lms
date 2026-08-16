@@ -2719,30 +2719,6 @@ parameters:
 			path: app/Domains/Certification/Http/Controllers/Api/V1/CertificateFileController.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$issued_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateListItemResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateListItemResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateListItemResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateListItemResource.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2845,12 +2821,6 @@ parameters:
 			path: app/Domains/Certification/Models/BadgeAward.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Models/Certificate.php
-
-		-
 			message: '#^Cross\-context Model reference\: ''App\\Domains\\Catalog\\Models\\Course'' is used from context ''Certification''\. Access another context''s data through a Port or a published read model, not its Eloquent Model\.$#'
 			identifier: helbaron.crossContextModel
 			count: 1
@@ -2935,25 +2905,7 @@ parameters:
 			path: app/Domains/Certification/Services/CertificateRenderService.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$issued_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateVerificationService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateVerificationService.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$revoked_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateVerificationService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Services/CertificateVerificationService.php

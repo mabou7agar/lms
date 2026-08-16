@@ -43,6 +43,11 @@ class NotificationsSeeder extends Seeder
             ['forum_reply', 'New reply to your thread', 'Someone replied to your forum thread.', 'رد جديد على موضوعك', 'قام أحدهم بالرد على موضوعك في المنتدى.'],
             ['forum_mention', 'You were mentioned', 'You were mentioned in a forum post.', 'تمت الإشارة إليك', 'تمت الإشارة إليك في منشور بالمنتدى.'],
             ['course_update', 'Course update', 'There is an update in one of your courses.', 'تحديث للدورة', 'يوجد تحديث في إحدى دوراتك.'],
+            // Expiry reminders — sent by commerce:send-expiry-reminders at the lead times the admin
+            // configured on the product. {{ days }} is the notice period, not a countdown.
+            ['company_purchase_expiring', 'Your company training expires in {{ days }} days', '{{ title }} ends on {{ expires_at }}. {{ seats }} employee(s) will lose access.', 'تدريب شركتك ينتهي خلال {{ days }} يومًا', 'ينتهي {{ title }} في {{ expires_at }}. سيفقد {{ seats }} موظف الوصول.'],
+            ['seat_access_expiring', 'Your course access ends in {{ days }} days', 'Your access to {{ title }} ends on {{ expires_at }}. Finish it before then or ask your manager.', 'ينتهي وصولك للدورة خلال {{ days }} يومًا', 'ينتهي وصولك إلى {{ title }} في {{ expires_at }}. أكمله قبل ذلك أو تواصل مع مديرك.'],
+            ['certificate_expiring', 'Your certificate expires in {{ days }} days', 'Certificate {{ number }} for {{ title }} is valid until {{ expires_at }}.', 'تنتهي صلاحية شهادتك خلال {{ days }} يومًا', 'الشهادة {{ number }} لـ {{ title }} صالحة حتى {{ expires_at }}.'],
         ];
 
         foreach ($templates as [$key, $enSubject, $enBody, $arSubject, $arBody]) {

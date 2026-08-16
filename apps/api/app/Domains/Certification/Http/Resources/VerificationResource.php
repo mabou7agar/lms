@@ -20,7 +20,10 @@ class VerificationResource extends BaseResource
             'holder_name' => $this->resource['holder_name'],
             'course_title' => $this->resource['course_title'],
             'issued_at' => $this->resource['issued_at'],
+            'expires_at' => $this->resource['expires_at'],
             'revoked_at' => $this->resource['revoked_at'],
+            'company_name' => $this->resource['company_name'],
+            'company_logo_url' => $this->resource['company_logo_url'],
         ];
     }
 }

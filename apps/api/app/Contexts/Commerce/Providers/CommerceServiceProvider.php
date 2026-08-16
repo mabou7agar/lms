@@ -2,11 +2,13 @@
 
 namespace App\Contexts\Commerce\Providers;
 
+use App\Contexts\Commerce\Adapters\CertificatePolicyAdapter;
 use App\Contexts\Commerce\Adapters\CompanyEntitlementAdapter;
 use App\Contexts\Commerce\Adapters\EntitlementAdapter;
 use App\Contexts\Commerce\Adapters\PurchaseSummaryAdapter;
 use App\Contexts\Commerce\Console\Commands\RenewDueSubscriptionsCommand;
 use App\Contexts\Commerce\Console\Commands\RetryFailedPaymentsCommand;
+use App\Contexts\Commerce\Console\Commands\SendExpiryRemindersCommand;
 use App\Contexts\Commerce\Contracts\PaymentGateway;
 use App\Contexts\Commerce\Contracts\TaxCalculator;
 use App\Contexts\Commerce\Events\ContractAccepted;
@@ -27,6 +29,7 @@ use App\Contexts\Commerce\Policies\OrderPolicy;
 use App\Contexts\Commerce\Policies\ProductPolicy;
 use App\Contexts\Commerce\Support\OrganizationSubscriptionExposureAdapter;
 use App\Contexts\Commerce\Tax\Services\TaxService;
+use App\Platform\Shared\Commerce\Contracts\CertificatePolicyPort;
 use App\Platform\Shared\Commerce\Contracts\CompanyEntitlementPort;
 use App\Platform\Shared\Commerce\Contracts\EntitlementPort;
 use App\Platform\Shared\Commerce\Contracts\PurchaseSummaryPort;
@@ -76,6 +79,9 @@ class CommerceServiceProvider extends BaseDomainServiceProvider
         // The manager portal's window onto what the organization bought. CRM authorizes the
         // caller and resolves which employees to seat; Commerce owns the seat maths and policy.
         $this->app->bind(CompanyEntitlementPort::class, CompanyEntitlementAdapter::class);
+        // What certificate a learner actually bought. Certification asks this at the moment of
+        // issue so it never has to know what a product, an order or a seat pool is.
+        $this->app->bind(CertificatePolicyPort::class, CertificatePolicyAdapter::class);
 
         // Org-subscription seat exposure for the CRM enterprise portal (seat summary + resize with
         // downgrade validation). Commerce implements; CRM consumes through this Shared port only.
@@ -84,6 +90,7 @@ class CommerceServiceProvider extends BaseDomainServiceProvider
         $this->commands([
             RetryFailedPaymentsCommand::class,
             RenewDueSubscriptionsCommand::class,
+            SendExpiryRemindersCommand::class,
         ]);
     }
 
@@ -136,6 +143,10 @@ class CommerceServiceProvider extends BaseDomainServiceProvider
             // retry that would race concurrent charges. onOneServer() elects a single runner.
             $schedule->command('commerce:retry-failed-payments')->hourly()->withoutOverlapping()->onOneServer();
             $schedule->command('commerce:renew-subscriptions')->hourly()->withoutOverlapping()->onOneServer();
+            // Expiry reminders are day-granularity notices, so daily is the right cadence. Every
+            // notice is deduplicated per (kind, reference, recipient, offset), so a missed day is
+            // caught up on the next run rather than lost, and a double run sends nothing twice.
+            $schedule->command('commerce:send-expiry-reminders')->dailyAt('07:00')->withoutOverlapping()->onOneServer();
         });
     }
 }

@@ -1,9 +1,12 @@
 "use client";
 
-import { Award, Download, Share2 } from "lucide-react";
+import { Award, Building2, Download, Share2 } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import { useI18n } from "@/lib/i18n/i18n-context";
+import { formatExpiry, hasExpired, isExpiringSoon } from "@/lib/commerce/expiry";
+import type { CertificateItem } from "@/lib/student/api";
 import { useCertificateDownload, useCertificateShare, useMyCertificates } from "@/lib/student/hooks";
+import { ExpiryBanner } from "@/components/commerce/expiry-banner";
 import { PageHeader } from "@/components/student/page-header";
 import { QueryState } from "@/components/student/query-state";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,8 +15,15 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/states/empty-state";
 import { toast } from "@/components/ui/toast";
 
+/** Issued and current reads as success; expired or revoked is not a failure, just no longer current. */
+function statusVariant(c: CertificateItem): "success" | "secondary" | "destructive" {
+  if (c.status === "revoked") return "destructive";
+  if (c.status === "expired") return "secondary";
+  return "success";
+}
+
 export default function CertificatesPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const query = useMyCertificates();
   const download = useCertificateDownload();
   const share = useCertificateShare();
@@ -46,7 +56,23 @@ export default function CertificatesPage() {
         isEmpty={(d) => d.length === 0}
         empty={<EmptyState icon={<Award className="size-8" />} title={t("student.certificates.empty")} />}
       >
-        {(items) => (
+        {(items) => {
+          // A credential the learner is about to lose is the one thing worth interrupting them
+          // about, so it leads. Expired ones stay listed rather than vanishing — a lapsed
+          // certificate is still proof of what was completed, and hiding it just looks like data loss.
+          const expiringSoon = items.filter((c) => c.status !== "revoked" && isExpiringSoon(c.expires_at));
+
+          return (
+          <div className="space-y-6">
+          {expiringSoon.length > 0 ? (
+            <ExpiryBanner
+              title={t("student.certificates.expiringBanner").replace("{count}", String(expiringSoon.length))}
+              detail={expiringSoon
+                .map((c) => `${c.course_title ?? "—"} · ${formatExpiry(c.expires_at, locale)}`)
+                .join(" · ")}
+            />
+          ) : null}
+
           <div className="stagger-in grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((c) => (
               <Card key={c.id} className="group relative overflow-hidden border-border/70 transition-all duration-300 hover:-translate-y-0.5 hover:border-copper/30 hover:shadow-lg">
@@ -56,7 +82,7 @@ export default function CertificatesPage() {
                     <div className="flex size-12 items-center justify-center rounded-2xl bg-copper/10 text-copper ring-1 ring-copper/20 transition-transform duration-300 group-hover:scale-105">
                       <Award className="size-6" aria-hidden />
                     </div>
-                    <Badge variant={c.status === "issued" ? "success" : "secondary"}>{c.status}</Badge>
+                    <Badge variant={statusVariant(c)}>{t(`student.certificates.status.${c.status}`)}</Badge>
                   </div>
                   <div className="space-y-1">
                     <h3 className="line-clamp-2 font-serif text-lg font-semibold leading-tight">{c.course_title ?? "—"}</h3>
@@ -65,7 +91,21 @@ export default function CertificatesPage() {
                     </p>
                     {c.issued_at ? (
                       <p className="text-xs text-muted-foreground">
-                        {t("student.certificates.issued")}: {new Date(c.issued_at).toLocaleDateString()}
+                        {t("student.certificates.issued")}: {formatExpiry(c.issued_at, locale)}
+                      </p>
+                    ) : null}
+                    {c.expires_at ? (
+                      <p className={hasExpired(c.expires_at) ? "text-xs font-medium text-destructive" : "text-xs text-muted-foreground"}>
+                        {hasExpired(c.expires_at)
+                          ? t("student.certificates.expiredOn")
+                          : t("student.certificates.expires")}
+                        : {formatExpiry(c.expires_at, locale)}
+                      </p>
+                    ) : null}
+                    {c.company_branded && c.company_name ? (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Building2 className="size-3.5" aria-hidden />
+                        {c.company_name}
                       </p>
                     ) : null}
                   </div>
@@ -92,7 +132,9 @@ export default function CertificatesPage() {
               </Card>
             ))}
           </div>
-        )}
+          </div>
+          );
+        }}
       </QueryState>
     </div>
   );

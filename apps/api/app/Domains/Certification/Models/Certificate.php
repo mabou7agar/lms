@@ -11,9 +11,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $user_id
+ * @property int $course_id
+ * @property string $public_id
+ * @property string $number
+ * @property string $verification_code
+ * @property CertificateStatus $status
+ * @property Carbon|null $issued_at
+ * @property Carbon|null $expires_at
+ * @property int|null $organization_id
+ * @property string|null $company_name
+ * @property string|null $company_logo_url
+ * @property string|null $branding_mode
  */
 class Certificate extends Model
 {
@@ -26,7 +38,10 @@ class Certificate extends Model
     protected $fillable = [
         'user_id', 'course_id', 'enrollment_id', 'template_id', 'template_version', 'number', 'verification_code',
         'status', 'signature_name', 'signature_title', 'signature_hash', 'pdf_path', 'pdf_generated_at',
-        'metadata', 'rendered_snapshot', 'issued_at', 'revoked_at', 'reissued_at',
+        'metadata', 'rendered_snapshot', 'issued_at', 'expires_at', 'revoked_at', 'reissued_at',
+        // Commercial context, resolved at issue and snapshotted so the credential still reads
+        // correctly after the company rebrands or the product is retired.
+        'organization_id', 'company_name', 'company_logo_url', 'branding_mode',
     ];
 
     protected $hidden = ['pdf_path']; // storage path is never serialized
@@ -40,6 +55,7 @@ class Certificate extends Model
             'template_version' => 'integer',
             'pdf_generated_at' => 'datetime',
             'issued_at' => 'datetime',
+            'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
             'reissued_at' => 'datetime',
         ];
@@ -76,7 +92,48 @@ class Certificate extends Model
 
     public function isValid(): bool
     {
-        return $this->status === CertificateStatus::Issued;
+        return $this->status === CertificateStatus::Issued && ! $this->hasExpired();
+    }
+
+    /** Has the credential's own validity window closed? Null expiry means it never lapses. */
+    public function hasExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
+     * The status a reader should see, folding in an expiry the clock has passed. Revocation outranks
+     * expiry — a withdrawn credential is withdrawn regardless of its dates.
+     */
+    public function effectiveStatus(): CertificateStatus
+    {
+        if ($this->status === CertificateStatus::Revoked) {
+            return CertificateStatus::Revoked;
+        }
+
+        return $this->hasExpired() ? CertificateStatus::Expired : $this->status;
+    }
+
+    /** Does this credential carry a company's marks? */
+    public function isCompanyBranded(): bool
+    {
+        return $this->organization_id !== null
+            && $this->branding_mode !== null
+            && $this->branding_mode !== 'helbaron_only';
+    }
+
+    /**
+     * Valid certificates whose window closes inside the next `$days` days — the reminder sweep's
+     * working set.
+     *
+     * @param  Builder<Certificate>  $query
+     * @return Builder<Certificate>
+     */
+    public function scopeExpiringWithin(Builder $query, int $days): Builder
+    {
+        return $query->valid()
+            ->whereNotNull('expires_at')
+            ->whereBetween('expires_at', [now(), now()->addDays($days)]);
     }
 
     protected static function newFactory(): CertificateFactory

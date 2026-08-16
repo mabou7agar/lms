@@ -20,4 +20,16 @@ interface OrganizationLookupPort
 
     /** Billing identity for an organization, or null when it does not exist. */
     public function organizationRef(int $organizationId): ?OrganizationRef;
+
+    /**
+     * Platform user ids of the people who run this organization — its ACTIVE owners and admins, the
+     * same authority that may commit it to a purchase. These are who gets told when the company's
+     * training is about to lapse; a plain member cannot act on that news.
+     *
+     * Members without a linked account are omitted: an invitation that was never accepted has
+     * nobody to notify.
+     *
+     * @return list<int>
+     */
+    public function managerUserIds(int $organizationId): array;
 }

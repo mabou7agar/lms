@@ -28,9 +28,16 @@ export type ContinueLearningItem = {
 export type CertificateItem = {
   id: string;
   number: string;
+  /** Effective status: "issued" | "revoked" | "expired". */
   status: string;
   course_title: string | null;
   issued_at: string | null;
+  /** When the credential stops being valid. Null means it never lapses. */
+  expires_at: string | null;
+  expired: boolean;
+  /** Set only when the certificate carries the company's marks. */
+  company_name: string | null;
+  company_branded: boolean;
 };
 
 export type NotificationItem = {

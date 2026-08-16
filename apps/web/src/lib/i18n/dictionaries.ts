@@ -226,6 +226,8 @@ export const dictionaries = {
         title: "My Learning",
         subtitle: "Courses you are enrolled in.",
         empty: "You are not enrolled in any course yet.",
+        expiringBanner: "Access to {count} course(s) ends soon",
+        expiredBanner: "Access to {count} course(s) has ended",
       },
       continuePage: {
         title: "Continue Learning",
@@ -242,6 +244,14 @@ export const dictionaries = {
         share: "Share",
         shareReady: "Shareable link copied.",
         empty: "No certificates yet — complete a course to earn one.",
+        expires: "Valid until",
+        expiredOn: "Expired on",
+        expiringBanner: "{count} certificate(s) expire soon",
+        status: {
+          issued: "Valid",
+          expired: "Expired",
+          revoked: "Revoked",
+        },
       },
       profile: {
         title: "Profile",
@@ -952,6 +962,7 @@ export const dictionaries = {
           revoked: "Revoked",
           result: "{assigned} employee(s) seated, {already} already had a seat, {skipped} skipped without an account.",
           revoked_result: "Seat revoked.",
+          expiringBanner: "{count} purchase(s) expire soon — {seats} employee(s) will lose access",
           status: {
             active: "Active",
             expired: "Expired",
@@ -1378,6 +1389,11 @@ export const dictionaries = {
       status: "Status",
       statusIssued: "Issued",
       statusRevoked: "Revoked",
+      statusExpired: "Expired",
+      expires: "Valid until",
+      company: "Issued for",
+      expiredTitle: "Certificate expired",
+      expiredDescription: "This certificate is authentic, but its validity period has ended.",
     },
   },
   ar: {
@@ -1632,6 +1648,8 @@ export const dictionaries = {
         title: "تعلّمي",
         subtitle: "الدورات المسجّل بها.",
         empty: "لست مسجّلًا في أي دورة بعد.",
+        expiringBanner: "ينتهي الوصول إلى {count} دورة قريبًا",
+        expiredBanner: "انتهى الوصول إلى {count} دورة",
       },
       continuePage: {
         title: "متابعة التعلّم",
@@ -1648,6 +1666,14 @@ export const dictionaries = {
         share: "مشاركة",
         shareReady: "تم نسخ رابط المشاركة.",
         empty: "لا توجد شهادات بعد — أكمل دورة لتحصل على شهادة.",
+        expires: "صالحة حتى",
+        expiredOn: "انتهت في",
+        expiringBanner: "{count} شهادة تنتهي صلاحيتها قريبًا",
+        status: {
+          issued: "صالحة",
+          expired: "منتهية",
+          revoked: "ملغاة",
+        },
       },
       profile: {
         title: "الملف الشخصي",
@@ -2358,6 +2384,7 @@ export const dictionaries = {
           revoked: "تم الاسترداد",
           result: "تم تعيين {assigned} موظف، و{already} لديهم مقعد بالفعل، وتم تخطي {skipped} بدون حساب.",
           revoked_result: "تم استرداد المقعد.",
+          expiringBanner: "{count} اشتراء ينتهي قريبًا — سيفقد {seats} موظف الوصول",
           status: {
             active: "نشط",
             expired: "منتهٍ",
@@ -2753,6 +2780,11 @@ export const dictionaries = {
       status: "الحالة",
       statusIssued: "صادرة",
       statusRevoked: "ملغاة",
+      statusExpired: "منتهية",
+      expires: "صالحة حتى",
+      company: "صادرة لصالح",
+      expiredTitle: "انتهت صلاحية الشهادة",
+      expiredDescription: "هذه الشهادة أصلية، لكن فترة صلاحيتها انتهت.",
     },
   },
 } as const;
