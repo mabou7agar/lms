@@ -24,11 +24,31 @@ const FORWARD_RESPONSE_HEADERS = [
   "x-ratelimit-remaining",
 ] as const;
 
+/**
+ * CSRF origin check. Accepts an Origin only when it matches a host this deployment serves: the host
+ * Next resolved for the request, or the configured canonical site host. `nextUrl.host` alone is not
+ * enough — behind a proxy that rewrites Host, or on a dev server reached by a hostname other than
+ * the one it bound to, it differs from the browser's Origin and every mutation would 403. Adding
+ * only the operator's own configured origin leaves third-party origins refused as before.
+ */
+function allowedHosts(req: NextRequest): Set<string> {
+  const hosts = new Set([req.nextUrl.host]);
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (site) {
+    try {
+      hosts.add(new URL(site).host);
+    } catch {
+      // A malformed NEXT_PUBLIC_SITE_URL simply contributes no additional host.
+    }
+  }
+  return hosts;
+}
+
 function crossOrigin(req: NextRequest): boolean {
   const origin = req.headers.get("origin");
   if (!origin) return false;
   try {
-    return new URL(origin).host !== req.nextUrl.host;
+    return !allowedHosts(req).has(new URL(origin).host);
   } catch {
     return true;
   }
