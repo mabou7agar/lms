@@ -59,7 +59,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('cart', [CartController::class, 'store'])->name('commerce.cart.store');
         Route::put('cart/buyer', [CartController::class, 'setBuyer'])->name('commerce.cart.buyer');
         Route::delete('cart/items/{product}', [CartController::class, 'removeItem'])->name('commerce.cart.items.destroy');
-        Route::delete('cart', [CartController::class, 'clear'])->name('commerce.cart.clear');
+        // The controller method is `destroy` (Laravel's convention); routing to a non-existent
+        // `clear` made every "empty cart" request a 500.
+        Route::delete('cart', [CartController::class, 'destroy'])->name('commerce.cart.clear');
 
         // Checkout
         Route::post('checkout', [CheckoutController::class, 'store'])

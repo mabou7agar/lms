@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Commerce\Http\Resources;
 
+use App\Contexts\Commerce\Enums\BuyerType;
 use App\Contexts\Commerce\Enums\InvoiceStatus;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\TransactionStatus;
@@ -34,6 +35,7 @@ class OrderDetailResource extends BaseResource
         $taxableBase = max(0, $subtotal - $discount);
 
         $status = $order->getAttribute('status');
+        $buyerType = $order->getAttribute('buyer_type');
 
         return [
             'id' => $order->getAttribute('public_id'),
@@ -43,6 +45,18 @@ class OrderDetailResource extends BaseResource
             'discount_minor' => $discount,
             'tax_minor' => $tax,
             'total_minor' => $total,
+            // Buyer ownership travels with the order everywhere it is read. The orders list is what
+            // the post-checkout page inspects to decide where to send the buyer, so omitting this
+            // here silently sent a company buyer to My Learning instead of the training portal.
+            'buyer_type' => $buyerType instanceof BuyerType ? $buyerType->value : $buyerType,
+            'company_name' => $order->getAttribute('company_name'),
+            'billing' => [
+                'name' => $order->getAttribute('billing_name'),
+                'email' => $order->getAttribute('billing_email'),
+                'country' => $order->getAttribute('billing_country'),
+                'tax_id' => $order->getAttribute('billing_tax_id'),
+            ],
+
             'placed_at' => $order->getAttribute('placed_at')?->toIso8601String(),
             'paid_at' => $order->getAttribute('paid_at')?->toIso8601String(),
             'fulfilled_at' => $order->getAttribute('fulfilled_at')?->toIso8601String(),
