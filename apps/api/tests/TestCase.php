@@ -6,6 +6,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Cache;
+use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
 abstract class TestCase extends BaseTestCase
@@ -16,7 +17,40 @@ abstract class TestCase extends BaseTestCase
         $app = require __DIR__.'/../bootstrap/app.php';
         $app->make(Kernel::class)->bootstrap();
 
+        self::guardTestDatabase();
+
         return $app;
+    }
+
+    /**
+     * Refuse to run against anything but a test database.
+     *
+     * RefreshDatabase drops and re-migrates every table, so a misconfigured connection does not fail
+     * a test — it silently destroys whatever database it reached. phpunit.xml pins DB_DATABASE to
+     * `helbaron_test`, but a stray exported DB_DATABASE, a hand-edited phpunit.xml or a future
+     * connection default could still point the suite at development data. This runs from
+     * createApplication(), which Laravel calls BEFORE setUpTraits() boots RefreshDatabase, so the
+     * abort happens while the database is still untouched.
+     *
+     * Accepts any name ending in `_test` (covering the `_test_{token}` databases `artisan test
+     * --parallel` derives per worker) and in-memory SQLite.
+     */
+    private static function guardTestDatabase(): void
+    {
+        $connection = (string) config('database.default');
+        $database = (string) config("database.connections.{$connection}.database");
+
+        if ($database === ':memory:' || str_ends_with($database, '_test') || (bool) preg_match('/_test_\d+$/', $database)) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf(
+            'Refusing to run tests against database "%s" on connection "%s". The suite uses '
+            .'RefreshDatabase and would destroy it. Test databases must end in "_test" — see the '
+            .'DB_DATABASE override in phpunit.xml.',
+            $database,
+            $connection,
+        ));
     }
 
     /**

@@ -18,6 +18,15 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="DB_CONNECTION" value="pgsql"/>
+        <!-- NEVER let the suite touch the development database. TestCase uses RefreshDatabase, which
+             drops and re-migrates every table between tests, so whichever database resolves here is
+             destroyed on every run. Without this line DB_DATABASE fell through to .env (`helbaron`),
+             meaning a serial `composer test` / `artisan test` wiped real dev data. Only the database
+             NAME is pinned — host, port, username and password are deliberately left to the ambient
+             environment so the same config works both inside the Docker api container (DB_HOST=postgres)
+             and from host PHP (DB_HOST=127.0.0.1 DB_PORT=55432).
+             Parallel runs derive their own per-worker databases from this name. -->
+        <env name="DB_DATABASE" value="helbaron_test" force="true"/>
         <!-- force="true": overwrite any ambient value from the shell/Docker/.env so tests run with
              the declared drivers. Without it, a QUEUE_CONNECTION=redis exported by the dev/CI
              environment silently wins and event->job->consumer chains never run in-test. -->
