@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\DB;
  * Catalog course aggregate. Owns metadata, taxonomy links, visibility, featuring and publish
  * lifecycle. Curriculum (sections/lessons) belongs to Authoring — not here.
  *
+ * @property string $title
+ * @property CourseStatus $status
  * @property string|null $trailer_path
  * @property int|null $duration_minutes
  *

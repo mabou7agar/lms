@@ -25,6 +25,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @property string $public_id
  * @property string $name
+ * @property string|null $timezone
  * @property \Illuminate\Support\Carbon|null $password_set_at
  */
 class User extends Authenticatable implements Actor, FilamentUser, HasName
