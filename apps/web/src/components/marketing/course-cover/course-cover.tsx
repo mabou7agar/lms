@@ -130,6 +130,8 @@ export function CourseCover({
           <h3 className="hb-cover-title">{title}</h3>
           {!minimal && subtitle ? <p className="hb-cover-subtitle">{subtitle}</p> : null}
           {names ? <p className="hb-cover-names">{names}</p> : null}
+          {/* Price sits with the faculty line so the editorial frame keeps its typographic rhythm. */}
+          {course.price ? <p className="hb-cover-price">{course.price}</p> : null}
           {!minimal && (
           <p className="hb-cover-footer">
             <span className="hb-cover-footer-l">HELBARON · INSTITUTE OF PRACTICE</span>

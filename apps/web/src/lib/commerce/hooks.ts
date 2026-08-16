@@ -7,9 +7,11 @@ import {
   checkout,
   clearCart,
   getCart,
+  getBundles,
   getContracts,
   getOrder,
   getOrders,
+  getProduct,
   getProducts,
   removeCartItem,
   validateCoupon,
@@ -17,6 +19,10 @@ import {
 
 export const useProducts = (page: number) =>
   useQuery({ queryKey: ["products", page], queryFn: () => getProducts(page) });
+export const useBundles = (page: number) =>
+  useQuery({ queryKey: ["bundles", page], queryFn: () => getBundles(page) });
+export const useProduct = (publicId: string) =>
+  useQuery({ queryKey: ["product", publicId], queryFn: () => getProduct(publicId), enabled: publicId.length > 0 });
 export const useCart = () => useQuery({ queryKey: ["cart"], queryFn: getCart });
 export const useOrders = (page: number) => useQuery({ queryKey: ["orders", page], queryFn: () => getOrders(page) });
 export const useOrder = (id: string) =>

@@ -51,4 +51,9 @@ export type CoverCourse = {
   instructors: CoverInstructor[];
   href: string;
   folio?: number;
+  /**
+   * The course price, already formatted for the active locale. Present only when an active product
+   * sells the course; a cover with no price simply omits the line rather than implying it is free.
+   */
+  price?: string | null;
 };

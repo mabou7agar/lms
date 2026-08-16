@@ -3,12 +3,14 @@ import { I18nProvider } from "@/lib/i18n/i18n-context";
 import type { Product } from "@/lib/commerce/api";
 import { ProductCard } from "@/components/commerce/product-card";
 
+// A product is either a single course or a bundle of them — the storefront never sells a
+// subscription through this card.
 const base: Product = {
-  id: "prd_pro_monthly",
-  type: "subscription",
-  title: "HElbaron Pro — Monthly",
-  slug: "helbaron-pro-monthly",
-  description: "Unlimited access to 100+ courses across 12 business verticals, updated monthly.",
+  id: "prd_leadership_bundle",
+  type: "bundle",
+  title: "Leadership Essentials — Bundle",
+  slug: "leadership-essentials-bundle",
+  description: "Six courses covering management, negotiation and executive communication.",
   prices: [
     { currency: "SAR", amount_minor: 14900, sale_amount_minor: null, on_sale: false, effective_minor: 14900 },
   ],

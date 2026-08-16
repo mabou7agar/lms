@@ -26,7 +26,7 @@ const publicRoutes = [
   "/advisory",
   "/solutions",
   "/trainers",
-  "/products",
+  "/bundles",
   "/pricing",
   "/compare",
   "/about",

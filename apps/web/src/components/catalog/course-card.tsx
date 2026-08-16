@@ -1,17 +1,29 @@
+"use client";
+
 import Link from "next/link";
 import { Star, ArrowRight } from "lucide-react";
 import type { CourseListItem } from "@/lib/catalog/api";
+import { coursePurchasePrice } from "@/lib/commerce/sales-format";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Badge } from "@/components/ui/badge";
+import { PriceTag } from "@/components/commerce/price-tag";
 import { CourseMedia } from "./course-media";
 
 /**
  * Premium public course card (catalog + rails). Uses only real list fields — title, subtitle,
- * level, language, featured — with hierarchy and motion instead of fabricated price/rating.
+ * level, language, featured, and the course's real price — never a fabricated rating or figure.
  * RTL-safe (logical properties); reduced-motion safe (transitions only).
+ *
+ * Every public course is sold. A course with no active product yet reads as not-yet-available
+ * rather than free, so a card can never imply an enrolment that the API would refuse.
  */
 export function CourseCard({ course }: { course: CourseListItem }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const price = coursePurchasePrice(course.purchase, locale);
+  // `purchase` is absent on payloads that never attached a summary; only an explicit
+  // `purchasable: false` means the course is genuinely not for sale.
+  const notForSale = course.purchase?.purchasable === false;
+
   return (
     <Link
       href={`/courses/${course.id}`}
@@ -42,10 +54,20 @@ export function CourseCard({ course }: { course: CourseListItem }) {
           <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{course.subtitle}</p>
         ) : null}
 
-        <span className="mt-4 inline-flex items-center gap-1.5 pt-1 text-sm font-semibold text-primary">
-          {t("catalog.course.view")}
-          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" aria-hidden />
-        </span>
+        {/* Price sits above the CTA on its own baseline so it reads first — it is the decision. */}
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
+          {price ? (
+            <PriceTag price={price} size="sm" />
+          ) : notForSale ? (
+            <span className="text-sm text-muted-foreground">{t("catalog.course.unavailable")}</span>
+          ) : (
+            <span aria-hidden />
+          )}
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+            {t("catalog.course.view")}
+            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" aria-hidden />
+          </span>
+        </div>
       </div>
     </Link>
   );

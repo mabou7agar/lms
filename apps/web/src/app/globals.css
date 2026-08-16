@@ -688,6 +688,10 @@
   :root[dir="rtl"] .hb-cover-subtitle, [dir="rtl"] .hb-cover-subtitle { font-family: var(--font-arabic); letter-spacing: 0.06em; }
   .hb-cover-names { margin-top: 6px; font-family: var(--font-mono); font-size: clamp(0.5rem, 2.2cqw, 0.6rem); letter-spacing: 0.05em; color: color-mix(in oklab, var(--foreground, #21302e) 66%, transparent); }
   :root[dir="rtl"] .hb-cover-names, [dir="rtl"] .hb-cover-names { font-family: var(--font-arabic); }
+  /* Price on an editorial cover: same serif voice as the title, one step down, so the commercial
+     fact reads as part of the plate rather than a bolted-on SaaS price chip. */
+  .hb-cover-price { margin-top: 6px; font-family: var(--font-serif); font-weight: 600; font-size: clamp(0.72rem, 3cqw, 0.9rem); font-variant-numeric: tabular-nums; color: var(--foreground, #21302e); }
+  .hb-cover-minimal .hb-cover-price { margin-top: 4px; }
   .hb-cover-footer {
     margin-top: 8px; width: 100%; display: flex; justify-content: space-between; gap: 0.6rem;
     font-family: var(--font-mono); font-size: clamp(0.42rem, 1.8cqw, 0.5rem); letter-spacing: 0.1em; text-transform: uppercase;

@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
-import { ProductsPageClient } from "./products-page-client";
+import { permanentRedirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Products",
-  description: "Browse HElbaron products — course bundles and learning offers available for purchase.",
-};
-
+/**
+ * "Products" was never buyer-facing language, and the page listed courses and bundles together
+ * under one generic heading. Courses are browsed at /courses and bundles at /bundles, so this
+ * redirects rather than keeping a third, vaguer catalogue alive.
+ */
 export default function ProductsPage() {
-  return <ProductsPageClient />;
+  permanentRedirect("/bundles");
 }

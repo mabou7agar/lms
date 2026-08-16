@@ -5,13 +5,13 @@ import { useParams } from "next/navigation";
 import {
   ArrowLeft, GraduationCap, Languages, Star, Award, BookOpen, Layers, CheckCircle2, ArrowRight,
 } from "lucide-react";
-import { errorMessage } from "@/lib/api/errors";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
-import { useCourse, useEnroll } from "@/lib/catalog/hooks";
+import { useCourse } from "@/lib/catalog/hooks";
 import { QueryState } from "@/components/student/query-state";
 import { ReviewsSection } from "@/components/community/reviews-section";
 import { CourseCard } from "@/components/catalog/course-card";
+import { CoursePurchasePanel } from "@/components/catalog/course-purchase-panel";
 import { CourseMedia } from "@/components/catalog/course-media";
 import { VideoEmbed, hasEmbeddableVideo } from "@/components/media/video-embed";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +28,7 @@ export function CourseDetailsClient() {
   const publicId = params.public_id;
   const { status } = useAuth();
   const query = useCourse(publicId);
-  const enroll = useEnroll();
   const authed = status === "authenticated";
-
-  const onEnroll = () =>
-    enroll.mutate(publicId, {
-      onSuccess: () => toast.success(t("catalog.course.enrolled")),
-      onError: (e) => toast.error(errorMessage(e, t("common.error"))),
-    });
 
   return (
     <div className="pb-24 lg:pb-4">
@@ -48,16 +41,8 @@ export function CourseDetailsClient() {
       <QueryState query={query}>
         {(course) => {
           const primaryCategory = course.categories[0]?.name;
-          const cta = authed ? (
-            <Button className="w-full shine relative overflow-hidden" size="lg" loading={enroll.isPending} onClick={onEnroll}>
-              {t("catalog.course.enroll")}
-              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
-            </Button>
-          ) : (
-            <Button asChild className="w-full" size="lg">
-              <Link href={`/login?redirect=/courses/${course.id}`}>{t("catalog.course.signInToEnroll")}</Link>
-            </Button>
-          );
+          // The buy box owns price, access, certificate terms and the guest round-trip.
+          const cta = <CoursePurchasePanel courseId={course.id} purchase={course.purchase} />;
 
           return (
             <div className="space-y-16">
@@ -232,11 +217,6 @@ export function CourseDetailsClient() {
                         </ul>
                       </div>
                     </div>
-                    {!authed ? (
-                      <p className="px-1 text-center text-xs text-muted-foreground">
-                        {L("Free account — enroll in seconds.", "حساب مجاني — سجّل خلال ثوانٍ.")}
-                      </p>
-                    ) : null}
                   </div>
                 </aside>
               </div>
@@ -276,15 +256,7 @@ export function CourseDetailsClient() {
                 <p className="truncate text-sm font-semibold">{course.title}</p>
                 {course.level ? <p className="text-xs text-muted-foreground">{course.level.name}</p> : null}
               </div>
-              {authed ? (
-                <Button loading={enroll.isPending} onClick={onEnroll}>
-                  {t("catalog.course.enroll")}
-                </Button>
-              ) : (
-                <Button asChild>
-                  <Link href={`/login?redirect=/courses/${course.id}`}>{t("catalog.course.signInToEnroll")}</Link>
-                </Button>
-              )}
+              <CoursePurchasePanel courseId={course.id} purchase={course.purchase} compact />
             </div>
           </div>
         )}

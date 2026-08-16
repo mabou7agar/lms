@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('products', [ProductController::class, 'index'])->name('commerce.products.index');
+    Route::get('products/{publicId}', [ProductController::class, 'show'])->name('commerce.products.show');
 
     Route::post('payment/webhook', [PaymentWebhookController::class, 'handle'])
         ->middleware('throttle:commerce-webhook')

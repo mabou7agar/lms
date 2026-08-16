@@ -2,6 +2,7 @@ import type { DemoCourse } from "@/config/demo";
 import type { Swatch } from "@/config/theme";
 import type { CourseListItem } from "@/lib/catalog/api";
 import { proxyMediaUrl } from "@/lib/media/proxy";
+import { coursePurchasePrice } from "@/lib/commerce/sales-format";
 import { hashString } from "./seed";
 import type { CoverCourse, CoverFamily, CoverInstructor, MedallionKey } from "./types";
 
@@ -114,7 +115,7 @@ export function courseFamily(course: CourseListItem): CoverFamily {
  */
 const MEDALLION_CYCLE: MedallionKey[] = ["navy", "copper", "teal", "plum", "olive", "burgundy", "indigo", "slate"];
 
-export function courseListItemToCover(course: CourseListItem): CoverCourse {
+export function courseListItemToCover(course: CourseListItem, locale: "en" | "ar" = "en"): CoverCourse {
   const title = course.title || course.slug;
 
   const instructors: CoverInstructor[] = (course.trainers ?? []).map((t, i) => ({
@@ -135,6 +136,9 @@ export function courseListItemToCover(course: CourseListItem): CoverCourse {
     thumbnail: proxyMediaUrl(course.thumbnail_path) ?? null,
     instructors,
     href: `/courses/${course.id}`,
+    // Null when nothing sells the course yet — the cover then shows no price at all rather than
+    // suggesting it is free.
+    price: coursePurchasePrice(course.purchase, locale)?.effective ?? null,
   };
 }
 

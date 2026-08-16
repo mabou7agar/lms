@@ -30,7 +30,13 @@ function CartView({ cart }: { cart: Cart }) {
     return (
       <EmptyState
         title={t("commerce.cart.empty")}
-        action={<Button asChild className="mt-2"><Link href="/products">{t("commerce.cart.browse")}</Link></Button>}
+        // Point at what a buyer actually browses — courses and bundles — not a generic catalogue.
+        action={
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            <Button asChild><Link href="/courses">{t("commerce.cart.browse")}</Link></Button>
+            <Button asChild variant="outline"><Link href="/bundles">{t("commerce.bundles.title")}</Link></Button>
+          </div>
+        }
       />
     );
   }

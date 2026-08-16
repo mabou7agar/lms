@@ -52,7 +52,7 @@ const MODELS: Model[] = [
     title: { en: "Free courses", ar: "دورات مجانية" },
     body: { en: "Selected courses are free. Create an account and start learning right away.", ar: "دورات مختارة مجانية. أنشئ حسابًا وابدأ التعلّم فورًا." },
     meta: { en: "No payment required", ar: "بدون دفع" },
-    cta: { label: { en: "Start free", ar: "ابدأ مجانًا" }, href: "/courses" },
+    cta: { label: { en: "Browse courses", ar: "تصفّح الدورات" }, href: "/courses" },
   },
   {
     slug: "per_course",

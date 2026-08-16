@@ -23,6 +23,7 @@ import { FAMILY_LABEL } from "./course-cards-paths";
  * identity stays consistent. Hero stacks above the grid on mobile; fully RTL-safe (logical props).
  */
 export function CourseCardsCinematic({ courses }: { courses: CourseListItem[] }) {
+  const { locale } = useI18n();
   const [hero, ...rest] = courses;
   if (!hero) return null;
 
@@ -34,7 +35,7 @@ export function CourseCardsCinematic({ courses }: { courses: CourseListItem[] })
           {rest.map((course, i) => (
             <CourseCover
               key={course.id}
-              course={courseListItemToCover(course)}
+              course={courseListItemToCover(course, locale)}
               wave="cradle"
               index={i + 2}
             />
@@ -47,7 +48,7 @@ export function CourseCardsCinematic({ courses }: { courses: CourseListItem[] })
 
 function CinematicHero({ course }: { course: CourseListItem }) {
   const { locale } = useI18n();
-  const cover = courseListItemToCover(course);
+  const cover = courseListItemToCover(course, locale);
   const family = courseFamily(course);
 
   const title = pickLocale(cover.title, locale);

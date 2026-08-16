@@ -125,13 +125,16 @@ export const brandTheme = {
       en: "Start with one course, grow into a cohort, scale to enterprise training, partner on advisory. The full journey, one academy.",
       ar: "ابدأ بدورة واحدة، وتوسّع إلى فوج، ثم إلى تدريب مؤسسي، وشارك في الاستشارات. الرحلة الكاملة في أكاديمية واحدة.",
     } as Localized,
-    primary: { label: { en: "Start free trial", ar: "ابدأ نسخة تجريبية مجانية" }, href: "/register" } as LinkItem,
+    // No free tier or trial exists — every course is bought — so the CTA offers the account, not a
+    // trial the product cannot honour.
+    primary: { label: { en: "Create account", ar: "أنشئ حسابًا" }, href: "/register" } as LinkItem,
     secondary: { label: { en: "Talk to enterprise", ar: "تحدّث مع فريق المؤسسات" }, href: "/enterprise" } as LinkItem,
   },
 
   ctas: {
     signIn: { en: "Sign in", ar: "تسجيل الدخول" } as Localized,
-    startFree: { en: "Start free", ar: "ابدأ مجانًا" } as Localized,
+    // Header CTA. Creating an account is free; the courses are not — so this says what it does.
+    startFree: { en: "Create account", ar: "أنشئ حسابًا" } as Localized,
   },
 
   footer: {
@@ -145,7 +148,7 @@ export const brandTheme = {
         title: { en: "Learn", ar: "تعلّم" } as Localized,
         links: [
           { label: { en: "Courses", ar: "الدورات" }, href: "/courses" },
-          { label: { en: "Products", ar: "المنتجات" }, href: "/products" },
+          { label: { en: "Bundles", ar: "الباقات" }, href: "/bundles" },
           { label: { en: "Live cohorts", ar: "الأفواج" }, href: "/cohorts" },
           { label: { en: "Workshops", ar: "الورش" }, href: "/workshops" },
           { label: { en: "Events", ar: "الفعاليات" }, href: "/events" },

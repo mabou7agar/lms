@@ -8,13 +8,41 @@ export type Price = {
   on_sale: boolean;
   effective_minor: number;
 };
+/** A course granted by a product, as returned inside the product payload. */
+export type ProductCourse = { id: string; title: string; slug: string };
+
+/**
+ * A purchasable product: a single course or a bundle of them. The commercial policy fields mirror
+ * the admin-controlled settings on the product — see the API ProductResource.
+ */
 export type Product = {
   id: string;
-  type: string;
+  type: "course" | "bundle";
   title: string;
   slug: string;
   description: string | null;
+  image?: string | null;
   prices: Price[];
+  /** Present from the commercial-policy wave; older payloads may omit these. */
+  audience?: "individual" | "company" | "both" | null;
+  courses?: ProductCourse[];
+  access?: {
+    duration_type: "lifetime" | "fixed_days" | "fixed_months" | "fixed_years" | "fixed_date" | null;
+    duration_value: number | null;
+    ends_at: string | null;
+  };
+  certificate?: {
+    enabled: boolean;
+    expiry_type: "none" | "fixed_days" | "fixed_months" | "fixed_years" | "fixed_date" | null;
+    expiry_value: number | null;
+  };
+  seats?: {
+    mode: "not_applicable" | "fixed" | "buyer_selects" | "unlimited" | null;
+    default_count: number | null;
+    reassignment_policy: string | null;
+    reassignment_progress_threshold: number | null;
+    employee_access_expires_with_purchase: boolean;
+  };
 };
 export type CartItem = { id: string; product_id: string; title: string; unit_amount_minor: number };
 export type Cart = {
@@ -97,6 +125,14 @@ export type CouponValidation = {
 };
 
 export const getProducts = (page = 1) => api.get<Paginated<Product>>(`products?page=${page}`, { auth: false });
+
+/** Purchasable bundles only (a bundle grants several courses in one purchase). */
+export const getBundles = (page = 1) =>
+  api.get<Paginated<Product>>(`products?type=bundle&page=${page}`, { auth: false });
+
+/** A single purchasable product (course product or bundle) by public id. */
+export const getProduct = (publicId: string) =>
+  api.data<Product>(`products/${publicId}`, { auth: false });
 export const getCart = () => api.data<Cart>("cart");
 export const addToCart = (body: { product: string; coupon_code?: string }) =>
   api.post<ApiSuccess<Cart>>("cart", body);
