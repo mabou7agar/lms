@@ -40,7 +40,7 @@ export function KpiGrid({ analytics }: { analytics: CommerceAnalytics }) {
       />
       <RevenueTile
         label={t("commerce.analytics.orders")}
-        value={count(analytics.orders)}
+        value={count(analytics.orders_count)}
         icon={<ShoppingBag className={iconClass} />}
       />
       <RevenueTile

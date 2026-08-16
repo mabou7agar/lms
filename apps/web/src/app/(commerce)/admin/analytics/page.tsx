@@ -70,7 +70,7 @@ function AnalyticsView() {
 
       <QueryState
         query={query}
-        isEmpty={(d) => d.orders === 0 && d.revenue_minor === 0 && d.active_subscribers === 0}
+        isEmpty={(d) => d.orders_count === 0 && d.revenue_minor === 0 && d.active_subscribers === 0}
         empty={<EmptyState icon={<BarChart3 className="size-8" />} title={t("commerce.analytics.title")} />}
       >
         {(data) => <KpiGrid analytics={data} />}

@@ -23,7 +23,7 @@ export type CommerceAnalyticsRange = {
  * - `revenue_minor`        gross settled revenue in the window (before refunds).
  * - `net_revenue_minor`    revenue net of refunds (`revenue_minor − refunds_minor`).
  * - `refunds_minor`        total refunded amount, stored as a positive magnitude.
- * - `orders`               count of paid orders in the window.
+ * - `orders_count`         count of paid orders in the window.
  * - `aov_minor`            average order value (net revenue ÷ orders), server-rounded.
  * - `mrr_minor`            monthly recurring revenue across active subscriptions, normalized.
  * - `active_subscribers`   distinct subscriptions currently granting access.
@@ -34,7 +34,7 @@ export type CommerceAnalytics = {
   revenue_minor: number;
   net_revenue_minor: number;
   refunds_minor: number;
-  orders: number;
+  orders_count: number;
   aov_minor: number;
   mrr_minor: number;
   active_subscribers: number;

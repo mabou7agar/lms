@@ -27,6 +27,11 @@ class CommerceAnalyticsResource extends BaseResource
         $range = is_array($data['range'] ?? null) ? $data['range'] : [];
 
         return [
+            // The money fields below are bare integers in minor units, so the payload has to name the
+            // currency they are denominated in — otherwise a client cannot format them at all. The
+            // aggregate spans the whole store, so it carries the store's configured currency rather
+            // than any single order's.
+            'currency' => (string) config('commerce.default_currency', 'SAR'),
             'range' => [
                 'from' => $range['from'] ?? null,
                 'to' => $range['to'] ?? null,
