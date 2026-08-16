@@ -1,9 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { GraduationCap, Users, Award } from "lucide-react";
 import { RequireGuest } from "@/lib/auth/guards";
 import { useI18n } from "@/lib/i18n/i18n-context";
+
+/**
+ * Auth routes that a SIGNED-IN user is supposed to reach. Everything else in this group is
+ * guest-only, so an authenticated visitor still cannot open login or register.
+ */
+const AUTHENTICATED_AUTH_ROUTES = new Set(["/verify-email"]);
 
 /**
  * Premium split-layout for the authentication surfaces: an editorial brand panel on large
@@ -13,6 +20,7 @@ import { useI18n } from "@/lib/i18n/i18n-context";
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
+  const pathname = usePathname();
   const L = (en: string, ar: string) => (locale === "ar" ? ar : en);
 
   const points = [
@@ -21,9 +29,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     { icon: Award, label: L("Verifiable certificates on completion", "شهادات قابلة للتحقق عند الإتمام") },
   ];
 
-  return (
-    <RequireGuest redirectTo="/">
-      <div className="grid min-h-dvh lg:grid-cols-2">
+  // Email verification is the one auth surface that belongs to a SIGNED-IN user: registration logs
+  // the account in and sends it straight here, and the page itself reads the session to submit the
+  // code. Guarding it as guest-only made it unreachable the moment it was needed — the guard bounced
+  // the freshly-registered user to the homepage. It keeps the same shell, just not the guest guard.
+  // Every other auth page stays guest-only, so an authenticated user still cannot see login/register.
+  const content = (
+    <div className="grid min-h-dvh lg:grid-cols-2">
         {/* Brand panel (large screens) */}
         <aside className="relative hidden overflow-hidden bg-primary text-primary-foreground lg:flex lg:flex-col lg:justify-between lg:p-12">
           <div className="pointer-events-none absolute inset-0 opacity-[0.15] [background-image:radial-gradient(oklch(1_0_0/0.5)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(80%_80%_at_30%_10%,#000,transparent_75%)]" aria-hidden />
@@ -60,6 +72,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="w-full max-w-md">{children}</div>
         </main>
       </div>
-    </RequireGuest>
   );
+
+  return AUTHENTICATED_AUTH_ROUTES.has(pathname ?? "")
+    ? content
+    : <RequireGuest redirectTo="/">{content}</RequireGuest>;
 }

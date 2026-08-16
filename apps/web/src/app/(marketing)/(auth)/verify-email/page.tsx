@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { hasSession } from "@/lib/api/client";
@@ -59,6 +59,14 @@ export default function VerifyEmailPage() {
     setFormError(null);
     mutation.mutate(v);
   });
+
+  // Nothing left to verify. The page is no longer guest-guarded, so it has to send an already
+  // verified account on itself rather than showing it a code form it cannot use. `done` is excluded
+  // so the success message still gets its moment before the page's own redirect fires.
+  const alreadyVerified = auth.status === "authenticated" && auth.user?.email_verified === true;
+  useEffect(() => {
+    if (alreadyVerified && !done) router.replace("/dashboard");
+  }, [alreadyVerified, done, router]);
 
   if (!ready) return <PageLoading />;
 
