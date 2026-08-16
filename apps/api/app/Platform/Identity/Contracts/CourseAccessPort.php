@@ -29,4 +29,15 @@ interface CourseAccessPort
      * not import the Course model still has to turn a route parameter into a foreign key.
      */
     public function manageableCourseId(Actor $actor, string $coursePublicId): ?int;
+
+    /**
+     * Every course this actor may manage the content of.
+     *
+     * An instructor-facing queue — "the questions waiting on me" — has to start from a set of
+     * courses, and asking canManageContent() once per course in the catalogue is not a way to build
+     * one. The same single ownership rule decides membership; this only evaluates it in bulk.
+     *
+     * @return list<int>
+     */
+    public function manageableCourseIds(Actor $actor): array;
 }

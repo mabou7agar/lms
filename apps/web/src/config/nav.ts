@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, GraduationCap, Award, Bell, User, Building2, Building, Headset,
-  Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
+  MessageCircleQuestion, Contact, Users, BarChart3, FileText, LayoutGrid, PlayCircle, ShoppingCart, FileSignature,
   Presentation, LineChart, Film, Receipt, CreditCard, Armchair, FolderTree, Upload, BookOpenCheck,
   ShieldCheck, KeyRound, Palette, Ticket, ReceiptText,
 } from "lucide-react";
@@ -42,6 +42,7 @@ export const instructorNav: NavItem[] = [
   { labelKey: "nav.teachCourses", href: "/teach/courses", icon: Presentation },
   { labelKey: "nav.teachMedia", href: "/teach/media", icon: Film },
   { labelKey: "nav.teachStudents", href: "/teach/students", icon: Users },
+  { labelKey: "nav.teachQuestions", href: "/teach/questions", icon: MessageCircleQuestion },
   { labelKey: "nav.profile", href: "/profile", icon: User },
 ];
 

@@ -26,16 +26,18 @@ use Illuminate\Support\Carbon;
  * @property string $body sanitized HTML
  * @property bool $is_instructor
  * @property bool $accepted
+ * @property bool $is_official
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
 class QuestionAnswer extends Model
 {
+    use CanBeReported;
+
     /** @use HasFactory<QuestionAnswerFactory> */
     use HasFactory;
 
-    use CanBeReported;
     use HasPublicId;
     use SoftDeletes;
 
@@ -57,6 +59,7 @@ class QuestionAnswer extends Model
         return [
             'is_instructor' => 'boolean',
             'accepted' => 'boolean',
+            'is_official' => 'boolean',
         ];
     }
 

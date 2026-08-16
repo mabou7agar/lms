@@ -2,6 +2,7 @@
 
 namespace App\Platform\Media\Providers;
 
+use App\Platform\Media\Adapters\MediaAssetLookupAdapter;
 use App\Platform\Media\Events\MediaReady;
 use App\Platform\Media\Imaging\ImageProcessor;
 use App\Platform\Media\Ingestion\IngestionProviderManager;
@@ -15,6 +16,7 @@ use App\Platform\Media\Ports\MediaPickerAdapter;
 use App\Platform\Media\Ports\MediaReferenceAdapter;
 use App\Platform\Media\Ports\NullMediaEnrollmentPort;
 use App\Platform\Media\Resolution\MediaPublicAssetUrlResolver;
+use App\Platform\Shared\Media\Contracts\MediaAssetLookupPort;
 use App\Platform\Shared\Media\Contracts\MediaEnrollmentPort;
 use App\Platform\Shared\Media\Contracts\MediaPickerPort;
 use App\Platform\Shared\Media\Contracts\MediaReferencePort;
@@ -71,6 +73,10 @@ class MediaServiceProvider extends BaseDomainServiceProvider
         // The seam the Shared reusable Filament MediaPicker resolves for every Media-side concern
         // (search selectable assets, sign a preview, re-authorize a picked id, upload a new asset).
         $this->app->bind(MediaPickerPort::class, MediaPickerAdapter::class);
+
+        // Any library asset, by id, as a signable reference. The publishing contexts (a course
+        // resource points at an asset) need this without importing a Media model or seeing a key.
+        $this->app->bind(MediaAssetLookupPort::class, MediaAssetLookupAdapter::class);
 
         // Deny-by-default; Learning overrides with a real enrollment/publication-aware implementation.
         $this->app->bind(MediaEnrollmentPort::class, NullMediaEnrollmentPort::class);

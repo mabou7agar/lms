@@ -6,6 +6,7 @@ namespace App\Domains\Qna\Models;
 
 use App\Domains\Qna\Database\Factories\CourseQuestionFactory;
 use App\Domains\Qna\Enums\QuestionStatus;
+use App\Domains\Qna\Enums\QuestionVisibility;
 use App\Domains\Qna\Tenancy\InheritsCourseTenancy;
 use App\Platform\Shared\Moderation\Concerns\CanBeReported;
 use App\Platform\Shared\Traits\HasPublicId;
@@ -34,21 +35,26 @@ use Illuminate\Support\Carbon;
  * @property int|null $organization_id
  * @property string $title
  * @property string $body sanitized HTML
+ * @property QuestionVisibility $visibility
  * @property int|null $lesson_timestamp_seconds
  * @property QuestionStatus $status
  * @property Carbon|null $pinned_at
  * @property int|null $accepted_answer_id
  * @property int $answers_count
+ * @property Carbon|null $first_response_at
+ * @property int|null $first_response_minutes
+ * @property Carbon|null $closed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
 class CourseQuestion extends Model
 {
+    use CanBeReported;
+
     /** @use HasFactory<CourseQuestionFactory> */
     use HasFactory;
 
-    use CanBeReported;
     use HasPublicId;
     use InheritsCourseTenancy;
     use SoftDeletes;
@@ -63,7 +69,7 @@ class CourseQuestion extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'course_id', 'lesson_id', 'user_id', 'title', 'body', 'lesson_timestamp_seconds',
+        'course_id', 'lesson_id', 'user_id', 'title', 'body', 'visibility', 'lesson_timestamp_seconds',
     ];
 
     /** @return array<string, string> */
@@ -71,7 +77,11 @@ class CourseQuestion extends Model
     {
         return [
             'status' => QuestionStatus::class,
+            'visibility' => QuestionVisibility::class,
             'pinned_at' => 'datetime',
+            'first_response_at' => 'datetime',
+            'first_response_minutes' => 'integer',
+            'closed_at' => 'datetime',
             'lesson_timestamp_seconds' => 'integer',
             'answers_count' => 'integer',
             'organization_id' => 'integer',
@@ -98,6 +108,66 @@ class CourseQuestion extends Model
     public function isPinned(): bool
     {
         return $this->pinned_at !== null;
+    }
+
+    public function isPrivate(): bool
+    {
+        return $this->visibility === QuestionVisibility::Private;
+    }
+
+    /**
+     * Is the course team late? Only an unanswered question can be overdue — once somebody from the
+     * course has replied the promise has been kept, however the thread ends afterwards.
+     */
+    public function isOverdue(int $slaHours, ?Carbon $now = null): bool
+    {
+        if ($this->first_response_at !== null || ! $this->status->awaitsResponse()) {
+            return false;
+        }
+
+        $asked = $this->created_at;
+
+        return $asked !== null && $asked->copy()->addHours(max(1, $slaHours))->isBefore($now ?? Carbon::now());
+    }
+
+    /**
+     * Questions still waiting on the course team, oldest first — the instructor's queue and the
+     * numerator of every SLA figure.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAwaitingResponse(Builder $query): Builder
+    {
+        return $query->whereNull('first_response_at')
+            ->where('status', QuestionStatus::Open->value);
+    }
+
+    /**
+     * Unanswered for longer than the promise allows.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeOverdue(Builder $query, int $slaHours, ?Carbon $now = null): Builder
+    {
+        $cutoff = ($now ?? Carbon::now())->copy()->subHours(max(1, $slaHours));
+
+        return $query->awaitingResponse()->where('created_at', '<', $cutoff);
+    }
+
+    /**
+     * The questions a given user may read: everything public, plus their own private ones. Course
+     * staff bypass this entirely — the controller decides that, because only it knows who is asking.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeReadableBy(Builder $query, int $userId): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->where('visibility', QuestionVisibility::Public->value)
+            ->orWhere('user_id', $userId));
     }
 
     /**

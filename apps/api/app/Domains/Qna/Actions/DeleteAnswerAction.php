@@ -35,7 +35,12 @@ final class DeleteAnswerAction
 
             if ((int) $question->accepted_answer_id === (int) $answer->id) {
                 $question->accepted_answer_id = null;
-                $question->status = QuestionStatus::Open;
+                // Withdrawing the accepted answer reopens the question only if nothing else is left
+                // to read. The response clock is never rewound: an instructor did reply, and
+                // deleting a post afterwards does not un-happen it.
+                $question->status = $question->answers_count > 0
+                    ? QuestionStatus::Answered
+                    : QuestionStatus::Open;
                 $question->save();
             }
         });

@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Domains\Qna\Http\Controllers\Api\V1;
 
 use App\Domains\Qna\Actions\AskQuestionAction;
+use App\Domains\Qna\Actions\CloseQuestionAction;
 use App\Domains\Qna\Actions\DeleteQuestionAction;
 use App\Domains\Qna\Actions\PinQuestionAction;
 use App\Domains\Qna\Actions\UpdateQuestionAction;
 use App\Domains\Qna\Enums\QuestionStatus;
+use App\Domains\Qna\Enums\QuestionVisibility;
 use App\Domains\Qna\Http\Resources\QuestionDetailResource;
 use App\Domains\Qna\Http\Resources\QuestionResource;
 use App\Domains\Qna\Models\CourseQuestion;
+use App\Domains\Qna\Models\QnaSetting;
 use App\Platform\Shared\Moderation\Enums\ReportReason;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -34,8 +37,11 @@ final class QuestionController extends QnaController
         $this->assertParticipation($actor, $resolved->id);
 
         $validated = $request->validate([
-            'status' => ['nullable', Rule::in([QuestionStatus::Open->value, QuestionStatus::Resolved->value])],
-            'sort' => ['nullable', Rule::in(['recent', 'pinned', 'unanswered'])],
+            'status' => ['nullable', Rule::in(array_values(array_filter(
+                QuestionStatus::values(),
+                static fn (string $v): bool => $v !== QuestionStatus::Hidden->value,
+            )))],
+            'sort' => ['nullable', Rule::in(['recent', 'pinned', 'unanswered', 'overdue'])],
             'search' => ['nullable', 'string', 'max:200'],
             'lesson_id' => ['nullable', 'string'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
@@ -45,6 +51,12 @@ final class QuestionController extends QnaController
             ->with('acceptedAnswer')
             ->where('course_id', $resolved->id)
             ->visible(); // moderation-hidden questions never surface in the learner listing
+
+        // A private thread belongs to its author and the course team. Staff see the whole course so
+        // they can actually answer; everyone else sees the public threads plus their own.
+        if (! $this->canManageCourse($actor, $resolved->id)) {
+            $query->readableBy($actor->actorId());
+        }
 
         if (isset($validated['status'])) {
             $query->where('status', $validated['status']);
@@ -66,7 +78,15 @@ final class QuestionController extends QnaController
         }
 
         match ($validated['sort'] ?? 'recent') {
+            // "Unanswered" means what it has always meant on the LEARNER-facing board: no replies at
+            // all, which is what somebody browsing for a question they could help with is looking
+            // for. The instructor queue and the SLA use a stricter sense — no reply from the course
+            // TEAM — and that is `overdue` here and awaitingResponse() there. The two audiences ask
+            // genuinely different questions, so the same word is not made to serve both.
             'unanswered' => $query->where('answers_count', 0)->latest('id'),
+            // Oldest-first: the question that has been waiting longest is the one that should be
+            // answered next, which is the opposite of a social feed's ordering.
+            'overdue' => $query->overdue($this->slaHours())->oldest('id'),
             'pinned' => $query->orderByRaw('pinned_at IS NULL')->latest('pinned_at')->latest('id'),
             default => $query->latest('id'),
         };
@@ -89,6 +109,7 @@ final class QuestionController extends QnaController
             'body' => ['required', 'string', 'max:10000'],
             'lesson_id' => ['nullable', 'string'],
             'lesson_timestamp_seconds' => ['nullable', 'integer', 'min:0'],
+            'visibility' => ['nullable', Rule::in(QuestionVisibility::values())],
         ]);
 
         $question = $action->execute($actor, $resolved, [
@@ -96,6 +117,7 @@ final class QuestionController extends QnaController
             'body' => $validated['body'],
             'lesson_id' => $this->resolveLessonIdInCourse($validated['lesson_id'] ?? null, $resolved->id),
             'lesson_timestamp_seconds' => $validated['lesson_timestamp_seconds'] ?? null,
+            'visibility' => $validated['visibility'] ?? QuestionVisibility::Public->value,
         ]);
 
         $authors = $this->authorsFor([$actor->actorId()]);
@@ -197,5 +219,42 @@ final class QuestionController extends QnaController
         );
 
         return ApiResponse::success(null, 'Reported.');
+    }
+
+    /**
+     * POST /v1/questions/{question}/close — the course team ends a thread that will not be resolved:
+     * a duplicate, an off-topic question, or one a course update has overtaken. Distinct from
+     * accepting an answer, which is the asker saying their problem went away.
+     */
+    public function close(Request $request, CourseQuestion $question, CloseQuestionAction $action): JsonResponse
+    {
+        $actor = $this->actor($request);
+        Gate::forUser($actor)->authorize('moderateThread', $question);
+
+        $question = $action->close($question);
+
+        $authors = $this->authorsFor([$question->user_id]);
+
+        return ApiResponse::updated(new QuestionResource($question, $authors[(int) $question->user_id] ?? null));
+    }
+
+    /** DELETE /v1/questions/{question}/close — reopen a thread that was closed by mistake. */
+    public function reopen(Request $request, CourseQuestion $question, CloseQuestionAction $action): JsonResponse
+    {
+        $actor = $this->actor($request);
+        Gate::forUser($actor)->authorize('moderateThread', $question);
+
+        // The action returns the thread to whichever state it had actually reached before closing.
+        $question = $action->reopen($question);
+
+        $authors = $this->authorsFor([$question->user_id]);
+
+        return ApiResponse::updated(new QuestionResource($question, $authors[(int) $question->user_id] ?? null));
+    }
+
+    /** The admin-configured response promise, in calendar hours. */
+    private function slaHours(): int
+    {
+        return QnaSetting::current()->response_sla_hours;
     }
 }

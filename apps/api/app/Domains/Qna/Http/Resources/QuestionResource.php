@@ -38,6 +38,14 @@ class QuestionResource extends JsonResource
             'answers_count' => (int) $question->answers_count,
             'accepted_answer_id' => $this->whenLoaded('acceptedAnswer', fn () => $question->acceptedAnswer?->public_id),
             'is_resolved' => $question->isResolved(),
+            'visibility' => $question->visibility->value,
+            'is_private' => $question->isPrivate(),
+            // Response facts, not internal ids: how long the course team took, and whether they are
+            // still late. The UI shows a waiting badge from these.
+            'first_response_at' => $question->first_response_at?->toIso8601String(),
+            'first_response_minutes' => $question->first_response_minutes,
+            'awaiting_response' => $question->first_response_at === null && $question->status->awaitsResponse(),
+            'closed_at' => $question->closed_at?->toIso8601String(),
             'author' => $this->author === null ? null : [
                 'id' => $this->author->publicId,
                 'name' => $this->author->name,

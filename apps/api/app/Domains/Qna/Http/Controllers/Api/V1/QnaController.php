@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Qna\Http\Controllers\Api\V1;
 
 use App\Domains\Qna\Http\Resources\QuestionResource;
+use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Support\CourseLocator;
 use App\Domains\Qna\Support\ResolvedCourse;
 use App\Platform\Identity\Contracts\Actor;
@@ -12,9 +13,9 @@ use App\Platform\Identity\Contracts\CourseAccessPort;
 use App\Platform\Identity\Contracts\Data\UserRef;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -78,17 +79,30 @@ abstract class QnaController
      * Authoring model import — so a caller can never anchor a question to another course's lesson.
      * Returns null for "not provided", "no such lesson", or "not in this course".
      */
+    /**
+     * Is this actor part of the course TEAM (instructor / content manager / super_admin)? Distinct
+     * from participation, which an enrolled learner also has. Staff read private threads and see the
+     * SLA queues; learners do not.
+     */
+    protected function canManageCourse(Actor $actor, int $courseId): bool
+    {
+        return $this->access->canManageContent($actor, $courseId);
+    }
+
     protected function resolveLessonIdInCourse(?string $lessonPublicId, int $courseId): ?int
     {
         if ($lessonPublicId === null || $lessonPublicId === '') {
             return null;
         }
 
+        // The table is `course_sections`, not `sections`. Joining the wrong name made every
+        // lesson-scoped Q&A call — asking a question about a lesson, or filtering the list to one —
+        // fail with a 500 rather than resolving the lesson.
         $id = DB::table('lessons')
-            ->join('sections', 'lessons.section_id', '=', 'sections.id')
+            ->join('course_sections', 'lessons.section_id', '=', 'course_sections.id')
             ->where('lessons.public_id', $lessonPublicId)
             ->whereNull('lessons.deleted_at')
-            ->where('sections.course_id', $courseId)
+            ->where('course_sections.course_id', $courseId)
             ->value('lessons.id');
 
         return $id === null ? null : (int) $id;
@@ -115,7 +129,11 @@ abstract class QnaController
      * Render a question paginator into the standard paginated envelope, injecting each question's
      * author. Mirrors ApiResponse::paginated but threads the author map the summary resource needs.
      *
-     * @param  LengthAwarePaginator<int, \App\Domains\Qna\Models\CourseQuestion>  $paginator
+     * Typed against the CONCRETE paginator rather than the contract: getCollection() is a method of
+     * the implementation, not of Illuminate's LengthAwarePaginator interface, and every caller here
+     * passes what Eloquent's paginate() returns anyway.
+     *
+     * @param  LengthAwarePaginator<int, CourseQuestion>  $paginator
      * @param  array<int, UserRef>  $authors
      */
     protected function paginatedQuestions(LengthAwarePaginator $paginator, array $authors): JsonResponse

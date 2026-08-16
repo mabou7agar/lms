@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useCourse } from "@/lib/catalog/hooks";
 import { QueryState } from "@/components/student/query-state";
+import { ResourceList } from "@/components/courseware/resource-list";
 import { ReviewsSection } from "@/components/community/reviews-section";
 import { CourseCard } from "@/components/catalog/course-card";
 import { CoursePurchasePanel } from "@/components/catalog/course-purchase-panel";
@@ -237,6 +238,12 @@ export function CourseDetailsClient() {
                   </div>
                 </Reveal>
               ) : null}
+
+              {/* COURSE FILES — the whole list is shown to an entitled learner; a visitor sees only
+                  what the course chose to give away, which is part of what sells it. */}
+              <Reveal as="section">
+                <ResourceList courseId={course.id} />
+              </Reveal>
 
               {/* REVIEWS — public aggregate + list; write form gated to signed-in learners */}
               <Reveal as="section">

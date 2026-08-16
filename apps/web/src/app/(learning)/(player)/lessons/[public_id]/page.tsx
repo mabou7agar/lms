@@ -9,6 +9,8 @@ import { useI18n } from "@/lib/i18n/i18n-context";
 import { useLesson, useRecordProgress, useToggleBookmark, useUpsertNote } from "@/lib/learning/hooks";
 import { RequireAuth } from "@/lib/auth/guards";
 import { AskQuestionDialog } from "@/components/community/ask-question-dialog";
+import { QnaPanel } from "@/components/courseware/qna-panel";
+import { ResourceList } from "@/components/courseware/resource-list";
 import { LessonContent } from "@/components/learning/lesson-content";
 import { PageHeader } from "@/components/student/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,6 +162,12 @@ function LessonInner() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Files pinned to this lesson, then the lesson's own Q&A. Both are lesson-scoped so the
+          player stays about the lesson in front of the learner, not the whole course. */}
+      <ResourceList lessonId={lessonId} title={t("courseware.resources.lessonTitle")} />
+
+      {courseId ? <QnaPanel courseId={courseId} lessonId={lessonId} /> : null}
     </div>
   );
 }

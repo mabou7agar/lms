@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Qna\Actions;
 
 use App\Domains\Qna\Enums\QuestionStatus;
+use App\Domains\Qna\Enums\QuestionVisibility;
 use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Support\ResolvedCourse;
 use App\Platform\Identity\Contracts\Actor;
@@ -40,12 +41,15 @@ final class AskQuestionAction
             throw new AccessDeniedHttpException('You do not have access to this course.');
         }
 
-        $question = CourseQuestion::make([
+        $question = new CourseQuestion([
             'course_id' => $course->id,
             'lesson_id' => $data['lesson_id'] ?? null,
             'user_id' => $userId,
             'title' => $data['title'],
             'body' => $this->sanitizer->sanitize((string) $data['body']),
+            // Public unless the asker chose otherwise: a course Q&A that defaults to private stops
+            // being a Q&A and becomes a support queue nobody else learns from.
+            'visibility' => $data['visibility'] ?? QuestionVisibility::Public->value,
             'lesson_timestamp_seconds' => $data['lesson_timestamp_seconds'] ?? null,
         ]);
 

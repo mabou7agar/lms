@@ -10,6 +10,11 @@ use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
  * contexts (Assessment's gradebook roster + submission entitlement) over Learning's own Enrollment
  * model, so those contexts never import it. "Enrolled" means an ACTIVE enrollment; soft-deleted and
  * non-active rows are ignored (the `active()` scope + default SoftDeletes global scope).
+ *
+ * An enrollment whose access window has CLOSED grants nothing, here as everywhere else. The seat
+ * wave added that window and guarded the lesson player with it, but this port — which is how
+ * assessments, Q&A and course files all decide entitlement — kept answering true for a company seat
+ * that had already run out. One expiry rule, applied at the single place every consumer asks.
  */
 class CourseEnrollmentAdapter implements CourseEnrollmentPort
 {
@@ -19,6 +24,7 @@ class CourseEnrollmentAdapter implements CourseEnrollmentPort
             ->where('course_id', $courseId)
             ->where('user_id', $userId)
             ->active()
+            ->notExpired()
             ->exists();
     }
 
@@ -31,6 +37,7 @@ class CourseEnrollmentAdapter implements CourseEnrollmentPort
             ->where('course_id', $courseId)
             ->where('user_id', $userId)
             ->grantsAccess()
+            ->notExpired()
             ->exists();
     }
 
@@ -45,6 +52,7 @@ class CourseEnrollmentAdapter implements CourseEnrollmentPort
         $ids = Enrollment::query()
             ->where('course_id', $courseId)
             ->active()
+            ->notExpired()
             ->orderBy('user_id')
             ->distinct()
             ->pluck('user_id')

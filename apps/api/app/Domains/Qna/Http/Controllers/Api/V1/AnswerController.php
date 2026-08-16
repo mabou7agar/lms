@@ -7,6 +7,7 @@ namespace App\Domains\Qna\Http\Controllers\Api\V1;
 use App\Domains\Qna\Actions\AcceptAnswerAction;
 use App\Domains\Qna\Actions\AnswerQuestionAction;
 use App\Domains\Qna\Actions\DeleteAnswerAction;
+use App\Domains\Qna\Actions\MarkOfficialAnswerAction;
 use App\Domains\Qna\Actions\UpdateAnswerAction;
 use App\Domains\Qna\Http\Resources\AnswerResource;
 use App\Domains\Qna\Http\Resources\QuestionResource;
@@ -121,5 +122,42 @@ final class AnswerController extends QnaController
         }
 
         return $question;
+    }
+
+    /**
+     * POST /v1/answers/{answer}/official — the course team marks its authoritative answer.
+     *
+     * Deliberately separate from acceptance: "official" is the course saying this is correct, while
+     * "accepted" is the asker saying it solved their problem. A thread can have both, either, or
+     * neither, and collapsing them would let an instructor mark their own answer as the asker's.
+     * Only one answer per question is official, so marking a new one clears the previous.
+     */
+    public function markOfficial(Request $request, QuestionAnswer $answer, MarkOfficialAnswerAction $action): JsonResponse
+    {
+        $actor = $this->actor($request);
+        $question = $this->questionForOr404($answer);
+
+        Gate::forUser($actor)->authorize('moderateThread', $question);
+
+        $answer = $action->mark($answer);
+
+        $authors = $this->authorsFor([$answer->user_id]);
+
+        return ApiResponse::updated(new AnswerResource($answer, $authors[(int) $answer->user_id] ?? null));
+    }
+
+    /** DELETE /v1/answers/{answer}/official — withdraw the official mark. */
+    public function unmarkOfficial(Request $request, QuestionAnswer $answer, MarkOfficialAnswerAction $action): JsonResponse
+    {
+        $actor = $this->actor($request);
+        $question = $this->questionForOr404($answer);
+
+        Gate::forUser($actor)->authorize('moderateThread', $question);
+
+        $answer = $action->unmark($answer);
+
+        $authors = $this->authorsFor([$answer->user_id]);
+
+        return ApiResponse::updated(new AnswerResource($answer, $authors[(int) $answer->user_id] ?? null));
     }
 }

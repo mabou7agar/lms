@@ -14,8 +14,12 @@ use App\Platform\Shared\Policies\BasePolicy;
  * Q&A is visible to course PARTICIPANTS only: an enrolled/entitled learner or a course
  * instructor/super_admin — never the anonymous public (a question can quote paid course material).
  *
+ * A PRIVATE question narrows that further: only its author and the course team may read it. That
+ * check lives here rather than in the controller so every path to a question — the thread endpoint,
+ * a future deep link, the moderation queue — inherits it from one place.
+ *
  * Authorship rules:
- *   - view/report : any participant.
+ *   - view/report : any participant; a private question additionally requires authorship or staff.
  *   - update/delete: the author only (super_admin bypasses via before()).
  *   - pin         : course instructor/super_admin.
  *   - accept      : the question's author OR a course instructor/super_admin.
@@ -42,7 +46,22 @@ class CourseQuestionPolicy extends BasePolicy
 
     public function view(Actor $user, CourseQuestion $question): bool
     {
-        return $this->participatesIn($user, (int) $question->course_id);
+        if (! $this->participatesIn($user, (int) $question->course_id)) {
+            return false;
+        }
+
+        if (! $question->isPrivate()) {
+            return true;
+        }
+
+        return $this->owns($user, $question)
+            || $this->access->canManageContent($user, (int) $question->course_id);
+    }
+
+    /** Closing a thread, or marking an answer as the course's official one, is the team's call. */
+    public function moderateThread(Actor $user, CourseQuestion $question): bool
+    {
+        return $this->access->canManageContent($user, (int) $question->course_id);
     }
 
     public function report(Actor $user, CourseQuestion $question): bool

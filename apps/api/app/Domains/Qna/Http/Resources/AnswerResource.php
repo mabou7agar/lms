@@ -32,6 +32,9 @@ class AnswerResource extends JsonResource
             'body' => $answer->body,
             'is_instructor' => (bool) $answer->is_instructor,
             'accepted' => (bool) $answer->accepted,
+            // "Official" is the course saying this is correct; "accepted" is the asker saying it
+            // solved their problem. Both, either or neither can be true.
+            'is_official' => (bool) $answer->is_official,
             'author' => $this->author === null ? null : [
                 'id' => $this->author->publicId,
                 'name' => $this->author->name,

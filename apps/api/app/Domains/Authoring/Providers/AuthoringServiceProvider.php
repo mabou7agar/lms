@@ -38,6 +38,7 @@ class AuthoringServiceProvider extends BaseDomainServiceProvider
     protected array $routeFiles = [
         'routes/authoring_admin.php',
         'routes/versioning_admin.php',
+        'routes/course_resources.php',
     ];
 
     /** @var array<class-string, class-string> */

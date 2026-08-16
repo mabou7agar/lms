@@ -15,6 +15,24 @@ vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => ({ status: "guest" })
 // ReviewsSection is a React-Query-driven child with its own tests; stub it so this page test needs no QueryClient.
 vi.mock("@/components/community/reviews-section", () => ({ ReviewsSection: () => null }));
 
+// The course/lesson pages now embed the courseware panels (files + Q&A). Those are react-query
+// backed, and this suite renders without a QueryClientProvider, so their hooks are stubbed the same
+// way every other data hook here is.
+vi.mock("@/lib/courseware/hooks", () => ({
+  useCourseResources: () => ({ isPending: false, isError: false, data: { entitled: false, items: [] } }),
+  useLessonResources: () => ({ isPending: false, isError: false, data: { entitled: false, items: [] } }),
+  useCourseQuestions: () => ({ isPending: false, isError: false, data: [] }),
+  useQuestion: () => ({ isPending: false, isError: false, data: undefined }),
+  useInstructorQueue: () => ({ isPending: false, isError: false, data: undefined }),
+  useDownloadResource: () => ({ mutate: vi.fn(), isPending: false, variables: undefined }),
+  useAskQuestion: () => ({ mutate: vi.fn(), isPending: false }),
+  useAnswerQuestion: () => ({ mutate: vi.fn(), isPending: false }),
+  useAcceptAnswer: () => ({ mutate: vi.fn(), isPending: false }),
+  useMarkAnswerOfficial: () => ({ mutate: vi.fn(), isPending: false }),
+  useCloseQuestion: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+
 import CourseDetailsPage from "@/app/(marketing)/(site)/courses/[public_id]/page";
 
 describe("CourseDetailsPage", () => {
