@@ -11,6 +11,8 @@ vi.mock('@/components/ui', () => ({
   Spinner: (rest: any) => <span data-testid="spinner" {...rest} />,
   Skeleton: (rest: any) => <div {...rest} />,
   Drawer: ({ open, children }: any) => (open ? <div>{children}</div> : null),
+  DrawerContent: ({ children, ...rest }: any) => <div {...rest}>{children}</div>,
+  DrawerTitle: ({ children, ...rest }: any) => <h2 {...rest}>{children}</h2>,
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { Menu } from 'lucide-react';
-import { Button, Drawer, Spinner } from '@/components/ui';
+import { Button, Drawer, DrawerContent, DrawerTitle, Spinner } from '@/components/ui';
 import { flattenLessons, isLessonNavigable } from '@/lib/learning/player-api';
 import { useCurriculum, useProgressSummary } from '@/lib/learning/player-hooks';
 import {
@@ -132,14 +132,17 @@ function CoursePlayerShellInner({
           {sidebar}
         </aside>
 
-        {/* Drawer sidebar on small screens */}
-        <Drawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          direction={dir === 'rtl' ? 'right' : 'left'}
-          aria-label={t('player.curriculum')}
-        >
-          {sidebar}
+        {/* Curriculum drawer on small screens. The sidebar MUST sit inside DrawerContent: the shared
+            Drawer is vaul's Root, which renders its children inline rather than portalling them, so a
+            bare child stayed permanently in the grid — duplicating the curriculum next to the desktop
+            aside and pushing the lesson panel down a row. DrawerContent portals and is mounted only
+            while open. Closing is driven by onOpenChange (vaul's API); the previous onClose prop was
+            never called, so the drawer could not be dismissed. */}
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DrawerContent className="max-h-[85vh] overflow-y-auto p-4 lg:hidden">
+            <DrawerTitle className="sr-only">{t('player.curriculum')}</DrawerTitle>
+            {sidebar}
+          </DrawerContent>
         </Drawer>
 
         <main data-testid="lesson-panel" className="min-w-0 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
