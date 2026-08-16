@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\CompanyEntitlementController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\CourseAssignmentController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\DepartmentController;
 use App\Domains\Crm\Http\Controllers\Api\V1\Enterprise\EmployeeImportController;
@@ -72,6 +73,13 @@ Route::prefix('v1/enterprise')->middleware('auth:sanctum')->group(function (): v
 
     // Course assignment: owner/admin grants published catalog courses to members/scopes.
     Route::post('course-assignments', [CourseAssignmentController::class, 'store']);
+
+    // Purchased training: what the company bought, and handing those seats out. Distinct from the
+    // free grant above — capacity, expiry and the product's reassignment policy are enforced here.
+    Route::get('entitlements', [CompanyEntitlementController::class, 'index']);
+    Route::get('entitlements/{entitlement}', [CompanyEntitlementController::class, 'show']);
+    Route::post('entitlements/{entitlement}/assign', [CompanyEntitlementController::class, 'assign']);
+    Route::post('entitlements/{entitlement}/revoke', [CompanyEntitlementController::class, 'revoke']);
 
     // Org BI/data export: queue a bundle, list, and inspect (download URLs are signed, in `show`).
     Route::get('exports', [OrgDataExportController::class, 'index']);

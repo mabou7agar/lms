@@ -7,6 +7,7 @@ import { useCourses } from "@/lib/catalog/hooks";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import type { CourseAssignmentTargetType } from "@/lib/enterprise/manager-api";
 import { useAssignCourse, useDepartments, useMembers, useTeams } from "@/lib/enterprise/manager-hooks";
+import { PurchasedTraining } from "@/components/enterprise/purchased-training";
 import { PageHeader } from "@/components/student/page-header";
 import { QueryState } from "@/components/student/query-state";
 import { SectionCard } from "@/components/org/section-card";
@@ -84,6 +85,10 @@ export default function ManagerTrainingPage() {
 
       {notice ? <FormAlert variant="success">{notice}</FormAlert> : null}
       {error ? <FormAlert>{error}</FormAlert> : null}
+
+      {/* What the company actually paid for comes first: seats are finite and expire, so they are
+          what a manager is here to manage. The free catalog grant below is the secondary action. */}
+      <PurchasedTraining />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <SectionCard title={t("manager.training.assignTitle")}>

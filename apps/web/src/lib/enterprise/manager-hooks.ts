@@ -6,6 +6,7 @@ import {
   analyzeImport,
   assignCourse,
   assignDepartmentManager,
+  assignEntitlement,
   assignSeat,
   assignTeamManager,
   changeMemberRole,
@@ -17,6 +18,8 @@ import {
   deleteDepartment,
   deleteTeam,
   getDepartments,
+  getEntitlement,
+  getEntitlements,
   getManagerReport,
   getMembers,
   getSeatHistory,
@@ -25,6 +28,7 @@ import {
   releaseSeat,
   removeMember,
   resizeSeats,
+  revokeEntitlement,
   updateDepartment,
   updateTeam,
   type CourseAssignmentTargetType,
@@ -43,6 +47,9 @@ const KEYS = {
   report: (scope: ReportScope) => ["enterprise", "report", scope] as const,
   members: (page: number) => ["enterprise", "members", page] as const,
   departments: ["enterprise", "departments"] as const,
+  entitlements: ["enterprise", "entitlements"] as const,
+  entitlement: (id: string, includeRevoked: boolean) =>
+    ["enterprise", "entitlement", id, includeRevoked] as const,
   teams: ["enterprise", "teams"] as const,
 };
 
@@ -194,6 +201,54 @@ export function useAssignCourse() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["enterprise", "report"] });
     },
+  });
+}
+
+// ── Purchased training (company entitlements) ──────────────────────────────────
+
+export const useEntitlements = () =>
+  useQuery({ queryKey: KEYS.entitlements, queryFn: getEntitlements });
+
+export const useEntitlement = (id: string | null, includeRevoked = false) =>
+  useQuery({
+    queryKey: KEYS.entitlement(id ?? "", includeRevoked),
+    queryFn: () => getEntitlement(id as string, includeRevoked),
+    enabled: id !== null && id !== "",
+  });
+
+/**
+ * Assigning or revoking moves seat counts AND the employees' enrollments, so the purchase list, the
+ * open purchase's seat holders and the learning report all go stale together.
+ */
+function useEntitlementInvalidation() {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: KEYS.entitlements });
+    qc.invalidateQueries({ queryKey: ["enterprise", "entitlement"] });
+    qc.invalidateQueries({ queryKey: ["enterprise", "report"] });
+  };
+}
+
+export function useAssignEntitlement() {
+  const invalidate = useEntitlementInvalidation();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      target_type: CourseAssignmentTargetType;
+      target_id?: string | null;
+    }) => assignEntitlement(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRevokeEntitlement() {
+  const invalidate = useEntitlementInvalidation();
+  return useMutation({
+    mutationFn: ({ id, memberId }: { id: string; memberId: string }) => revokeEntitlement(id, memberId),
+    onSuccess: invalidate,
   });
 }
 

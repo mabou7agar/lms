@@ -2,8 +2,12 @@
 
 namespace App\Contexts\Commerce\Services;
 
+use App\Contexts\Commerce\Enums\BuyerType;
+use App\Contexts\Commerce\Enums\CompanyEntitlementStatus;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\SubscriptionStatus;
+use App\Contexts\Commerce\Models\CompanyEntitlement;
+use App\Contexts\Commerce\Models\CompanyEntitlementAssignment;
 use App\Contexts\Commerce\Models\OrderCourseGrant;
 use App\Contexts\Commerce\Models\Product;
 use App\Contexts\Commerce\Models\Subscription;
@@ -16,19 +20,25 @@ use Illuminate\Support\Collection;
 
 /**
  * Read-side entitlement resolver. Answers "which courses may this user access, and why" by unioning
- * the three sources of access in Commerce:
+ * the four sources of access in Commerce:
  *
- *   (a) paid one-off purchases — an OrderCourseGrant that hangs off an order whose status is Paid
- *       (a refunded/cancelled order is excluded because its status is no longer Paid);
+ *   (a) paid one-off purchases the user made FOR THEMSELVES — an OrderCourseGrant that hangs off an
+ *       order whose status is Paid (a refunded/cancelled order is excluded because its status is no
+ *       longer Paid). A company order never counts here: its buyer is an administrator, not a
+ *       student, and its courses reach people only as seats (source (d));
  *   (b) active individual subscriptions — a Subscription the user owns (user_id) whose status
  *       grantsAccess() and whose current period has not yet ended, resolved through
  *       plan -> product -> courses to the bundled course ids; and
  *   (c) organization seat entitlements — a Subscription owned by an ORGANIZATION on whose seat pool
  *       the user currently holds an ACTIVE seat (user -> organization_members -> seat_assignments ->
  *       seat_pool_id -> subscription). Releasing the seat (or the subscription lapsing) revokes it,
- *       because both are re-evaluated on every read.
+ *       because both are re-evaluated on every read; and
+ *   (d) company purchase seats — an active assignment on a CompanyEntitlement that a company bought
+ *       outright and its manager handed to this employee, resolved through the purchased product to
+ *       its courses. Like (c) it is recomputed on every read, so revoking the seat or the purchase
+ *       lapsing takes the access away immediately.
  *
- * Sources (a)/(b) are Commerce models + scalars only. Source (c) reaches the CRM seat tables through
+ * Sources (a)/(b)/(d) are Commerce models + scalars only. Source (c) reaches the CRM seat tables through
  * the Shared SeatProvisioningPort (the single Commerce->CRM seam), which returns only scalar pool ids
  * — so no Learning model and no CRM Eloquent class is imported here directly.
  *
@@ -53,6 +63,7 @@ class EntitlementService extends BaseService
         return $this->oneOffGrantCourseIds($userId)
             ->merge($this->subscriptionCourseIds($userId))
             ->merge($this->seatEntitledCourseIds($userId))
+            ->merge($this->companyEntitlementCourseIds($userId))
             ->map(fn ($id): int => (int) $id)
             ->unique()
             ->sort()
@@ -68,7 +79,8 @@ class EntitlementService extends BaseService
     {
         return $this->hasOneOffGrant($userId, $courseId)
             || $this->hasActiveSubscriptionForCourse($userId, $courseId)
-            || $this->hasSeatEntitlementForCourse($userId, $courseId);
+            || $this->hasSeatEntitlementForCourse($userId, $courseId)
+            || $this->hasCompanyEntitlementForCourse($userId, $courseId);
     }
 
     /**
@@ -94,9 +106,7 @@ class EntitlementService extends BaseService
     private function oneOffGrantCourseIds(int $userId): Collection
     {
         return OrderCourseGrant::query()
-            ->whereHas('order', fn ($query) => $query
-                ->where('user_id', $userId)
-                ->whereIn('status', $this->paidOrderStatuses()))
+            ->whereHas('order', fn ($query) => $this->personalPaidOrder($query, $userId))
             ->pluck('course_id')
             ->map(fn ($id): int => (int) $id);
     }
@@ -105,10 +115,96 @@ class EntitlementService extends BaseService
     {
         return OrderCourseGrant::query()
             ->where('course_id', $courseId)
-            ->whereHas('order', fn ($query) => $query
-                ->where('user_id', $userId)
-                ->whereIn('status', $this->paidOrderStatuses()))
+            ->whereHas('order', fn ($query) => $this->personalPaidOrder($query, $userId))
             ->exists();
+    }
+
+    /**
+     * Constrain an order sub-query to a paid order the user bought FOR THEMSELVES. A company order is
+     * excluded deliberately: the employee who ran the company's card is an administrator, not a
+     * student, and its courses reach people only through the seats their manager assigns. Orders
+     * predating buyer ownership carry no buyer_type and stay personal, which is what they were.
+     *
+     * @param  Builder<Model>  $query  the relation query whereHas() hands to its callback
+     * @return Builder<Model>
+     */
+    private function personalPaidOrder(Builder $query, int $userId): Builder
+    {
+        return $query
+            ->where('user_id', $userId)
+            ->whereIn('status', $this->paidOrderStatuses())
+            ->where(fn ($q) => $q
+                ->whereNull('buyer_type')
+                ->orWhere('buyer_type', '!=', BuyerType::Company->value));
+    }
+
+    /**
+     * Course ids the user may access as an EMPLOYEE holding a seat in a company purchase: an active
+     * assignment on an entitlement that is still live, resolved to the bought product's courses.
+     *
+     * Read fresh on every request rather than trusted from the enrollment row, so a revoked seat or a
+     * lapsed purchase stops granting access the moment it happens.
+     *
+     * @return Collection<int, int>
+     */
+    private function companyEntitlementCourseIds(int $userId): Collection
+    {
+        $ids = [];
+
+        foreach ($this->liveCompanyEntitlements($userId) as $entitlement) {
+            foreach ($this->courseIdsForEntitlement($entitlement) as $courseId) {
+                $ids[$courseId] = $courseId;
+            }
+        }
+
+        return new Collection(array_values($ids));
+    }
+
+    private function hasCompanyEntitlementForCourse(int $userId, int $courseId): bool
+    {
+        foreach ($this->liveCompanyEntitlements($userId) as $entitlement) {
+            if (in_array($courseId, $this->courseIdsForEntitlement($entitlement), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The company purchases this user currently holds a seat in, filtered to those still granting:
+     * status active, the access window open at both ends.
+     *
+     * @return Collection<int, CompanyEntitlement>
+     */
+    private function liveCompanyEntitlements(int $userId): Collection
+    {
+        $entitlementIds = CompanyEntitlementAssignment::query()
+            ->where('user_id', $userId)
+            ->whereNull('revoked_at')
+            ->pluck('company_entitlement_id');
+
+        if ($entitlementIds->isEmpty()) {
+            return new Collection;
+        }
+
+        return CompanyEntitlement::query()
+            ->whereKey($entitlementIds)
+            ->where('status', CompanyEntitlementStatus::Active->value)
+            ->with('product.courses')
+            ->get()
+            ->filter(fn (CompanyEntitlement $entitlement): bool => $entitlement->isAssignable())
+            ->values();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function courseIdsForEntitlement(CompanyEntitlement $entitlement): array
+    {
+        $product = $entitlement->getRelationValue('product');
+
+        return $product instanceof Product ? $product->courseIds() : [];
     }
 
     /**

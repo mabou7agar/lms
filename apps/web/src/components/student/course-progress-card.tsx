@@ -13,9 +13,15 @@ export interface CourseProgressCardProps {
   continueHref?: string;
   continueLabel?: string;
   subtitle?: string;
+  /**
+   * The access window on this enrollment has closed — in practice a seat from a company purchase
+   * that ran out. The card stays visible on purpose: a course vanishing without explanation is worse
+   * than one that says why it can no longer be opened.
+   */
+  expired?: boolean;
 }
 
-export function CourseProgressCard({ title, progress, status, continueHref = "/continue-learning", continueLabel, subtitle }: CourseProgressCardProps) {
+export function CourseProgressCard({ title, progress, status, continueHref = "/continue-learning", continueLabel, subtitle, expired = false }: CourseProgressCardProps) {
   const { t } = useI18n();
   const pct = Math.round(progress);
   const done = pct >= 100;
@@ -30,7 +36,11 @@ export function CourseProgressCard({ title, progress, status, continueHref = "/c
             <h3 className="line-clamp-2 font-serif text-base font-semibold leading-tight">{title}</h3>
             {subtitle ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p> : null}
           </div>
-          {status ? <Badge variant={done ? "success" : "secondary"}>{status}</Badge> : null}
+          {expired ? (
+            <Badge variant="secondary">{t("student.accessEnded")}</Badge>
+          ) : status ? (
+            <Badge variant={done ? "success" : "secondary"}>{status}</Badge>
+          ) : null}
         </div>
         <div className="mt-auto space-y-2">
           <div className="flex items-center justify-between text-xs">
@@ -39,12 +49,18 @@ export function CourseProgressCard({ title, progress, status, continueHref = "/c
           </div>
           <ProgressBar value={pct} />
         </div>
-        <Button asChild className="w-full" variant={done ? "outline" : "default"}>
-          <Link href={continueHref}>
-            {continueLabel ?? t("student.continue")}
-            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
-          </Link>
-        </Button>
+        {expired ? (
+          <p className="rounded-md border bg-muted/40 p-2 text-center text-xs text-muted-foreground">
+            {t("student.accessEndedHint")}
+          </p>
+        ) : (
+          <Button asChild className="w-full" variant={done ? "outline" : "default"}>
+            <Link href={continueHref}>
+              {continueLabel ?? t("student.continue")}
+              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+            </Link>
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

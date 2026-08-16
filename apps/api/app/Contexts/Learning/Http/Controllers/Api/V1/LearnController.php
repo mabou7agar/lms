@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Learning\Http\Controllers\Api\V1;
 
+use App\Contexts\Learning\Exceptions\EnrollmentExpiredException;
 use App\Contexts\Learning\Exceptions\NotEnrolledException;
 use App\Contexts\Learning\Http\Resources\LearnCourseResource;
 use App\Contexts\Learning\Models\Enrollment;
@@ -30,6 +31,13 @@ class LearnController extends Controller
 
         if ($enrollment === null) {
             throw new NotEnrolledException;
+        }
+
+        // A company seat outlives neither the purchase that paid for it nor a manager revoking it.
+        // Individual enrollments carry no expiry at all, so this can never close the door on someone
+        // who bought the course themselves.
+        if ($enrollment->hasExpired()) {
+            throw new EnrollmentExpiredException;
         }
 
         $tree = $curriculum->curriculumTree($courseRef->id, publishedOnly: true);

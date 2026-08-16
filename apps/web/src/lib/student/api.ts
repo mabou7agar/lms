@@ -11,6 +11,12 @@ export type MyLearningItem = {
   enrolled_at: string | null;
   completed_at: string | null;
   course: CourseRef;
+  /** How this access was obtained. `company_seat` came out of an employer's purchase. */
+  source: string | null;
+  company_granted: boolean;
+  /** When the access window closes. Null for anything the learner obtained themselves. */
+  expires_at: string | null;
+  expired: boolean;
 };
 
 export type ContinueLearningItem = {

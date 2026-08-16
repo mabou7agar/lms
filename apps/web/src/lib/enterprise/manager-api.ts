@@ -231,6 +231,87 @@ export const assignCourse = (body: {
   target_id?: string | null;
 }) => api.data<CourseAssignmentResult>("enterprise/course-assignments", { method: "POST", body });
 
+// ── Purchased training (company entitlements) ─────────────────────────────────────────────────────
+
+/**
+ * What the organization bought. Distinct from the free course grant above: these seats came out of a
+ * purchase, so they run out, they expire, and the product's policy decides whether one can be taken
+ * back. `seats.purchased`/`seats.available` are null for an unlimited licence, never a made-up
+ * number — check `seats.unlimited` before rendering an arithmetic.
+ */
+export type SeatReassignmentPolicy = "always" | "before_start" | "before_progress_threshold" | "never";
+
+export type CompanyEntitlement = {
+  id: string;
+  product_title: string;
+  order_id: string;
+  courses: Array<{ id: string; title: string }>;
+  seats: { purchased: number | null; used: number; available: number | null; unlimited: boolean };
+  status: "active" | "expired" | "canceled";
+  assignable: boolean;
+  access_starts_at: string | null;
+  access_ends_at: string | null;
+  policy: {
+    seat_mode: string;
+    reassignment: SeatReassignmentPolicy | string;
+    reassignment_progress_threshold: number | null;
+    certificate_branding: string | null;
+    employee_access_expires_with_purchase: boolean;
+  };
+};
+
+/** An employee holding (or having held) a seat. `member_id` is the id the revoke endpoint expects. */
+export type SeatHolder = {
+  id: string;
+  member_id: string | null;
+  email: string | null;
+  assigned_at: string | null;
+  revoked_at: string | null;
+  active: boolean;
+};
+
+export type CompanyEntitlementDetail = CompanyEntitlement & { seat_holders: SeatHolder[] };
+
+export type SeatAssignmentResult = {
+  target: { type: CourseAssignmentTargetType; id: string | null };
+  summary: {
+    matched_members: number;
+    eligible_members: number;
+    assigned: number;
+    already_assigned: number;
+    skipped_without_account: number;
+    courses_granted: number;
+  };
+  seats: { used: number; available: number | null };
+};
+
+/** Error codes the seat endpoints return when a rule refuses the action, for message mapping. */
+export const SEATS_EXHAUSTED_CODE = "COMMERCE_COMPANY_SEATS_EXHAUSTED";
+export const ENTITLEMENT_INACTIVE_CODE = "COMMERCE_ENTITLEMENT_NOT_ASSIGNABLE";
+export const REASSIGNMENT_BLOCKED_CODE = "COMMERCE_SEAT_REASSIGNMENT_BLOCKED";
+
+/** GET /enterprise/entitlements — every purchase the organization owns. */
+export const getEntitlements = () => api.data<CompanyEntitlement[]>("enterprise/entitlements");
+
+/** GET /enterprise/entitlements/{id} — one purchase plus who holds its seats. */
+export const getEntitlement = (id: string, includeRevoked = false) =>
+  api.data<CompanyEntitlementDetail>(
+    `enterprise/entitlements/${id}${includeRevoked ? "?include_revoked=1" : ""}`,
+  );
+
+/** POST /enterprise/entitlements/{id}/assign — seat everyone in the target scope. */
+export const assignEntitlement = (
+  id: string,
+  body: { target_type: CourseAssignmentTargetType; target_id?: string | null },
+) => api.data<SeatAssignmentResult>(`enterprise/entitlements/${id}/assign`, { method: "POST", body });
+
+/** POST /enterprise/entitlements/{id}/revoke — take one employee's seat back. */
+export const revokeEntitlement = (id: string, memberId: string) =>
+  api.data<{ seats: { used: number; available: number | null } }>(
+    `enterprise/entitlements/${id}/revoke`,
+    { method: "POST", body: { member_id: memberId } },
+  );
+
 // ── Invitations (token-authorized) ────────────────────────────────────────────────────────────────
 
 /** POST /enterprise/invitations/{token}/accept — link the caller's account to the membership. */

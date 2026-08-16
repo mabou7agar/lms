@@ -27,6 +27,7 @@ export default function MyLearningPage() {
                 title={it.course.title}
                 progress={it.progress_percentage}
                 status={it.status}
+                expired={it.expired}
                 continueHref={`/learn/${it.course.id}`}
               />
             ))}

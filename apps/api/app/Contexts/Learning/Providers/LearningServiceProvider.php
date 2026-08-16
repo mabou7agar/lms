@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Learning\Providers;
 
+use App\Contexts\Learning\Adapters\CompanySeatEnrollmentAdapter;
 use App\Contexts\Learning\Adapters\CourseEnrollmentAdapter;
 use App\Contexts\Learning\Adapters\EnrollmentGrantAdapter;
 use App\Contexts\Learning\Adapters\MediaEnrollmentAdapter;
@@ -20,9 +21,10 @@ use App\Contexts\Learning\Support\NullLessonRequiredBlocksPort;
 use App\Platform\Shared\Assessment\Contracts\AssessmentResultPort;
 use App\Platform\Shared\Enterprise\Contracts\ManagerReportPort;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
+use App\Platform\Shared\Learning\Contracts\CompanySeatEnrollmentPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
-use App\Platform\Shared\Learning\Contracts\EnrollmentGrantPort;
 use App\Platform\Shared\Learning\Contracts\CourseNavigationPort;
+use App\Platform\Shared\Learning\Contracts\EnrollmentGrantPort;
 use App\Platform\Shared\Learning\Contracts\EnrollmentStatsPort;
 use App\Platform\Shared\Learning\Contracts\LessonAvailabilityPort;
 use App\Platform\Shared\Learning\Contracts\LessonRequiredBlocksPort;
@@ -84,6 +86,10 @@ class LearningServiceProvider extends BaseDomainServiceProvider
         // Administrative/enterprise course grant seam (CRM assigns catalog courses to org members
         // through this Shared port, so CRM never imports GrantEnrollmentAction / EnrollmentSource).
         $this->app->bind(EnrollmentGrantPort::class, EnrollmentGrantAdapter::class);
+        // Company seat grants: Commerce hands an employee access bought by their organization, with
+        // the purchase's expiry attached, and takes it back on revoke — without ever disturbing an
+        // enrollment the learner obtained on their own.
+        $this->app->bind(CompanySeatEnrollmentPort::class, CompanySeatEnrollmentAdapter::class);
 
         // Learning owns enrollment/publication, so it provides the real course-media access rule,
         // overriding the Media platform's deny-by-default NullMediaEnrollmentPort.

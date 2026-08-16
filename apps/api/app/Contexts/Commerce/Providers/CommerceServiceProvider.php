@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Commerce\Providers;
 
+use App\Contexts\Commerce\Adapters\CompanyEntitlementAdapter;
 use App\Contexts\Commerce\Adapters\EntitlementAdapter;
 use App\Contexts\Commerce\Adapters\PurchaseSummaryAdapter;
 use App\Contexts\Commerce\Console\Commands\RenewDueSubscriptionsCommand;
@@ -26,6 +27,7 @@ use App\Contexts\Commerce\Policies\OrderPolicy;
 use App\Contexts\Commerce\Policies\ProductPolicy;
 use App\Contexts\Commerce\Support\OrganizationSubscriptionExposureAdapter;
 use App\Contexts\Commerce\Tax\Services\TaxService;
+use App\Platform\Shared\Commerce\Contracts\CompanyEntitlementPort;
 use App\Platform\Shared\Commerce\Contracts\EntitlementPort;
 use App\Platform\Shared\Commerce\Contracts\PurchaseSummaryPort;
 use App\Platform\Shared\Enterprise\Contracts\OrganizationSubscriptionPort;
@@ -71,6 +73,9 @@ class CommerceServiceProvider extends BaseDomainServiceProvider
         // Cross-context entitlement boundary (lives in Shared): Commerce implements, others consume.
         $this->app->bind(EntitlementPort::class, EntitlementAdapter::class);
         $this->app->bind(PurchaseSummaryPort::class, PurchaseSummaryAdapter::class);
+        // The manager portal's window onto what the organization bought. CRM authorizes the
+        // caller and resolves which employees to seat; Commerce owns the seat maths and policy.
+        $this->app->bind(CompanyEntitlementPort::class, CompanyEntitlementAdapter::class);
 
         // Org-subscription seat exposure for the CRM enterprise portal (seat summary + resize with
         // downgrade validation). Commerce implements; CRM consumes through this Shared port only.

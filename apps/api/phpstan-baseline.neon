@@ -1303,18 +1303,6 @@ parameters:
 			path: app/Contexts/Learning/Http/Resources/LearnerLessonResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$completed_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Http/Resources/MyLearningItemResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$enrolled_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Http/Resources/MyLearningItemResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$progress_percentage\.$#'
 			identifier: property.notFound
 			count: 1
