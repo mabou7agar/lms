@@ -10,8 +10,24 @@ import {
  * labelKey is a dot-path into the i18n dictionary (resolved via useI18n().t). `flag` optionally gates
  * the entry behind a feature flag: the item shows unless the flag is explicitly OFF (default-on — an
  * unknown/unreachable flag keeps the item visible). The underlying route is never removed.
+ *
+ * `permission` names the permission the destination's API actually requires. It exists to stop the
+ * sidebar advertising a page that will only ever refuse the person clicking it — a company owner was
+ * being shown Brand & Domains and SSO, both of which need a platform permission org owners do not
+ * hold. Like `flag` it is presentation only: the route still exists, the API still authorizes, and
+ * a session payload that does not disclose permissions keeps showing the item rather than hiding
+ * the whole portal on a stale contract.
  */
-export type NavItem = { labelKey: string; href: string; icon: LucideIcon; flag?: string };
+export type NavItem = {
+  labelKey: string;
+  href: string;
+  icon: LucideIcon;
+  flag?: string;
+  permission?: string;
+};
+
+/** The platform permission the white-label surfaces authorize against. */
+const MANAGE_USERS = "identity.users.manage";
 
 export const learningNav: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -37,6 +53,8 @@ export const commerceNav: NavItem[] = [
 
 // Instructor Portal: ownership-scoped teaching surface (dashboard, courses, students) plus the
 // shared profile page.
+// /teach/earnings and /teach/sessions exist as dormant routes (they render ComingSoon) and are
+// deliberately absent here: a sidebar entry that leads to "not built yet" is worse than no entry.
 export const instructorNav: NavItem[] = [
   { labelKey: "nav.teachDashboard", href: "/teach", icon: LayoutDashboard },
   { labelKey: "nav.teachCourses", href: "/teach/courses", icon: Presentation },
@@ -70,8 +88,11 @@ export const managerNav: NavItem[] = [
   { labelKey: "nav.managerTraining", href: "/manager/training", icon: BookOpenCheck },
   { labelKey: "nav.managerSeats", href: "/manager/seats", icon: Armchair },
   { labelKey: "nav.managerImport", href: "/manager/import", icon: Upload },
-  { labelKey: "nav.managerSso", href: "/manager/sso", icon: KeyRound },
-  { labelKey: "nav.managerBrand", href: "/manager/branding", icon: Palette },
+  // Both need `identity.users.manage`, which an organization owner does not get from owning an
+  // organization. Shown to the admins who can actually use them; everyone else keeps the route
+  // (and its graceful refusal) but is not invited to it.
+  { labelKey: "nav.managerSso", href: "/manager/sso", icon: KeyRound, permission: MANAGE_USERS },
+  { labelKey: "nav.managerBrand", href: "/manager/branding", icon: Palette, permission: MANAGE_USERS },
 ];
 
 export const crmNav: NavItem[] = [

@@ -115,17 +115,22 @@ export async function getBlogPosts(filters: BlogFilters = {}): Promise<Paginated
 }
 
 /**
- * Fetch a single published post by slug. Returns null on any failure OR when the post is not live,
- * so the caller can 404 via notFound(). `preview` requests the admin draft (best-effort; needs an
+ * Fetch a single published post by slug. Returns null when the post is not there or not live, so
+ * the caller can 404 via notFound(). `preview` requests the admin draft (best-effort; needs an
  * authenticated admin session).
+ *
+ * A transport failure RETHROWS rather than returning null. The caller turns null into a 404, and a
+ * 404 is a claim that the post does not exist — a claim a crawler acts on by dropping the URL from
+ * the index. An API blip must surface as an error page it will retry, not as a permanent verdict.
  */
 export async function getBlogPost(slug: string, preview = false): Promise<BlogPost | null> {
   try {
     const path = preview ? `blog/posts/${slug}/preview` : `blog/posts/${slug}`;
     const data = await api.data<BlogPost | null>(path, { auth: preview, cache: "no-store" });
     return isBlogPost(data) ? withProxiedCover(data) : null;
-  } catch {
-    return null;
+  } catch (error) {
+    if ((error as { status?: number } | null)?.status === 404) return null;
+    throw error;
   }
 }
 

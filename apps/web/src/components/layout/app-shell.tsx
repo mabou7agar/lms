@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import type { NavItem } from "@/config/nav";
 import { pickLocale } from "@/config/theme";
+import { useAuth } from "@/lib/auth/auth-context";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useNavigation } from "@/lib/navigation/hooks";
@@ -44,6 +45,17 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
 
   const cms = useNavigation(location);
   const flags = useFeatureFlags();
+  const { user } = useAuth();
+
+  /**
+   * Hide an entry whose destination the caller definitely cannot use.
+   *
+   * "Definitely" is the operative word: a payload that does not disclose permissions at all (an
+   * older session, a cached user from before this contract) keeps every entry, because hiding the
+   * whole portal on a stale payload is far worse than showing a link that refuses politely.
+   */
+  const permitted = (item: NavItem): boolean =>
+    !item.permission || !user?.permissions || user.permissions.includes(item.permission);
 
   const items: SidebarNavItem[] = cms
     ? cms.map((node) => ({
@@ -57,6 +69,7 @@ export function AppShell({ nav, children, brand, location }: AppShellProps) {
     : // Default-on: an entry shows unless its flag is explicitly OFF (route stays regardless).
       nav
         .filter((n) => !n.flag || (flags[n.flag] ?? true))
+        .filter(permitted)
         .map((n) => ({ label: t(n.labelKey), href: n.href, icon: n.icon }));
 
   return (

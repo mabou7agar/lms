@@ -5,6 +5,22 @@
   **horizon** (queues), **scheduler** (`schedule:run` loop).
 - Frontend (`apps/web`, Next.js 15) deploys separately (Vercel/Node/container).
 
+### Running the frontend in production
+`next.config.ts` sets `output: "standalone"`, so a production build emits a self-contained server at
+`apps/web/.next/standalone/server.js`. Start it with that file — **not** `next start`, which cannot
+serve a standalone build and exits with a warning:
+
+```bash
+cd apps/web
+npm run build
+npm run start:standalone        # === node .next/standalone/server.js
+```
+
+`apps/web/Dockerfile` already does this (`CMD ["node", "server.js"]`); the script exists for a
+non-container host and for verifying a build locally. `npm run start` is kept because the Playwright
+harness builds with `NEXT_DISABLE_STANDALONE=1` and needs `next start` to serve that build — it is
+not the production entrypoint.
+
 ## Prerequisites
 - PostgreSQL 16, Redis 7, S3 bucket + CloudFront distribution, TLS terminated upstream (ALB/CDN).
 - A populated `apps/api/.env.production` (see `.env.example`; never commit real values).

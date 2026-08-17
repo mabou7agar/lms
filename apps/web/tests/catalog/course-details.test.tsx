@@ -33,7 +33,10 @@ vi.mock("@/lib/courseware/hooks", () => ({
 }));
 
 
-import CourseDetailsPage from "@/app/(marketing)/(site)/courses/[public_id]/page";
+// The route file is now a server component: it checks the course exists so a missing one answers a
+// real 404, then renders this client view. These tests are about the view, so they render it
+// directly rather than awaiting a server component.
+import { CourseDetailsClient as CourseDetailsPage } from "@/app/(marketing)/(site)/courses/[public_id]/course-details-client";
 
 describe("CourseDetailsPage", () => {
   beforeEach(() => vi.clearAllMocks());
