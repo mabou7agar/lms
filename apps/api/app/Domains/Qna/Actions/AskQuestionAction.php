@@ -10,6 +10,9 @@ use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Support\ResolvedCourse;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -29,6 +32,7 @@ final class AskQuestionAction
         private readonly HtmlSanitizer $sanitizer,
         private readonly CourseEnrollmentPort $enrollment,
         private readonly CourseAccessPort $access,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /** @param  array<string, mixed>  $data */
@@ -59,6 +63,15 @@ final class AskQuestionAction
         // through the DB) carries the enum the resource serializes; mirrors the DB column default.
         $question->status = QuestionStatus::Open;
         $question->save();
+
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::QnaQuestionAsked->value,
+            userId: $userId,
+            organizationId: $course->organizationId,
+            courseId: $course->id,
+            metadata: ['scope' => $question->lesson_id === null ? 'course' : 'lesson'],
+            dedupKey: 'qna_asked:'.$question->public_id,
+        ));
 
         return $question;
     }

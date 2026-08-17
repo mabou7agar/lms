@@ -10,6 +10,10 @@ use App\Contexts\Commerce\Services\CompanyEntitlementService;
 use App\Contexts\Learning\Actions\Enrollment\GrantEnrollmentAction;
 use App\Contexts\Learning\Enums\EnrollmentSource;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
+use Illuminate\Support\Carbon;
 
 /**
  * Fulfils a paid order — ONLY when the order is paid AND its contract is accepted.
@@ -28,6 +32,7 @@ class FulfillOrderAction extends BaseAction
     public function __construct(
         private readonly GrantEnrollmentAction $grant,
         private readonly CompanyEntitlementService $companyEntitlements,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     public function execute(Order $order): bool
@@ -62,18 +67,36 @@ class FulfillOrderAction extends BaseAction
         }) ? $this->afterFulfilled($order) : false;
     }
 
-    /** The individual path, unchanged: the buyer is the student and is enrolled in what they bought. */
+    /**
+     * The individual path: the buyer is the student and is enrolled in what they bought — for as
+     * long as they bought it for.
+     *
+     * The access window comes from the SAME product policy that governs a company purchase. It had
+     * been applied only to company entitlements, so a product an admin sold as "12 months access"
+     * was in fact granting an individual buyer lifetime access. Null stays null: a lifetime product,
+     * and every product predating the policy, is unaffected.
+     */
     private function enrolBuyer(Order $order): void
     {
+        $purchasedAt = $order->paid_at ?? $order->placed_at ?? Carbon::now();
+
         foreach ($order->items as $item) {
-            foreach ($item->product->courses as $course) {
+            $product = $item->product;
+            $expiresAt = $product->accessEndsAfter($purchasedAt);
+
+            foreach ($product->courses as $course) {
                 $grant = OrderCourseGrant::firstOrCreate(
                     ['order_id' => $order->id, 'course_id' => $course->id],
                     ['granted_at' => now()],
                 );
 
                 if ($grant->wasRecentlyCreated) {
-                    $this->grant->executeByUserId($order->user_id, $course->id, EnrollmentSource::Purchase);
+                    $this->grant->executeByUserId(
+                        $order->user_id,
+                        $course->id,
+                        EnrollmentSource::Purchase,
+                        $expiresAt,
+                    );
                 }
             }
         }
@@ -81,7 +104,24 @@ class FulfillOrderAction extends BaseAction
 
     private function afterFulfilled(Order $order): bool
     {
-        OrderFulfilled::dispatch($order->refresh());
+        $order = $order->refresh();
+
+        // The authoritative revenue event, recorded where the money actually settled. Keyed on the
+        // order so a redelivered webhook records the same sale once. The recorder cannot throw, so
+        // nothing here can turn a completed purchase into a failed request.
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::OrderPaid->value,
+            userId: (int) $order->user_id,
+            organizationId: $order->organization_id === null ? null : (int) $order->organization_id,
+            orderId: (int) $order->id,
+            buyerType: $order->buyer_type?->value,
+            valueMinor: (int) $order->total_minor,
+            metadata: ['currency' => (string) $order->currency, 'items' => $order->items->count()],
+            dedupKey: 'order_paid:'.$order->id,
+            occurredAt: ($order->paid_at ?? Carbon::now())->toIso8601String(),
+        ));
+
+        OrderFulfilled::dispatch($order);
 
         return true;
     }

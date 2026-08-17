@@ -91,6 +91,29 @@ class ExpiryNotificationService implements ExpiryNotificationPort
         );
     }
 
+    public function qnaQuestionOverdue(
+        int $recipientUserId,
+        string $questionRef,
+        string $questionTitle,
+        string $courseTitle,
+        int $hoursWaiting,
+    ): bool {
+        return $this->dispatcher->dispatchToUserId(
+            $recipientUserId,
+            NotificationCategory::Learning,
+            'qna_question_overdue',
+            [
+                'title' => $questionTitle,
+                'course' => $courseTitle,
+                'hours' => $hoursWaiting,
+            ],
+            null,
+            // No offset in the key: a question breaches its promise once, and the sweep that keeps
+            // finding it every night must not keep saying so.
+            'qna-overdue:'.$questionRef.':'.$recipientUserId,
+        )->wasRecentlyCreated;
+    }
+
     /** Dates in a reminder are read by a person, so the time of day is noise. */
     private function day(string $iso): string
     {

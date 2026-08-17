@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * enrollment, a manual grant. Only a company seat carries a date, and only that date can take the
  * course away again.
  *
+ * @property int $user_id
  * @property EnrollmentSource $source
  * @property Carbon|null $enrolled_at
  * @property Carbon|null $expires_at
@@ -89,8 +90,9 @@ class Enrollment extends Model
     }
 
     /**
-     * Has this enrollment's access window elapsed? Only company-seat grants ever carry one, so an
-     * individual purchase, a free enrollment and a manual grant all answer false forever.
+     * Has this enrollment's access window elapsed? A company-seat grant carries one, and so does an
+     * individual purchase of a product with a limited access duration. A free enrollment and a
+     * manual grant carry none and answer false forever.
      */
     public function hasExpired(): bool
     {

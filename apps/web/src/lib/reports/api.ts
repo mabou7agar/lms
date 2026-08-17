@@ -23,6 +23,9 @@ export const REPORT_KEYS = [
   "completion_funnel",
   "retention",
   "crm",
+  "admin_summary",
+  "marketing_funnel",
+  "accounting",
 ] as const;
 
 export type ReportKey = (typeof REPORT_KEYS)[number];
@@ -40,6 +43,9 @@ const PATHS: Record<string, string> = {
   completion_funnel: "completion-funnel",
   retention: "retention",
   crm: "crm",
+  admin_summary: "admin-summary",
+  marketing_funnel: "marketing-funnel",
+  accounting: "accounting",
 };
 
 export type ReportParams = { from?: string; to?: string; page?: number; perPage?: number };

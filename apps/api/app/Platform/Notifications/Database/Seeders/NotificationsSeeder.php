@@ -48,6 +48,8 @@ class NotificationsSeeder extends Seeder
             ['company_purchase_expiring', 'Your company training expires in {{ days }} days', '{{ title }} ends on {{ expires_at }}. {{ seats }} employee(s) will lose access.', 'تدريب شركتك ينتهي خلال {{ days }} يومًا', 'ينتهي {{ title }} في {{ expires_at }}. سيفقد {{ seats }} موظف الوصول.'],
             ['seat_access_expiring', 'Your course access ends in {{ days }} days', 'Your access to {{ title }} ends on {{ expires_at }}. Finish it before then or ask your manager.', 'ينتهي وصولك للدورة خلال {{ days }} يومًا', 'ينتهي وصولك إلى {{ title }} في {{ expires_at }}. أكمله قبل ذلك أو تواصل مع مديرك.'],
             ['certificate_expiring', 'Your certificate expires in {{ days }} days', 'Certificate {{ number }} for {{ title }} is valid until {{ expires_at }}.', 'تنتهي صلاحية شهادتك خلال {{ days }} يومًا', 'الشهادة {{ number }} لـ {{ title }} صالحة حتى {{ expires_at }}.'],
+            // Q&A service level — sent to the course team by qna:send-overdue-reminders.
+            ['qna_question_overdue', 'A learner has been waiting {{ hours }} hours', '"{{ title }}" on {{ course }} still has no reply from the course team.', 'متعلّم ينتظر منذ {{ hours }} ساعة', '"{{ title }}" في {{ course }} ما زال بلا رد من فريق الدورة.'],
         ];
 
         foreach ($templates as [$key, $enSubject, $enBody, $arSubject, $arBody]) {

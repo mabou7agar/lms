@@ -2,7 +2,6 @@
 
 namespace App\Contexts\Learning\Http\Controllers\Api\V1;
 
-use App\Contexts\Learning\Exceptions\NotEnrolledException;
 use App\Contexts\Learning\Http\Resources\CourseLaunchResource;
 use App\Contexts\Learning\Http\Resources\ProgressSummaryResource;
 use App\Contexts\Learning\Http\Resources\RuntimeCurriculumResource;
@@ -76,7 +75,9 @@ class CourseLaunchController extends Controller
 
         $enrollment = $access->activeEnrollmentByUserId($request->user()->id, $courseRef->id);
         if ($enrollment === null) {
-            throw new NotEnrolledException;
+            // "Not enrolled" and "your access ran out" are different problems with different
+            // remedies, and the player can only say the right thing if the API distinguishes them.
+            $access->denyAccess($request->user()->id, $courseRef->id);
         }
 
         return [$courseRef, $enrollment];

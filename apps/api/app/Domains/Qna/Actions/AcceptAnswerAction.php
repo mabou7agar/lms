@@ -8,6 +8,9 @@ use App\Domains\Qna\Enums\QuestionStatus;
 use App\Domains\Qna\Events\AnswerAccepted;
 use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Models\QuestionAnswer;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,6 +23,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class AcceptAnswerAction
 {
+    public function __construct(private readonly AnalyticsEventRecorder $analytics) {}
+
     public function execute(CourseQuestion $question, QuestionAnswer $answer, int $acceptedByUserId): CourseQuestion
     {
         // IDOR / integrity guard: the answer must belong to the question being resolved.
@@ -49,6 +54,15 @@ final class AcceptAnswerAction
                 (int) $answer->user_id,
                 $acceptedByUserId,
             );
+
+            // Keyed on the QUESTION: a thread resolves once, even if the asker changes their mind
+            // about which answer did it.
+            $this->analytics->record(new AnalyticsEventInput(
+                name: AnalyticsEventName::QnaQuestionAccepted->value,
+                userId: $acceptedByUserId,
+                courseId: (int) $question->course_id,
+                dedupKey: 'qna_accepted:'.$question->public_id,
+            ));
 
             return $question;
         });

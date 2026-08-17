@@ -10,6 +10,9 @@ use App\Contexts\Commerce\Exceptions\SeatQuantityUnavailableException;
 use App\Contexts\Commerce\Models\Cart;
 use App\Contexts\Commerce\Models\CartItem;
 use App\Contexts\Commerce\Models\Product;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Services\BaseService;
 
 /**
@@ -20,6 +23,7 @@ class CartService extends BaseService
     public function __construct(
         private readonly PricingService $pricing,
         private readonly CouponService $coupons,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     public function currentByUserId(int $userId): Cart
@@ -48,10 +52,25 @@ class CartService extends BaseService
             throw new ProductUnavailableException('No price is set for this product in your currency.');
         }
 
-        return CartItem::updateOrCreate(
+        $item = CartItem::updateOrCreate(
             ['cart_id' => $cart->id, 'product_id' => $product->id],
             ['unit_amount_minor' => $amount],
         );
+
+        // The top of the purchase funnel. Keyed per (cart, product) so re-adding the same product
+        // to the same cart is the one intent it actually is, not two.
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::CartItemAdded->value,
+            userId: (int) $cart->user_id,
+            organizationId: $cart->organization_id === null ? null : (int) $cart->organization_id,
+            productId: (int) $product->id,
+            productType: $product->type->value,
+            buyerType: $cart->buyerType()->value,
+            valueMinor: $amount,
+            dedupKey: 'cart_item_added:'.$cart->id.':'.$product->id,
+        ));
+
+        return $item;
     }
 
     /**

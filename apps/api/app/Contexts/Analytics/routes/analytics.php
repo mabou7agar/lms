@@ -1,6 +1,7 @@
 <?php
 
 use App\Contexts\Analytics\Http\Controllers\Api\V1\DashboardController;
+use App\Contexts\Analytics\Http\Controllers\Api\V1\EventCollectorController;
 use App\Contexts\Analytics\Http\Controllers\Api\V1\ExportController;
 use App\Contexts\Analytics\Http\Controllers\Api\V1\KpiController;
 use App\Contexts\Analytics\Http\Controllers\Api\V1\ReportController;
@@ -11,6 +12,12 @@ use Illuminate\Support\Facades\Route;
  | Analytics endpoints. Base 'api' prefix + these => /api/v1/*.
  */
 Route::prefix('v1')->group(function (): void {
+    // Client event collector. Unauthenticated on purpose — the top of the funnel is anonymous, and
+    // requiring a session would measure only the people who already signed up. Rate-limited, name
+    // whitelisted, and every field bounded before storage.
+    Route::post('analytics/events', [EventCollectorController::class, 'store'])
+        ->middleware('throttle:120,1');
+
     // Signed export file stream (no auth guard; signature authorizes)
     Route::get('analytics/exports/{export}/file', [ExportController::class, 'file'])
         ->middleware('signed')
@@ -33,6 +40,10 @@ Route::prefix('v1')->group(function (): void {
             Route::get('completion-funnel', [ReportInsightController::class, 'completionFunnel']);
             Route::get('retention', [ReportInsightController::class, 'retention']);
             Route::get('crm', [ReportInsightController::class, 'crm']);
+            // The command-centre reports. Same admin gate and same cache as every other one.
+            Route::get('admin-summary', [ReportInsightController::class, 'adminSummary']);
+            Route::get('marketing-funnel', [ReportInsightController::class, 'marketingFunnel']);
+            Route::get('accounting', [ReportInsightController::class, 'accounting']);
         });
 
         Route::get('reports', [ReportController::class, 'index']);

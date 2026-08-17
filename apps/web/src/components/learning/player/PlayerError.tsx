@@ -9,10 +9,13 @@ import { useLearningPlayerI18n } from '@/lib/learning/player-i18n';
  * `refetch`. Keyboard-accessible: the retry button is a real <button>.
  */
 export function PlayerError({
+  title,
   message,
   onRetry,
   isRetrying = false,
 }: {
+  /** Overrides the "something went wrong" heading — an expected refusal is not a fault. */
+  title?: string;
   message?: string;
   onRetry?: () => void;
   isRetrying?: boolean;
@@ -29,7 +32,7 @@ export function PlayerError({
           <AlertTriangle aria-hidden className="size-5" />
         </span>
         <div>
-          <p className="font-serif text-base font-semibold">{t('player.error.title')}</p>
+          <p className="font-serif text-base font-semibold">{title ?? t('player.error.title')}</p>
           <p className="mt-1 text-muted-foreground">{message ?? t('player.error.curriculum')}</p>
         </div>
       </div>

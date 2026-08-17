@@ -15,6 +15,9 @@ use App\Contexts\Commerce\Models\PaymentTransaction;
 use App\Contexts\Commerce\Models\Refund;
 use App\Contexts\Commerce\Payments\Data\RefundRequest;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Audit\AuditLogger;
 use Throwable;
 
@@ -44,6 +47,7 @@ class RefundOrderAction extends BaseAction
     public function __construct(
         private readonly PaymentGateway $gateway,
         private readonly AuditLogger $audit,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /**
@@ -202,6 +206,19 @@ class RefundOrderAction extends BaseAction
 
             OrderRefunded::dispatch($order->refresh());
         }
+
+        // Recorded for EVERY refund, not only a full one: net revenue has to account for partials,
+        // and the refund row is the thing that happened regardless of what it did to the order.
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::RefundIssued->value,
+            userId: (int) $order->user_id,
+            organizationId: $order->organization_id === null ? null : (int) $order->organization_id,
+            orderId: (int) $order->id,
+            buyerType: $order->buyer_type?->value,
+            valueMinor: $requestedMinor,
+            metadata: ['currency' => $currency, 'full' => $fullyRefunded],
+            dedupKey: 'refund_issued:'.$refund->public_id,
+        ));
 
         return $refund;
     }

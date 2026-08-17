@@ -2,6 +2,7 @@
 
 namespace App\Contexts\Learning\Services;
 
+use App\Contexts\Learning\Exceptions\EnrollmentExpiredException;
 use App\Contexts\Learning\Exceptions\LessonLockedException;
 use App\Contexts\Learning\Exceptions\NotEnrolledException;
 use App\Contexts\Learning\Models\Enrollment;
@@ -28,7 +29,12 @@ class LessonAccessService extends BaseService
     /**
      * The enrollment that grants this learner access to the course, or null. Access survives course
      * completion (status 'completed'), so finishing the last lesson never locks the learner out of
-     * /viewed, /curriculum, resume or launch; only a cancelled/soft-deleted enrollment denies it.
+     * /viewed, /curriculum, resume or launch; a cancelled/soft-deleted enrollment denies it, and so
+     * does an elapsed access window.
+     *
+     * notExpired() belongs here and not only on CourseEnrollmentPort: this is the query the whole
+     * player runtime resolves through, so an enrollment whose window has closed must stop resolving
+     * at this point or the curriculum, resume, progress and launch endpoints all keep serving it.
      */
     public function activeEnrollmentByUserId(int $userId, int $courseId): ?Enrollment
     {
@@ -36,7 +42,33 @@ class LessonAccessService extends BaseService
             ->where('user_id', $userId)
             ->where('course_id', $courseId)
             ->grantsAccess()
+            ->notExpired()
             ->first();
+    }
+
+    /**
+     * Did this learner once have access that has since run out? Callers use it to refuse with
+     * "your access ended" instead of "you are not enrolled" — a learner who paid and finished their
+     * window is not the same person as one who never enrolled, and telling them otherwise sends
+     * them to support instead of to renewal.
+     */
+    public function accessWindowElapsed(int $userId, int $courseId): bool
+    {
+        return Enrollment::query()
+            ->where('user_id', $userId)
+            ->where('course_id', $courseId)
+            ->grantsAccess()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->exists();
+    }
+
+    /** Throws the exception that describes why this learner has no live enrollment. */
+    public function denyAccess(int $userId, int $courseId): never
+    {
+        throw $this->accessWindowElapsed($userId, $courseId)
+            ? new EnrollmentExpiredException
+            : new NotEnrolledException;
     }
 
     public function canAccessByUserId(int $userId, int $lessonId): bool
@@ -45,20 +77,21 @@ class LessonAccessService extends BaseService
             $this->assertAccessByUserId($userId, $lessonId);
 
             return true;
-        } catch (NotEnrolledException|LessonLockedException) {
+        } catch (EnrollmentExpiredException|NotEnrolledException|LessonLockedException) {
             return false;
         }
     }
 
-    /** Throws NotEnrolledException or LessonLockedException when access is denied. */
+    /** Throws EnrollmentExpiredException, NotEnrolledException or LessonLockedException. */
     public function assertAccessByUserId(int $userId, int $lessonId): Enrollment
     {
         $ref = $this->curriculum->lessonRefById($lessonId);
-        $enrollment = $this->activeEnrollmentByUserId($userId, $ref?->courseId ?? 0);
+        $courseId = $ref?->courseId ?? 0;
+        $enrollment = $this->activeEnrollmentByUserId($userId, $courseId);
 
         // Preview lessons are viewable, but still need an enrollment context for progress.
         if ($enrollment === null) {
-            throw new NotEnrolledException;
+            $this->denyAccess($userId, $courseId);
         }
 
         if ($ref !== null && ! $ref->isPreview && ! $this->prerequisitesMetByIds($enrollment, $ref->prerequisiteLessonIds)) {

@@ -75,11 +75,18 @@ function CoursePlayerShellInner({
   }
 
   if (curriculum.isError || !curriculum.data) {
+    // An access window that closed is a refusal, not a failure: retrying will never help, and
+    // "something went wrong" sends a learner whose subscription lapsed to support instead of to
+    // renewal. Anything else keeps the generic error and its retry.
+    const expired =
+      (curriculum.error as { code?: string } | null)?.code === 'LEARNING_ACCESS_EXPIRED';
+
     return (
       <div dir={dir} className="p-4">
         <PlayerError
-          message={t('player.error.curriculum')}
-          onRetry={() => void curriculum.refetch()}
+          title={expired ? t('player.error.expiredTitle') : undefined}
+          message={expired ? t('player.error.expired') : t('player.error.curriculum')}
+          onRetry={expired ? undefined : () => void curriculum.refetch()}
           isRetrying={curriculum.isFetching}
         />
       </div>

@@ -14,6 +14,9 @@ use App\Contexts\Learning\Services\ProgressService;
 use App\Contexts\Learning\Services\RuntimeAccessService;
 use App\Contexts\Learning\Services\VideoProgressService;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Curriculum\Contracts\CurriculumReadPort;
 use App\Platform\Shared\Media\Contracts\MediaAssetPort;
 
@@ -39,6 +42,7 @@ class CompleteLessonAction extends BaseAction
         private readonly VideoProgressService $video,
         private readonly CurriculumReadPort $curriculum,
         private readonly MediaAssetPort $mediaAssets,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /**
@@ -108,6 +112,43 @@ class CompleteLessonAction extends BaseAction
             CourseCompleted::dispatch($result['enrollment']);
         }
 
+        $this->recordAnalytics($result['enrollment'], $lessonId, (bool) $result['just_completed_lesson'], (bool) $result['just_completed_course']);
+
         return $result['progress'];
+    }
+
+    /**
+     * Progress facts, recorded only on the transition. Re-opening a finished lesson is not a second
+     * completion, and counting it as one would make "lessons completed" a measure of revisiting.
+     *
+     * Both are keyed per (enrollment, lesson) and per enrollment respectively, so the same
+     * completion arriving twice — a retried request, a double-tap — records once.
+     */
+    private function recordAnalytics(Enrollment $enrollment, int $lessonId, bool $justCompletedLesson, bool $justCompletedCourse): void
+    {
+        $events = [];
+
+        if ($justCompletedLesson) {
+            $events[] = new AnalyticsEventInput(
+                name: AnalyticsEventName::LessonCompleted->value,
+                userId: (int) $enrollment->user_id,
+                courseId: $enrollment->courseId(),
+                metadata: ['lesson_id' => $lessonId],
+                dedupKey: 'lesson_completed:'.$enrollment->id.':'.$lessonId,
+            );
+        }
+
+        if ($justCompletedCourse) {
+            $events[] = new AnalyticsEventInput(
+                name: AnalyticsEventName::CourseCompleted->value,
+                userId: (int) $enrollment->user_id,
+                courseId: $enrollment->courseId(),
+                dedupKey: 'course_completed:'.$enrollment->id,
+            );
+        }
+
+        if ($events !== []) {
+            $this->analytics->recordMany($events);
+        }
     }
 }

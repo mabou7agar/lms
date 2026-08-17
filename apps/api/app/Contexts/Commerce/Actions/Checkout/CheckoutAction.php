@@ -29,6 +29,9 @@ use App\Contexts\Commerce\Services\ContractService;
 use App\Contexts\Commerce\Services\CouponService;
 use App\Contexts\Commerce\Services\InvoiceNumberService;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Enterprise\Contracts\OrganizationLookupPort;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -60,6 +63,7 @@ class CheckoutAction extends BaseAction
         private readonly TaxCalculator $tax,
         private readonly CouponService $coupons,
         private readonly OrganizationLookupPort $organizations,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /**
@@ -260,6 +264,20 @@ class CheckoutAction extends BaseAction
         } catch (Throwable $e) {
             $this->compensate($order);
 
+            // Recorded before rethrowing: a failed checkout is the most interesting row in the
+            // funnel, and it is the one nothing else in the system remembers.
+            $this->analytics->record(new AnalyticsEventInput(
+                name: AnalyticsEventName::CheckoutFailed->value,
+                userId: $userId,
+                organizationId: $order->organization_id === null ? null : (int) $order->organization_id,
+                orderId: (int) $order->id,
+                buyerType: $order->buyer_type?->value,
+                valueMinor: (int) $order->total_minor,
+                // The class name only — a gateway message can carry a card holder's name.
+                metadata: ['reason' => class_basename($e)],
+                dedupKey: 'checkout_failed:'.$order->id,
+            ));
+
             throw $e;
         }
 
@@ -278,6 +296,17 @@ class CheckoutAction extends BaseAction
             // Empty the cart now that it is captured on the order.
             $this->carts->clear($cart);
         });
+
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::OrderPlaced->value,
+            userId: $userId,
+            organizationId: $order->organization_id === null ? null : (int) $order->organization_id,
+            orderId: (int) $order->id,
+            buyerType: $order->buyer_type?->value,
+            valueMinor: (int) $order->total_minor,
+            metadata: ['items' => $cart->items->count()],
+            dedupKey: 'order_placed:'.$order->id,
+        ));
 
         OrderPlaced::dispatch($order);
 

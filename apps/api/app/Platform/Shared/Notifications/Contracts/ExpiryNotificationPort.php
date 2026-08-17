@@ -60,4 +60,28 @@ interface ExpiryNotificationPort
         string $expiresAt,
         int $daysBefore,
     ): void;
+
+    /**
+     * A learner's question has gone unanswered past the response promise the platform makes on the
+     * course team's behalf. Sent to that team.
+     *
+     * It belongs on this port rather than a new one because it is the same kind of event: something
+     * with a clock on it has run out. Dedup is per (question, recipient) — a question breaches its
+     * SLA once, and a sweep that keeps finding it must not keep saying so.
+     *
+     * Returns whether this call is what created the notice. The other methods here are fire and
+     * forget, but this one is driven by a command an operator runs by hand and reads the count of,
+     * and a sweep that reports "3 sent" on its fifth run over the same three questions is telling
+     * that operator something untrue.
+     *
+     * @param  string  $questionRef  the question's public id — the dedup anchor.
+     * @return bool true when a new notice was created, false when this question was already reported.
+     */
+    public function qnaQuestionOverdue(
+        int $recipientUserId,
+        string $questionRef,
+        string $questionTitle,
+        string $courseTitle,
+        int $hoursWaiting,
+    ): bool;
 }

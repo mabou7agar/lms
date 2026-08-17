@@ -14,7 +14,10 @@ export type MyLearningItem = {
   /** How this access was obtained. `company_seat` came out of an employer's purchase. */
   source: string | null;
   company_granted: boolean;
-  /** When the access window closes. Null for anything the learner obtained themselves. */
+  /**
+   * When the access window closes. Null when the access never runs out — a free enrollment, an
+   * admin grant, or a purchase of a product sold with lifetime access.
+   */
   expires_at: string | null;
   expired: boolean;
 };

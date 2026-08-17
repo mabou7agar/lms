@@ -10,6 +10,9 @@ use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Models\QuestionAnswer;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +38,7 @@ final class AnswerQuestionAction
         private readonly HtmlSanitizer $sanitizer,
         private readonly CourseEnrollmentPort $enrollment,
         private readonly CourseAccessPort $access,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     public function execute(Actor $author, CourseQuestion $question, string $body): QuestionAnswer
@@ -59,7 +63,9 @@ final class AnswerQuestionAction
 
             $question->increment('answers_count');
 
+            $wasFirstResponse = $isInstructor && $question->first_response_at === null;
             $this->recordResponse($question, $isInstructor);
+            $this->recordAnalytics($question, $answer, $isInstructor, $wasFirstResponse);
 
             QuestionAnswered::dispatch(
                 (int) $answer->id,
@@ -72,6 +78,35 @@ final class AnswerQuestionAction
 
             return $answer;
         });
+    }
+
+    /**
+     * The answer, and separately the FIRST instructor response — which is the event the service-level
+     * reporting is actually about. They are two facts: every answer is an answer, but only one of
+     * them was the moment the course team showed up.
+     */
+    private function recordAnalytics(CourseQuestion $question, QuestionAnswer $answer, bool $isInstructor, bool $wasFirstResponse): void
+    {
+        $events = [new AnalyticsEventInput(
+            name: AnalyticsEventName::QnaAnswerPosted->value,
+            userId: (int) $answer->user_id,
+            courseId: (int) $question->course_id,
+            metadata: ['by_instructor' => $isInstructor],
+            dedupKey: 'qna_answered:'.$answer->public_id,
+        )];
+
+        if ($wasFirstResponse) {
+            $events[] = new AnalyticsEventInput(
+                name: AnalyticsEventName::QnaFirstResponse->value,
+                userId: (int) $answer->user_id,
+                courseId: (int) $question->course_id,
+                instructorId: (int) $answer->user_id,
+                metadata: ['minutes' => (int) $question->first_response_minutes],
+                dedupKey: 'qna_first_response:'.$question->public_id,
+            );
+        }
+
+        $this->analytics->recordMany($events);
     }
 
     /**

@@ -12,6 +12,9 @@ use App\Domains\Certification\Services\CertificateNumberService;
 use App\Domains\Certification\Services\SignatureService;
 use App\Domains\Certification\Services\VerificationCodeService;
 use App\Platform\Shared\Actions\BaseAction;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Commerce\Contracts\CertificatePolicyPort;
 
 /**
@@ -33,6 +36,7 @@ class GenerateCertificateAction extends BaseAction
         private readonly VerificationCodeService $codes,
         private readonly SignatureService $signatures,
         private readonly CertificatePolicyPort $policies,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     public function executeByUserId(int $userId, Course $course, ?int $enrollmentId = null): ?Certificate
@@ -90,6 +94,15 @@ class GenerateCertificateAction extends BaseAction
         });
 
         if ($created && $certificate instanceof Certificate) {
+            $this->analytics->record(new AnalyticsEventInput(
+                name: AnalyticsEventName::CertificateIssued->value,
+                userId: $userId,
+                organizationId: $policy->organizationId,
+                courseId: (int) $course->id,
+                metadata: ['company_branded' => $certificate->isCompanyBranded()],
+                dedupKey: 'certificate_issued:'.$certificate->public_id,
+            ));
+
             CertificateIssued::dispatch($certificate);
         }
 

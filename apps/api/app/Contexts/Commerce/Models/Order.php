@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Buyer ownership fields are nullable: an order placed before buyer ownership existed carries no
  * value, and a model that has not been persisted has none in memory either.
  *
+ * @property int $user_id
+ * @property string $currency
+ * @property int $total_minor
  * @property BuyerType|null $buyer_type
  * @property int|null $organization_id
  * @property string|null $company_name

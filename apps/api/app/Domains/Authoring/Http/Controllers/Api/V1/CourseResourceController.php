@@ -10,6 +10,9 @@ use App\Domains\Authoring\Models\CourseResource;
 use App\Domains\Authoring\Models\Lesson;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Identity\Contracts\CourseAccessPort;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Catalog\Contracts\CourseLookupPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
 use App\Platform\Shared\Media\Contracts\MediaAssetLookupPort;
@@ -39,6 +42,7 @@ final class CourseResourceController extends Controller
         private readonly CourseAccessPort $access,
         private readonly CourseEnrollmentPort $enrollment,
         private readonly CourseLookupPort $courses,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /** GET /v1/courses/{course}/resources — course-level files, or all of them with ?scope=all. */
@@ -129,6 +133,16 @@ final class CourseResourceController extends Controller
         }
 
         $token = $playback->issue($ref, (int) config('learning.playback.ttl_seconds', 600));
+
+        // NO dedup key: repeat downloads of the same file by the same learner are genuinely
+        // separate events, and "how often is this workbook fetched" is the question the metric
+        // exists to answer.
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::FileDownloaded->value,
+            userId: $actor->actorId(),
+            courseId: $courseId,
+            metadata: ['scope' => $resource->isCourseLevel() ? 'course' : 'lesson'],
+        ));
 
         // Published after the URL is issued, and nothing waits on it: a reporting concern must never
         // stand between a learner and a file they paid for.

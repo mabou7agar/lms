@@ -111,6 +111,53 @@ describe("My Learning expiry banners", () => {
 
     expect(screen.getByText(/Access to 1 course\(s\) has ended/i)).toBeInTheDocument();
   });
+
+  it("tells a company learner to ask their manager", () => {
+    useMyLearning.mockReturnValue(ok([learningItem({ expires_at: inDays(-2), expired: true })]));
+
+    renderWithI18n(<MyLearningPage />);
+
+    expect(screen.getAllByText(/Ask your manager/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Buy it again/i)).not.toBeInTheDocument();
+  });
+
+  it("does not send a self-buyer to a manager they do not have", () => {
+    useMyLearning.mockReturnValue(
+      ok([
+        learningItem({
+          source: "purchase",
+          company_granted: false,
+          expires_at: inDays(-2),
+          expired: true,
+        }),
+      ]),
+    );
+
+    renderWithI18n(<MyLearningPage />);
+
+    // Both the banner and the course card carry the advice, and neither may point at a manager.
+    expect(screen.getAllByText(/Buy it again/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Ask your manager/i)).not.toBeInTheDocument();
+  });
+
+  it("covers both when the learner lost one of each", () => {
+    useMyLearning.mockReturnValue(
+      ok([
+        learningItem({ expires_at: inDays(-2), expired: true }),
+        learningItem({
+          enrollment_id: "en_2",
+          source: "purchase",
+          company_granted: false,
+          expires_at: inDays(-3),
+          expired: true,
+        }),
+      ]),
+    );
+
+    renderWithI18n(<MyLearningPage />);
+
+    expect(screen.getByText(/came from your company and some you bought yourself/i)).toBeInTheDocument();
+  });
 });
 
 describe("Certificates page", () => {

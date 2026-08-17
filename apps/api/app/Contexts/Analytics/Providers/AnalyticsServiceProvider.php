@@ -16,7 +16,9 @@ use App\Contexts\Analytics\Policies\DashboardDefinitionPolicy;
 use App\Contexts\Analytics\Policies\ExportJobPolicy;
 use App\Contexts\Analytics\Policies\ReportDefinitionPolicy;
 use App\Contexts\Analytics\Services\AnalyticsSummaryProvider;
+use App\Contexts\Analytics\Services\EventRecorder;
 use App\Contexts\Analytics\Services\ReportCache;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
 use App\Platform\Shared\Analytics\Contracts\AnalyticsSummaryPort;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
 use Illuminate\Support\Facades\Event;
@@ -60,6 +62,10 @@ class AnalyticsServiceProvider extends BaseDomainServiceProvider
         // Shared read port: exposes an aggregate, tenant-scoped KPI summary to the Platform AI layer
         // (the Admin AI Analytics Assistant) WITHOUT that layer importing the Analytics context.
         $this->app->bind(AnalyticsSummaryPort::class, AnalyticsSummaryProvider::class);
+
+        // The append-only event log every context writes to. Bound as a singleton because it is
+        // called from hot paths (checkout, downloads) and holds no per-request state.
+        $this->app->singleton(AnalyticsEventRecorder::class, EventRecorder::class);
     }
 
     protected function bootDomain(): void

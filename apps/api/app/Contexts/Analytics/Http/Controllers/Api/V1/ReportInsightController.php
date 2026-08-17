@@ -148,4 +148,19 @@ class ReportInsightController extends Controller
             throw new AccessDeniedHttpException('Administrator access required.');
         }
     }
+
+    public function adminSummary(ReportInsightRequest $request): JsonResponse
+    {
+        return $this->respond($request, 'admin_summary', fn (CarbonImmutable $from, CarbonImmutable $to): array => $this->reports->adminSummary($from, $to));
+    }
+
+    public function marketingFunnel(ReportInsightRequest $request): JsonResponse
+    {
+        return $this->respond($request, 'marketing_funnel', fn (CarbonImmutable $from, CarbonImmutable $to): array => $this->reports->marketingFunnel($from, $to));
+    }
+
+    public function accounting(ReportInsightRequest $request): JsonResponse
+    {
+        return $this->respond($request, 'accounting', fn (CarbonImmutable $from, CarbonImmutable $to): array => $this->reports->accounting($from, $to));
+    }
 }

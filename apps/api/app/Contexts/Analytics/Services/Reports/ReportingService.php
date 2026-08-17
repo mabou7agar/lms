@@ -803,4 +803,391 @@ class ReportingService extends BaseService
             ],
         ];
     }
+
+    // ---------------------------------------------------------------------------------------
+    // 12. Executive summary
+    // ---------------------------------------------------------------------------------------
+
+    /**
+     * The one screen a director asks for: what came in, what went back out, who bought, and what
+     * the platform owes them next.
+     *
+     * Every figure is a real aggregate. Where a dimension exists but nothing has been recorded for
+     * it in the window, the row is simply absent — an empty table says "nothing happened", which is
+     * true, whereas a zero-filled one invites the reader to believe the dimension was measured.
+     *
+     * @return array<string, mixed>
+     */
+    public function adminSummary(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        // Read through the query builder rather than the Eloquent models: these are cross-context
+        // read-only aggregates, and going through the table keeps the coupling to a name rather than
+        // to another context's model class.
+        $paid = fn (): Builder => DB::table('orders')
+            ->whereNull('deleted_at')
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$from, $to]);
+
+        $gross = (int) $paid()->sum('total_minor');
+        $orders = (int) $paid()->count();
+
+        $refunds = (int) DB::table('payment_transactions')
+            ->where('type', TransactionType::Refund->value)
+            ->where('status', TransactionStatus::Succeeded->value)
+            ->whereBetween('created_at', [$from, $to])
+            ->sum('amount_minor');
+
+        // Buyer split: an order predating buyer ownership carries no type and is counted as the
+        // individual purchase it was.
+        $byBuyer = $paid()
+            ->selectRaw("COALESCE(buyer_type, 'individual') as buyer_type, COUNT(*) as orders, COALESCE(SUM(total_minor), 0) as revenue_minor")
+            ->groupBy('buyer_type')
+            ->get()
+            ->map(static fn ($r): array => [
+                'buyer_type' => (string) $r->buyer_type,
+                'orders' => (int) $r->orders,
+                'revenue_minor' => (int) $r->revenue_minor,
+            ])->values()->all();
+
+        // Course vs bundle, taken from the product type on each purchased line.
+        $byProductType = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->whereNotNull('orders.paid_at')
+            ->whereBetween('orders.paid_at', [$from, $to])
+            ->selectRaw('products.type as product_type, COUNT(*) as units, COALESCE(SUM(order_items.unit_amount_minor), 0) as revenue_minor')
+            ->groupBy('products.type')
+            ->get()
+            ->map(static fn ($r): array => [
+                'product_type' => (string) $r->product_type,
+                'units' => (int) $r->units,
+                'revenue_minor' => (int) $r->revenue_minor,
+            ])->values()->all();
+
+        $topBundles = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('products.type', 'bundle')
+            ->whereNotNull('orders.paid_at')
+            ->whereBetween('orders.paid_at', [$from, $to])
+            ->selectRaw('products.title as bundle, COUNT(*) as units, COALESCE(SUM(order_items.unit_amount_minor), 0) as revenue_minor')
+            ->groupBy('products.id', 'products.title')
+            ->orderByRaw('SUM(order_items.unit_amount_minor) DESC')
+            ->limit(10)
+            ->get()
+            ->map(static fn ($r): array => [
+                'bundle' => (string) $r->bundle,
+                'units' => (int) $r->units,
+                'revenue_minor' => (int) $r->revenue_minor,
+            ])->values()->all();
+
+        $topCompanies = DB::table('orders')
+            ->join('crm_organizations', 'crm_organizations.id', '=', 'orders.organization_id')
+            ->whereNotNull('orders.paid_at')
+            ->whereBetween('orders.paid_at', [$from, $to])
+            ->selectRaw('crm_organizations.name as company, COUNT(*) as orders, COALESCE(SUM(orders.total_minor), 0) as revenue_minor')
+            ->groupBy('crm_organizations.id', 'crm_organizations.name')
+            ->orderByRaw('SUM(orders.total_minor) DESC')
+            ->limit(10)
+            ->get()
+            ->map(static fn ($r): array => [
+                'company' => (string) $r->company,
+                'orders' => (int) $r->orders,
+                'revenue_minor' => (int) $r->revenue_minor,
+            ])->values()->all();
+
+        // Seats: what companies bought against what they have actually handed out.
+        $seats = DB::table('company_entitlements')
+            ->selectRaw('COALESCE(SUM(seats_purchased), 0) as purchased, COALESCE(SUM(seats_used), 0) as used, COUNT(*) as pools')
+            ->first();
+
+        $expiringEntitlements = DB::table('company_entitlements')
+            ->where('status', 'active')
+            ->whereNotNull('access_ends_at')
+            ->whereBetween('access_ends_at', [now(), now()->addDays(30)])
+            ->count();
+
+        $certificates = (int) DB::table('certificates')
+            ->whereNull('deleted_at')
+            ->whereBetween('issued_at', [$from, $to])
+            ->count();
+
+        // Q&A health, on the same window: how much the course teams were asked, and how much of it
+        // they answered.
+        $questions = (int) DB::table('course_questions')
+            ->whereBetween('created_at', [$from, $to])
+            ->where('status', '!=', 'hidden')
+            ->count();
+        $answered = (int) DB::table('course_questions')
+            ->whereBetween('created_at', [$from, $to])
+            ->where('status', '!=', 'hidden')
+            ->whereNotNull('first_response_at')
+            ->count();
+
+        return [
+            'summary' => [
+                'gross_revenue_minor' => $gross,
+                'refunds_minor' => $refunds,
+                'net_revenue_minor' => $gross - $refunds,
+                'orders' => $orders,
+                'average_order_value_minor' => $orders > 0 ? intdiv($gross, $orders) : 0,
+                'certificates_issued' => $certificates,
+                'seats_purchased' => (int) ($seats->purchased ?? 0),
+                'seats_used' => (int) ($seats->used ?? 0),
+                'seat_pools' => (int) ($seats->pools ?? 0),
+                'entitlements_expiring_30d' => $expiringEntitlements,
+                'questions_asked' => $questions,
+                'questions_answered' => $answered,
+                'qna_response_rate' => Percentage::rate($answered, $questions),
+            ],
+            'revenue_by_buyer_type' => $byBuyer,
+            'revenue_by_product_type' => $byProductType,
+            'top_courses' => $this->topCoursesByRevenue($from, $to),
+            'top_bundles' => $topBundles,
+            'top_companies' => $topCompanies,
+        ];
+    }
+
+    /**
+     * Per-course revenue, allocated through order_items -> product_courses. A bundle attributes its
+     * line amount to every course it grants, which over-states a bundled course and is documented
+     * as such rather than silently apportioned by a rule nobody agreed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function topCoursesByRevenue(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        return DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('product_courses', 'product_courses.product_id', '=', 'order_items.product_id')
+            ->join('courses', 'courses.id', '=', 'product_courses.course_id')
+            ->whereNotNull('orders.paid_at')
+            ->whereBetween('orders.paid_at', [$from, $to])
+            ->selectRaw('courses.title as course, COUNT(*) as units, COALESCE(SUM(order_items.unit_amount_minor), 0) as revenue_minor')
+            ->groupBy('courses.id', 'courses.title')
+            ->orderByRaw('SUM(order_items.unit_amount_minor) DESC')
+            ->limit(10)
+            ->get()
+            ->map(static fn ($r): array => [
+                'course' => (string) $r->course,
+                'units' => (int) $r->units,
+                'revenue_minor' => (int) $r->revenue_minor,
+            ])->values()->all();
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // 13. Marketing funnel
+    // ---------------------------------------------------------------------------------------
+
+    /**
+     * The funnel, built from the event log rather than from state — because state cannot answer it.
+     * A course that nobody bought leaves no order behind, so "viewed but not bought" is invisible to
+     * every other report in this class.
+     *
+     * IMPORTANT about the view stages: they exist only from the moment the browser started
+     * reporting them. A window that predates the event pipeline shows zero views, and that zero is
+     * "not measured", not "nobody looked". The payload says so explicitly via `tracking_since` so a
+     * reader is never invited to draw a conclusion the data cannot support.
+     *
+     * @return array<string, mixed>
+     */
+    public function marketingFunnel(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $count = fn (string $name): int => (int) DB::table('analytics_events')
+            ->where('name', $name)
+            ->whereBetween('occurred_at', [$from, $to])
+            ->count();
+
+        $courseViews = $count('course_viewed');
+        $bundleViews = $count('bundle_viewed');
+        $addToCart = $count('cart_item_added');
+        $checkoutStarted = $count('checkout_started');
+        $ordersPlaced = $count('order_placed');
+        $ordersPaid = $count('order_paid');
+        $checkoutFailed = $count('checkout_failed');
+
+        $views = $courseViews + $bundleViews;
+
+        // Carts with items that were never turned into an order and have gone quiet. Derived from
+        // state rather than from an "abandoned" event, because abandonment is the absence of an
+        // action and nothing ever fires when a person simply stops.
+        $abandonedCarts = (int) DB::table('carts')
+            ->join('cart_items', 'cart_items.cart_id', '=', 'carts.id')
+            ->where('carts.updated_at', '<', now()->subDay())
+            ->whereBetween('carts.updated_at', [$from, $to])
+            ->distinct()
+            ->count('carts.id');
+
+        $couponOrders = (int) DB::table('orders')
+            ->whereNull('deleted_at')
+            ->whereNotNull('paid_at')
+            ->whereNotNull('coupon_id')
+            ->whereBetween('paid_at', [$from, $to])
+            ->count();
+        $couponDiscount = (int) DB::table('orders')
+            ->whereNull('deleted_at')
+            ->whereNotNull('paid_at')
+            ->whereNotNull('coupon_id')
+            ->whereBetween('paid_at', [$from, $to])
+            ->sum('discount_minor');
+
+        // Attention that did not convert: the courses people looked at most and bought least.
+        $highViewLowSale = DB::table('analytics_events')
+            ->join('courses', 'courses.id', '=', 'analytics_events.course_id')
+            ->where('analytics_events.name', 'course_viewed')
+            ->whereBetween('analytics_events.occurred_at', [$from, $to])
+            ->groupBy('courses.id', 'courses.title')
+            ->selectRaw('courses.title as course, COUNT(*) as views')
+            ->orderByRaw('COUNT(*) DESC')
+            ->limit(10)
+            ->get()
+            ->map(static fn ($r): array => ['course' => (string) $r->course, 'views' => (int) $r->views])
+            ->values()->all();
+
+        $searchTerms = DB::table('analytics_events')
+            ->where('name', 'search_performed')
+            ->whereBetween('occurred_at', [$from, $to])
+            ->whereNotNull('metadata')
+            ->selectRaw("metadata->>'term' as term, COUNT(*) as searches")
+            ->groupByRaw("metadata->>'term'")
+            ->orderByRaw('COUNT(*) DESC')
+            ->limit(15)
+            ->get()
+            ->filter(static fn ($r): bool => $r->term !== null && $r->term !== '')
+            ->map(static fn ($r): array => ['term' => (string) $r->term, 'searches' => (int) $r->searches])
+            ->values()->all();
+
+        $sources = DB::table('analytics_events')
+            ->whereNotNull('utm_source')
+            ->whereBetween('occurred_at', [$from, $to])
+            ->selectRaw('utm_source as source, utm_medium as medium, utm_campaign as campaign, COUNT(*) as events')
+            ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
+            ->orderByRaw('COUNT(*) DESC')
+            ->limit(15)
+            ->get()
+            ->map(static fn ($r): array => [
+                'source' => (string) $r->source,
+                'medium' => (string) ($r->medium ?? ''),
+                'campaign' => (string) ($r->campaign ?? ''),
+                'events' => (int) $r->events,
+            ])->values()->all();
+
+        // The earliest event of any kind: before this instant nothing was measured, and the funnel
+        // says so rather than reporting a zero that reads like a finding.
+        $trackingSince = DB::table('analytics_events')->min('occurred_at');
+
+        return [
+            'summary' => [
+                'course_views' => $courseViews,
+                'bundle_views' => $bundleViews,
+                'add_to_cart' => $addToCart,
+                'checkout_started' => $checkoutStarted,
+                'orders_placed' => $ordersPlaced,
+                'orders_paid' => $ordersPaid,
+                'checkout_failed' => $checkoutFailed,
+                'abandoned_carts' => $abandonedCarts,
+                'add_to_cart_rate' => Percentage::rate($addToCart, $views),
+                'checkout_start_rate' => Percentage::rate($checkoutStarted, $addToCart),
+                'checkout_completion_rate' => Percentage::rate($ordersPaid, $checkoutStarted),
+                'coupon_orders' => $couponOrders,
+                'coupon_discount_minor' => $couponDiscount,
+            ],
+            // Explicit honesty about the view stages: null means the pipeline has recorded nothing
+            // at all, so every view figure above is "not measured" rather than "zero".
+            'tracking_since' => $trackingSince,
+            'funnel' => [
+                ['stage' => 'viewed', 'count' => $views],
+                ['stage' => 'added_to_cart', 'count' => $addToCart],
+                ['stage' => 'checkout_started', 'count' => $checkoutStarted],
+                ['stage' => 'order_placed', 'count' => $ordersPlaced],
+                ['stage' => 'order_paid', 'count' => $ordersPaid],
+            ],
+            'most_viewed_courses' => $highViewLowSale,
+            'search_terms' => $searchTerms,
+            'traffic_sources' => $sources,
+        ];
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // 14. Accounting
+    // ---------------------------------------------------------------------------------------
+
+    /**
+     * What finance reconciles against: orders by settlement state, the invoices and credit notes
+     * raised, refunds paid back, and the tax collected — split by who was invoiced, because a
+     * company invoice and a consumer receipt are different obligations.
+     *
+     * @return array<string, mixed>
+     */
+    public function accounting(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $ordersByStatus = DB::table('orders')
+            ->whereNull('deleted_at')
+            ->whereBetween('created_at', [$from, $to])
+            ->selectRaw('status, COUNT(*) as orders, COALESCE(SUM(total_minor), 0) as total_minor')
+            ->groupBy('status')
+            ->orderByRaw('COUNT(*) DESC')
+            ->get()
+            ->map(static fn ($r): array => [
+                'status' => (string) $r->status,
+                'orders' => (int) $r->orders,
+                'total_minor' => (int) $r->total_minor,
+            ])->values()->all();
+
+        $invoices = DB::table('invoices')
+            ->whereBetween('issued_at', [$from, $to])
+            ->selectRaw('status, COUNT(*) as invoices, COALESCE(SUM(total_minor), 0) as total_minor, COALESCE(SUM(tax_minor), 0) as tax_minor')
+            ->groupBy('status')
+            ->get()
+            ->map(static fn ($r): array => [
+                'status' => (string) $r->status,
+                'invoices' => (int) $r->invoices,
+                'total_minor' => (int) $r->total_minor,
+                'tax_minor' => (int) $r->tax_minor,
+            ])->values()->all();
+
+        $creditNotes = DB::table('credit_notes')
+            ->whereBetween('created_at', [$from, $to])
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_minor), 0) as total_minor')
+            ->first();
+
+        $refunds = (int) DB::table('payment_transactions')
+            ->where('type', TransactionType::Refund->value)
+            ->where('status', TransactionStatus::Succeeded->value)
+            ->whereBetween('created_at', [$from, $to])
+            ->sum('amount_minor');
+
+        $taxCollected = (int) DB::table('orders')
+            ->whereNull('deleted_at')
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$from, $to])
+            ->sum('tax_minor');
+
+        $invoicesByBuyer = DB::table('orders')
+            ->join('invoices', 'invoices.order_id', '=', 'orders.id')
+            ->whereBetween('invoices.issued_at', [$from, $to])
+            ->selectRaw("COALESCE(orders.buyer_type, 'individual') as buyer_type, COUNT(*) as invoices, COALESCE(SUM(invoices.total_minor), 0) as total_minor, COALESCE(SUM(invoices.tax_minor), 0) as tax_minor")
+            ->groupBy('orders.buyer_type')
+            ->get()
+            ->map(static fn ($r): array => [
+                'buyer_type' => (string) $r->buyer_type,
+                'invoices' => (int) $r->invoices,
+                'total_minor' => (int) $r->total_minor,
+                'tax_minor' => (int) $r->tax_minor,
+            ])->values()->all();
+
+        return [
+            'summary' => [
+                'orders' => array_sum(array_column($ordersByStatus, 'orders')),
+                'invoiced_minor' => array_sum(array_column($invoices, 'total_minor')),
+                'tax_collected_minor' => $taxCollected,
+                'refunds_minor' => $refunds,
+                'credit_notes' => (int) ($creditNotes->count ?? 0),
+                'credit_notes_minor' => (int) ($creditNotes->total_minor ?? 0),
+            ],
+            'orders_by_status' => $ordersByStatus,
+            'invoices_by_status' => $invoices,
+            'invoices_by_buyer_type' => $invoicesByBuyer,
+        ];
+    }
 }

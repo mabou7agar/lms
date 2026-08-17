@@ -451,19 +451,7 @@ parameters:
 			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
 			identifier: property.notFound
 			count: 3
 			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
@@ -506,12 +494,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$fulfilled_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Actions/Payment/FulfillOrderAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Contexts/Commerce/Actions/Payment/FulfillOrderAction.php
@@ -1043,12 +1025,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Contexts/Commerce/Providers/CommerceServiceProvider.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Cart\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\CartItem\:\:\$product_id\.$#'

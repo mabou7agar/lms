@@ -1,5 +1,6 @@
 <?php
 
+use App\Contexts\Analytics\Enums\InsightReport;
 use App\Contexts\Commerce\Models\Coupon;
 use App\Contexts\Commerce\Models\CouponRedemption;
 use App\Contexts\Commerce\Models\Order;
@@ -123,13 +124,16 @@ function seedReportFixture(): void
     ConsultingRequest::factory()->create();
 }
 
-it('exposes the report catalog with all 11 reports', function () {
+it('exposes the report catalog with every report', function () {
     Sanctum::actingAs(reportAdmin());
 
     $res = $this->getJson('/api/v1/reports/insights/catalog')->assertOk();
 
-    expect($res->json('data'))->toHaveCount(11);
-    expect(collect($res->json('data'))->pluck('key'))->toContain('revenue', 'completion_funnel', 'retention', 'crm');
+    // The count is asserted against the enum rather than a literal so adding a report cannot leave
+    // the catalog and the dispatcher out of step without this failing.
+    expect($res->json('data'))->toHaveCount(count(InsightReport::cases()));
+    expect(collect($res->json('data'))->pluck('key'))
+        ->toContain('revenue', 'completion_funnel', 'retention', 'crm', 'admin_summary', 'marketing_funnel', 'accounting');
 });
 
 it('returns every report to an admin with a real payload', function () {

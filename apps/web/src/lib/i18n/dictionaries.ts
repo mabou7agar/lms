@@ -207,6 +207,8 @@ export const dictionaries = {
       viewAll: "View all",
       accessEnded: "Access ended",
       accessEndedHint: "Your company's access to this course has ended. Ask your manager to restore it.",
+      accessEndedHintPurchase: "Your access period for this course has ended. Buy it again to carry on.",
+      accessEndedHintMixed: "Access to some of these courses came from your company and some you bought yourself. Ask your manager about the first, and buy the rest again to carry on.",
       upcoming: {
         title: "Upcoming live sessions",
         empty: "No upcoming live sessions.",
@@ -1285,6 +1287,19 @@ export const dictionaries = {
       error: "Something went wrong. Please try again.",
     },
     analytics: {
+      centre: {
+        eyebrow: "COMMAND CENTRE",
+        title: "Analytics command centre",
+        subtitle: "Executive, marketing and accounting views over one date range.",
+        trackingSince: "Funnel tracking has been recording since {date}. Anything before that is not measured.",
+        noTracking: "No funnel events have been recorded yet, so the view and click stages below are not measured rather than zero.",
+        exportCsv: "Export CSV",
+        tabs: {
+          executive: "Executive",
+          marketing: "Marketing",
+          accounting: "Accounting",
+        },
+      },
       dashboard: {
         title: "Analytics",
         subtitle: "Key performance indicators across the platform.",
@@ -1692,6 +1707,8 @@ export const dictionaries = {
       viewAll: "عرض الكل",
       accessEnded: "انتهى الوصول",
       accessEndedHint: "انتهى وصول شركتك إلى هذه الدورة. تواصل مع مديرك لاستعادته.",
+      accessEndedHintPurchase: "انتهت مدة وصولك إلى هذه الدورة. اشترها مجددًا للمتابعة.",
+      accessEndedHintMixed: "بعض هذه الدورات جاء وصولها من شركتك وبعضها اشتريته بنفسك. تواصل مع مديرك بشأن الأولى، واشترِ البقية مجددًا للمتابعة.",
       upcoming: {
         title: "الجلسات المباشرة القادمة",
         empty: "لا توجد جلسات مباشرة قادمة.",
@@ -2770,6 +2787,19 @@ export const dictionaries = {
       error: "حدث خطأ ما. حاول مرة أخرى.",
     },
     analytics: {
+      centre: {
+        eyebrow: "مركز القيادة",
+        title: "مركز تحليلات القيادة",
+        subtitle: "عروض الإدارة والتسويق والمحاسبة ضمن نطاق زمني واحد.",
+        trackingSince: "بدأ تتبّع المسار في {date}. ما قبل ذلك غير مُقاس.",
+        noTracking: "لم تُسجَّل أي أحداث للمسار بعد، لذا فمراحل المشاهدة والنقر أدناه غير مُقاسة وليست صفرًا.",
+        exportCsv: "تصدير CSV",
+        tabs: {
+          executive: "الإدارة",
+          marketing: "التسويق",
+          accounting: "المحاسبة",
+        },
+      },
       dashboard: {
         title: "التحليلات",
         subtitle: "مؤشرات الأداء الرئيسية عبر المنصة.",

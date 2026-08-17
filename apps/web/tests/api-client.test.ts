@@ -54,6 +54,17 @@ describe("apiFetch", () => {
       code: "VALIDATION",
     });
   });
+
+  it("keeps the explanation a framework-rendered refusal wrote outside the envelope", async () => {
+    // A Symfony HttpException answers `{ "message": "..." }` with no `error` key. Falling through
+    // to statusText would replace a written reason with the word "Forbidden".
+    vi.stubGlobal("fetch", mockFetch(403, { message: "You do not have access to this course." }));
+    await expect(apiFetch("courses/x/questions")).rejects.toMatchObject({
+      status: 403,
+      code: "HTTP_ERROR",
+      message: "You do not have access to this course.",
+    });
+  });
 });
 
 describe("session helpers", () => {

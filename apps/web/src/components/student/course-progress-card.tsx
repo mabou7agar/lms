@@ -14,14 +14,16 @@ export interface CourseProgressCardProps {
   continueLabel?: string;
   subtitle?: string;
   /**
-   * The access window on this enrollment has closed — in practice a seat from a company purchase
-   * that ran out. The card stays visible on purpose: a course vanishing without explanation is worse
-   * than one that says why it can no longer be opened.
+   * The access window on this enrollment has closed — either an employer's seat or a purchase of
+   * time-limited access. The card stays visible on purpose: a course vanishing without explanation
+   * is worse than one that says why it can no longer be opened.
    */
   expired?: boolean;
+  /** Whose access ran out decides who the learner has to talk to to get it back. */
+  companyGranted?: boolean;
 }
 
-export function CourseProgressCard({ title, progress, status, continueHref = "/continue-learning", continueLabel, subtitle, expired = false }: CourseProgressCardProps) {
+export function CourseProgressCard({ title, progress, status, continueHref = "/continue-learning", continueLabel, subtitle, expired = false, companyGranted = false }: CourseProgressCardProps) {
   const { t } = useI18n();
   const pct = Math.round(progress);
   const done = pct >= 100;
@@ -51,7 +53,7 @@ export function CourseProgressCard({ title, progress, status, continueHref = "/c
         </div>
         {expired ? (
           <p className="rounded-md border bg-muted/40 p-2 text-center text-xs text-muted-foreground">
-            {t("student.accessEndedHint")}
+            {t(companyGranted ? "student.accessEndedHint" : "student.accessEndedHintPurchase")}
           </p>
         ) : (
           <Button asChild className="w-full" variant={done ? "outline" : "default"}>

@@ -63,10 +63,14 @@ async function parseAndThrow(res: Response): Promise<unknown> {
 
   if (!res.ok) {
     const err = (json as ApiError | null)?.error;
+    // Not every refusal comes back in the envelope: a Symfony HttpException rendered by the
+    // framework carries a bare top-level `message`. Reading it beats falling through to the HTTP
+    // status text, which turns a written explanation into the word "Forbidden".
+    const bare = (json as { message?: unknown } | null)?.message;
     throw new ApiRequestError(
       res.status,
       err?.code ?? "HTTP_ERROR",
-      err?.message ?? res.statusText,
+      err?.message ?? (typeof bare === "string" && bare !== "" ? bare : res.statusText),
       err?.details,
       err?.correlation_id,
       json,

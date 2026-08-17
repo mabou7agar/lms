@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property BuyerType|null $buyer_type
  * @property int|null $organization_id
  */
+/**
+ * @property int $user_id
+ * @property string $currency
+ * @property int|null $organization_id
+ */
 class Cart extends Model
 {
     use HasPublicId;

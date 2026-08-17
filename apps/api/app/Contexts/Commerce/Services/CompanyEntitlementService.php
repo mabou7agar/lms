@@ -9,6 +9,9 @@ use App\Contexts\Commerce\Models\CompanyEntitlement;
 use App\Contexts\Commerce\Models\CompanyEntitlementAssignment;
 use App\Contexts\Commerce\Models\Order;
 use App\Contexts\Commerce\Models\Product;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Commerce\Data\CompanyAssignmentOutcome;
 use App\Platform\Shared\Commerce\Data\SeatCandidate;
 use App\Platform\Shared\Commerce\Exceptions\CompanyEntitlementNotAssignableException;
@@ -33,6 +36,7 @@ class CompanyEntitlementService extends BaseService
 {
     public function __construct(
         private readonly CompanySeatEnrollmentPort $enrollments,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /**
@@ -204,6 +208,20 @@ class CompanyEntitlementService extends BaseService
             }
         }
 
+        // One event per NEWLY seated employee. A re-assignment consumed no seat and is not a new
+        // fact, so it is not one — which is also why the key is per (entitlement, member).
+        $this->analytics->recordMany(array_map(
+            fn (SeatCandidate $c): AnalyticsEventInput => new AnalyticsEventInput(
+                name: AnalyticsEventName::CompanySeatAssigned->value,
+                userId: $c->userId,
+                organizationId: (int) $entitlement->organization_id,
+                productId: (int) $entitlement->product_id,
+                metadata: ['courses' => count($courseIds)],
+                dedupKey: 'seat_assigned:'.$entitlement->public_id.':'.$c->organizationMemberId,
+            ),
+            $partition['fresh'],
+        ));
+
         return $this->outcome(
             $entitlement->refresh(),
             assigned: count($partition['fresh']),
@@ -253,6 +271,16 @@ class CompanyEntitlementService extends BaseService
         foreach ($courseIds as $courseId) {
             $this->enrollments->revokeCompanySeat($courseId, (int) $assignment->user_id);
         }
+
+        // Keyed on the assignment row rather than the member: the same person can hold, lose and
+        // regain a seat, and each of those is a separate thing that happened.
+        $this->analytics->record(new AnalyticsEventInput(
+            name: AnalyticsEventName::CompanySeatRevoked->value,
+            userId: (int) $assignment->user_id,
+            organizationId: (int) $entitlement->organization_id,
+            productId: (int) $entitlement->product_id,
+            dedupKey: 'seat_revoked:'.$assignment->public_id,
+        ));
 
         return $this->outcome($entitlement->refresh(), 0, 0, 0);
     }

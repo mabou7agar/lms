@@ -6,6 +6,9 @@ use App\Contexts\Commerce\Enums\CompanyEntitlementStatus;
 use App\Contexts\Commerce\Models\CompanyEntitlement;
 use App\Contexts\Commerce\Models\CompanyEntitlementAssignment;
 use App\Contexts\Commerce\Models\Product;
+use App\Platform\Shared\Analytics\AnalyticsEventName;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
+use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Certification\Contracts\CertificateStatusPort;
 use App\Platform\Shared\Enterprise\Contracts\OrganizationLookupPort;
 use App\Platform\Shared\Notifications\Contracts\ExpiryNotificationPort;
@@ -45,6 +48,7 @@ class ExpiryReminderService extends BaseService
         private readonly ExpiryNotificationPort $notifications,
         private readonly OrganizationLookupPort $organizations,
         private readonly CertificateStatusPort $certificates,
+        private readonly AnalyticsEventRecorder $analytics,
     ) {}
 
     /**
@@ -124,6 +128,16 @@ class ExpiryReminderService extends BaseService
                     expiresAt: $entitlement->access_ends_at->toIso8601String(),
                     daysBefore: $offset,
                 );
+                // Recorded with the same (reference, recipient, offset) shape the notice itself is
+                // deduplicated by, so the log counts notices sent rather than sweeps run.
+                $this->analytics->record(new AnalyticsEventInput(
+                    name: AnalyticsEventName::AccessExpiringReminderSent->value,
+                    userId: (int) $userId,
+                    organizationId: (int) $entitlement->organization_id,
+                    productId: (int) $entitlement->product_id,
+                    metadata: ['days_before' => $offset],
+                    dedupKey: 'access_reminder:'.$entitlement->public_id.':'.$userId.':'.$offset,
+                ));
                 $sent++;
             }
         }
@@ -154,6 +168,13 @@ class ExpiryReminderService extends BaseService
                 expiresAt: $expiresAt->toIso8601String(),
                 daysBefore: $offset,
             );
+            $this->analytics->record(new AnalyticsEventInput(
+                name: AnalyticsEventName::CertificateExpiringReminderSent->value,
+                userId: $certificate->userId,
+                courseId: $certificate->courseId,
+                metadata: ['days_before' => $offset],
+                dedupKey: 'certificate_reminder:'.$certificate->publicId.':'.$offset,
+            ));
             $sent++;
         }
 

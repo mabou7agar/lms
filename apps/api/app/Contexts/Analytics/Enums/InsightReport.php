@@ -21,6 +21,9 @@ enum InsightReport: string
     case CompletionFunnel = 'completion_funnel';
     case Retention = 'retention';
     case Crm = 'crm';
+    case AdminSummary = 'admin_summary';
+    case MarketingFunnel = 'marketing_funnel';
+    case Accounting = 'accounting';
 
     public function label(): string
     {
@@ -36,6 +39,9 @@ enum InsightReport: string
             self::CompletionFunnel => 'Completion Funnel',
             self::Retention => 'Retention',
             self::Crm => 'CRM',
+            self::AdminSummary => 'Executive Summary',
+            self::MarketingFunnel => 'Marketing Funnel',
+            self::Accounting => 'Accounting',
         };
     }
 
@@ -53,6 +59,9 @@ enum InsightReport: string
             self::CompletionFunnel => 'Enrolled to started to in-progress to completed to certified funnel.',
             self::Retention => 'Returning-learner cohorts by first-enrollment month.',
             self::Crm => 'Pipeline by stage, leads, opportunities, activities and consulting requests.',
+            self::AdminSummary => 'Gross and net revenue, refunds, B2C vs B2B, course vs bundle, top courses, bundles and companies, seats, certificates and Q&A health.',
+            self::MarketingFunnel => 'View to cart to checkout to paid, built from the event log, with abandoned carts, coupons, search terms and traffic sources.',
+            self::Accounting => 'Orders by status, invoices, credit notes, refunds and tax collected, split by who was invoiced.',
         };
     }
 

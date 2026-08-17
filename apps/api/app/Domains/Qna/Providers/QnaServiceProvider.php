@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Qna\Providers;
 
+use App\Domains\Qna\Console\Commands\SendOverdueQuestionRemindersCommand;
 use App\Domains\Qna\Listeners\QnaNotificationSubscriber;
 use App\Domains\Qna\Models\CourseQuestion;
 use App\Domains\Qna\Models\QuestionAnswer;
@@ -11,6 +12,7 @@ use App\Domains\Qna\Policies\CourseQuestionPolicy;
 use App\Domains\Qna\Policies\QuestionAnswerPolicy;
 use App\Domains\Qna\Search\AcceptedAnswerIndexableContentAdapter;
 use App\Platform\Shared\Providers\BaseDomainServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -44,6 +46,24 @@ class QnaServiceProvider extends BaseDomainServiceProvider
         // Search: expose accepted Q&A answers to the RAG index (authenticated-audience knowledge).
         // Tagged so the Search ingestion service discovers it without referencing Qna.
         $this->app->tag([AcceptedAnswerIndexableContentAdapter::class], 'search.indexers');
+
+        $this->commands([SendOverdueQuestionRemindersCommand::class]);
+        $this->registerSchedule();
+    }
+
+    /**
+     * A daily nudge, not an alarm: a team told hourly about the same backlog stops reading the
+     * channel. Every notice is deduplicated per (question, recipient), so a missed day is caught up
+     * on the next run and a double run sends nothing twice.
+     */
+    private function registerSchedule(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('qna:send-overdue-reminders')
+                ->dailyAt('08:00')
+                ->withoutOverlapping()
+                ->onOneServer();
+        });
     }
 
     protected function bootDomain(): void
