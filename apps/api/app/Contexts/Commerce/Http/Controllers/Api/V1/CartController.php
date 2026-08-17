@@ -37,7 +37,11 @@ class CartController extends Controller
             throw new NotFoundHttpException('Product not found.');
         }
 
-        $add->executeByUserId($request->user()->id, $product);
+        $add->executeByUserId(
+            $request->user()->id,
+            $product,
+            isset($data['seats']) ? (int) $data['seats'] : null,
+        );
 
         if (! empty($data['coupon_code'])) {
             $applyCoupon->executeByUserId($request->user()->id, $data['coupon_code']);

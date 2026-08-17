@@ -11,11 +11,14 @@ class AddToCartAction extends BaseAction
 {
     public function __construct(private readonly CartService $carts) {}
 
-    public function executeByUserId(int $userId, Product $product): Cart
+    /**
+     * @param  int|null  $seats  the seat count chosen for a product sold by the seat.
+     */
+    public function executeByUserId(int $userId, Product $product, ?int $seats = null): Cart
     {
-        return $this->transaction(function () use ($userId, $product): Cart {
+        return $this->transaction(function () use ($userId, $product, $seats): Cart {
             $cart = $this->carts->currentByUserId($userId);
-            $this->carts->addProduct($cart, $product);
+            $this->carts->addProduct($cart, $product, $seats);
 
             return $cart->fresh(['items', 'coupon']);
         });

@@ -457,24 +457,6 @@ parameters:
 			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$unit_amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Actions/Checkout/CheckoutAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Contract\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -494,12 +476,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$fulfilled_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Actions/Payment/FulfillOrderAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Contexts/Commerce/Actions/Payment/FulfillOrderAction.php
@@ -703,32 +679,8 @@ parameters:
 			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$unit_amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
 			message: '#^Method App\\Contexts\\Commerce\\Http\\Resources\\OrderResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
 			count: 1
 			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
 
@@ -767,18 +719,6 @@ parameters:
 			identifier: helbaron.crossContextEloquent
 			count: 1
 			path: app/Contexts/Commerce/Listeners/RevokeEnrollmentsOnRefund.php
-
-		-
-			message: '#^Method App\\Contexts\\Commerce\\Models\\Cart\:\:coupon\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Contexts/Commerce/Models/Cart.php
-
-		-
-			message: '#^Method App\\Contexts\\Commerce\\Models\\Cart\:\:items\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Contexts/Commerce/Models/Cart.php
 
 		-
 			message: '#^Method App\\Contexts\\Commerce\\Models\\CartItem\:\:cart\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
@@ -907,12 +847,6 @@ parameters:
 			path: app/Contexts/Commerce/Models/Order.php
 
 		-
-			message: '#^Method App\\Contexts\\Commerce\\Models\\Order\:\:items\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Contexts/Commerce/Models/Order.php
-
-		-
 			message: '#^Method App\\Contexts\\Commerce\\Models\\Order\:\:transactions\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -1025,48 +959,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Contexts/Commerce/Providers/CommerceServiceProvider.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\CartItem\:\:\$product_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\CartItem\:\:\$unit_amount_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{product_id\: mixed, amount_minor\: mixed\}, Closure\(App\\Contexts\\Commerce\\Models\\CartItem\)\: array\{product_id\: mixed, amount_minor\: mixed\} given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Parameter \#1 \$coupon of method App\\Contexts\\Commerce\\Services\\CouponService\:\:discountMinor\(\) expects App\\Contexts\\Commerce\\Models\\Coupon, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Parameter \#2 \$lines of method App\\Contexts\\Commerce\\Services\\CouponService\:\:discountMinor\(\) expects Illuminate\\Support\\Collection\<int, array\{product_id\: int, amount_minor\: int\}\>, Illuminate\\Support\\Collection\<int, array\{product_id\: mixed, amount_minor\: mixed\}\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Contexts/Commerce/Services/CartService.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Coupon\:\:\$is_active\.$#'

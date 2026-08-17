@@ -15,7 +15,7 @@ use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
 use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use App\Platform\Shared\Learning\Support\CourseAccessGuard;
 
 /**
  * Posts a new question to a course. The author must have course ACCESS — an enrolled/entitled learner
@@ -40,9 +40,8 @@ final class AskQuestionAction
     {
         $userId = $author->actorId();
 
-        if (! $this->enrollment->hasCourseAccess($course->id, $userId)
-            && ! $this->access->canManageContent($author, $course->id)) {
-            throw new AccessDeniedHttpException('You do not have access to this course.');
+        if (! $this->access->canManageContent($author, $course->id)) {
+            (new CourseAccessGuard($this->enrollment))->assert($course->id, $userId);
         }
 
         $question = new CourseQuestion([

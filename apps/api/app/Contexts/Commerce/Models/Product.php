@@ -7,6 +7,7 @@ use App\Contexts\Commerce\Enums\AccessDurationType;
 use App\Contexts\Commerce\Enums\CertificateExpiryType;
 use App\Contexts\Commerce\Enums\CertificateRefundPolicy;
 use App\Contexts\Commerce\Enums\CompanyCertificateBranding;
+use App\Contexts\Commerce\Enums\PricingBasis;
 use App\Contexts\Commerce\Enums\ProductAudience;
 use App\Contexts\Commerce\Enums\ProductStatus;
 use App\Contexts\Commerce\Enums\ProductType;
@@ -52,6 +53,10 @@ use Illuminate\Support\Carbon;
  * @property RefundAccessPolicy|null $refund_access_policy
  * @property CertificateRefundPolicy|null $certificate_refund_policy
  * @property SeatMode|null $seat_mode
+ * @property PricingBasis|null $pricing_basis
+ * @property int|null $min_seats
+ * @property int|null $max_seats
+ * @property int|null $seat_increment
  * @property int|null $default_seat_count
  * @property SeatReassignmentPolicy|null $seat_reassignment_policy
  * @property int|null $reassignment_progress_threshold
@@ -79,6 +84,7 @@ class Product extends Model
         'reminder_offsets_days', 'reminder_channels',
         'refund_access_policy', 'certificate_refund_policy',
         'seat_mode', 'default_seat_count', 'seat_reassignment_policy', 'reassignment_progress_threshold',
+        'pricing_basis', 'min_seats', 'max_seats', 'seat_increment',
         'company_certificate_branding', 'employee_access_expires_with_purchase',
     ];
 
@@ -105,6 +111,10 @@ class Product extends Model
             'refund_access_policy' => RefundAccessPolicy::class,
             'certificate_refund_policy' => CertificateRefundPolicy::class,
             'seat_mode' => SeatMode::class,
+            'pricing_basis' => PricingBasis::class,
+            'min_seats' => 'integer',
+            'max_seats' => 'integer',
+            'seat_increment' => 'integer',
             'default_seat_count' => 'integer',
             'seat_reassignment_policy' => SeatReassignmentPolicy::class,
             'reassignment_progress_threshold' => 'integer',
@@ -168,6 +178,55 @@ class Product extends Model
         $price = $prices->firstWhere('is_default', true) ?? $prices->first();
 
         return $price instanceof ProductPrice ? $price : null;
+    }
+
+    /** How this product's listed price is read. Unset behaves as the column default. */
+    public function pricingBasis(): PricingBasis
+    {
+        return $this->pricing_basis ?? PricingBasis::FixedBundlePrice;
+    }
+
+    /** The seat mode, with the column default applied for a product saved before the policy wave. */
+    public function seatMode(): SeatMode
+    {
+        return $this->seat_mode ?? SeatMode::NotApplicable;
+    }
+
+    /**
+     * The seat counts a buyer may choose, or null when they do not choose at all.
+     *
+     * The bounds are normalised here rather than trusted from the row: an admin who leaves the
+     * minimum empty means one, an increment of zero would make every count invalid, and a maximum
+     * below the minimum would leave nothing selectable. The buy box and the server-side check read
+     * the same normalised numbers, so what the UI offers is exactly what the API accepts.
+     *
+     * @return array{min: int, max: int|null, increment: int, default: int}|null
+     */
+    public function seatSelection(): ?array
+    {
+        if (! $this->seatMode()->buyerChoosesSeats()) {
+            return null;
+        }
+
+        $min = max(1, (int) ($this->min_seats ?? 1));
+        $increment = max(1, (int) ($this->seat_increment ?? 1));
+        $max = $this->max_seats === null ? null : max($min, (int) $this->max_seats);
+
+        // The default has to be a count the buyer could have picked themselves, or the buy box
+        // opens on a number the server would reject.
+        $default = max($min, (int) ($this->default_seat_count ?? $min));
+        $default = $min + (int) (round(($default - $min) / $increment) * $increment);
+        if ($max !== null) {
+            $default = min($default, $max);
+        }
+
+        return ['min' => $min, 'max' => $max, 'increment' => $increment, 'default' => max($min, $default)];
+    }
+
+    /** What a line costs: the package price, or the per-seat price times the seats chosen. */
+    public function lineAmountMinor(int $unitAmountMinor, int $quantity): int
+    {
+        return $this->pricingBasis()->lineAmountMinor($unitAmountMinor, $quantity);
     }
 
     /**

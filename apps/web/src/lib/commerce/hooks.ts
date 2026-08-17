@@ -34,7 +34,7 @@ export const useContracts = () => useQuery({ queryKey: ["contracts"], queryFn: g
 export function useAddToCart() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { product: string; coupon_code?: string }) => addToCart(body),
+    mutationFn: (body: { product: string; coupon_code?: string; seats?: number }) => addToCart(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
   });
 }

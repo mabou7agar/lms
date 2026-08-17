@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Award, Clock, Layers, ShoppingCart, Users } from "lucide-react";
@@ -19,6 +20,7 @@ import { QueryState } from "@/components/student/query-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PriceTag } from "@/components/commerce/price-tag";
+import { SeatSelector } from "@/components/commerce/seat-selector";
 import { Reveal } from "@/components/landing/reveal";
 import { toast } from "@/components/ui/toast";
 
@@ -26,8 +28,10 @@ import { toast } from "@/components/ui/toast";
  * Public bundle page. Shows exactly what the purchase grants — the courses inside it, how long
  * access lasts, the certificate terms, and for a company buyer the seat rules — then sells it.
  *
- * Company checkout itself is not built yet, so a company-eligible bundle says setup continues at
- * checkout rather than implying a flow that does not exist.
+ * A bundle sold by a buyer-chosen seat count gets a seat control here rather than at checkout: for
+ * a per-seat product the count IS the price, so choosing it later would mean the headline price on
+ * this page is not what the buyer pays. A quote-only bundle has no buy button at all, because there
+ * is nothing to buy online.
  */
 export function BundleDetailsClient() {
   const { t, locale } = useI18n();
@@ -38,14 +42,18 @@ export function BundleDetailsClient() {
   const query = useProduct(publicId);
   const add = useAddToCart();
   const authed = status === "authenticated";
+  // Null until the product loads and says a count is choosable; the selector supplies the default.
+  // Named for the count, not "seats": the render callback below already binds `seats` to the seat
+  // RULES label, and shadowing it silently typed this as a string.
+  const [seatCount, setSeatCount] = useState<number | null>(null);
 
-  const onAdd = () => {
+  const onAdd = (chosenSeats: number | null) => {
     if (!authed) {
       router.push(`/login?redirect=/bundles/${publicId}`);
       return;
     }
     add.mutate(
-      { product: publicId },
+      { product: publicId, ...(chosenSeats === null ? {} : { seats: chosenSeats }) },
       {
         onSuccess: () =>
           toast.success(t("commerce.bundles.added"), {
@@ -73,6 +81,10 @@ export function BundleDetailsClient() {
           const audiences = audienceLabels(bundle.audience, locale);
           const courses = bundle.courses ?? [];
           const forCompany = bundle.audience === "company" || bundle.audience === "both";
+          const selection = bundle.seats?.selection ?? null;
+          const perSeat = bundle.seats?.pricing_basis === "per_seat";
+          const quoteOnly = bundle.seats?.mode === "quote_only";
+          const chosenSeats = selection ? (seatCount ?? selection.default) : null;
 
           return (
             <div className="grid gap-10 lg:grid-cols-[1.4fr_0.6fr]">
@@ -122,11 +134,35 @@ export function BundleDetailsClient() {
               <aside className="lg:sticky lg:top-24 lg:self-start">
                 <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
                   <PriceTag price={price} size="lg" />
+                  {perSeat ? (
+                    <p className="-mt-2 text-xs text-muted-foreground">{t("commerce.seats.perSeat")}</p>
+                  ) : null}
 
-                  <Button className="w-full shine relative overflow-hidden" size="lg" loading={add.isPending} onClick={onAdd}>
-                    <ShoppingCart className="size-4" aria-hidden />
-                    {authed ? t("commerce.bundles.addToCart") : t("commerce.bundles.signInToBuy")}
-                  </Button>
+                  {selection ? (
+                    <SeatSelector
+                      selection={selection}
+                      price={defaultPrice(bundle)}
+                      perSeat={perSeat}
+                      value={chosenSeats ?? selection.default}
+                      onChange={setSeatCount}
+                    />
+                  ) : null}
+
+                  {quoteOnly ? (
+                    <Button asChild className="w-full" size="lg" variant="outline">
+                      <Link href="/contact?topic=company-quote">{t("commerce.seats.requestQuote")}</Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full shine relative overflow-hidden"
+                      size="lg"
+                      loading={add.isPending}
+                      onClick={() => onAdd(chosenSeats)}
+                    >
+                      <ShoppingCart className="size-4" aria-hidden />
+                      {authed ? t("commerce.bundles.addToCart") : t("commerce.bundles.signInToBuy")}
+                    </Button>
+                  )}
 
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     {courses.length > 0 ? (

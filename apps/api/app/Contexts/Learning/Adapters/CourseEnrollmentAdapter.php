@@ -41,6 +41,21 @@ class CourseEnrollmentAdapter implements CourseEnrollmentPort
             ->exists();
     }
 
+    public function accessWindowElapsed(int $courseId, int $userId): bool
+    {
+        // Deliberately the mirror image of hasCourseAccess: the same status rule, but selecting the
+        // rows the window has closed on. A learner with two enrollments — an expired purchase and a
+        // live company seat — is not "expired": hasCourseAccess answers true first, and the caller
+        // never asks this.
+        return Enrollment::query()
+            ->where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->grantsAccess()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->exists();
+    }
+
     /**
      * All actively-enrolled learner user ids for the course, ascending and de-duplicated.
      *

@@ -35,6 +35,7 @@ class OrderResource extends BaseResource
             'items' => $this->whenLoaded('items', fn () => $this->resource->items->map(fn ($i) => [
                 'title' => $i->title,
                 'unit_amount_minor' => $i->unit_amount_minor,
+                'quantity' => $i->quantityOrOne(),
             ])->values()),
             'invoice' => $this->whenLoaded('invoice', fn () => $this->resource->invoice ? [
                 'number' => $this->resource->invoice->number,

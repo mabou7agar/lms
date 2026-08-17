@@ -29,16 +29,22 @@ function CartView({ cart }: { cart: Cart }) {
 
   if (cart.items.length === 0) {
     return (
-      <EmptyState
-        title={t("commerce.cart.empty")}
-        // Point at what a buyer actually browses — courses and bundles — not a generic catalogue.
-        action={
-          <div className="mt-2 flex flex-wrap justify-center gap-2">
-            <Button asChild><Link href="/courses">{t("commerce.cart.browse")}</Link></Button>
-            <Button asChild variant="outline"><Link href="/bundles">{t("commerce.bundles.title")}</Link></Button>
-          </div>
-        }
-      />
+      <div className="space-y-4">
+        {/* The switch belongs above the empty state, not only beside a filled cart. A bundle sold by
+            the seat is refused to an individual buyer, so a company's FIRST purchase has to be able
+            to say who is buying before there is anything in the cart to say it beside. */}
+        <BuyerModeSwitch buyerType={cart.buyer_type ?? "individual"} />
+        <EmptyState
+          title={t("commerce.cart.empty")}
+          // Point at what a buyer actually browses — courses and bundles — not a generic catalogue.
+          action={
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              <Button asChild><Link href="/courses">{t("commerce.cart.browse")}</Link></Button>
+              <Button asChild variant="outline"><Link href="/bundles">{t("commerce.bundles.title")}</Link></Button>
+            </div>
+          }
+        />
+      </div>
     );
   }
 
@@ -58,7 +64,13 @@ function CartView({ cart }: { cart: Cart }) {
             <CardContent className="flex items-center justify-between gap-3 p-4">
               <div className="min-w-0">
                 <p className="truncate font-medium">{item.title}</p>
-                <p className="text-sm text-muted-foreground">{formatMoney(item.unit_amount_minor, cart.currency, locale)}</p>
+                {/* A seat line shows the arithmetic. A buyer who sees only "SAR 10,000" against a
+                    bundle they priced at SAR 400 has no way to tell a per-seat total from a mistake. */}
+                <p className="text-sm text-muted-foreground">
+                  {item.quantity > 1
+                    ? `${item.quantity} × ${formatMoney(item.unit_amount_minor, cart.currency, locale)} = ${formatMoney(item.line_amount_minor, cart.currency, locale)}`
+                    : formatMoney(item.line_amount_minor ?? item.unit_amount_minor, cart.currency, locale)}
+                </p>
               </div>
               <Button
                 variant="ghost"

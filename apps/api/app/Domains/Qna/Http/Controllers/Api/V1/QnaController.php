@@ -13,6 +13,7 @@ use App\Platform\Identity\Contracts\CourseAccessPort;
 use App\Platform\Identity\Contracts\Data\UserRef;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use App\Platform\Shared\Learning\Support\CourseAccessGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -65,12 +66,13 @@ abstract class QnaController
      */
     protected function assertParticipation(Actor $actor, int $courseId): void
     {
-        $participates = $this->access->canManageContent($actor, $courseId)
-            || $this->enrollment->hasCourseAccess($courseId, $actor->actorId());
-
-        if (! $participates) {
-            throw new AccessDeniedHttpException('You do not have access to this course.');
+        if ($this->access->canManageContent($actor, $courseId)) {
+            return;
         }
+
+        // Refused with a code the client can branch on: an ended licence and never having held one
+        // are different problems, and the panel says different things about them.
+        (new CourseAccessGuard($this->enrollment))->assert($courseId, $actor->actorId());
     }
 
     /**

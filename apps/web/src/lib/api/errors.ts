@@ -35,3 +35,28 @@ export function errorMessage(error: unknown, fallback: string): string {
 export function isMfaRequired(error: unknown): boolean {
   return error instanceof ApiRequestError && error.code === "AUTH_MFA_REQUIRED";
 }
+
+/**
+ * The stable machine-readable code the API refused with, or null for anything that is not an API
+ * refusal. Every refusal carries one — a domain code where the server knew why, and an
+ * `HTTP_*` code where all it knew was the status.
+ *
+ * Branch on this, not on the message: messages are prose, get reworded, and are translated.
+ */
+export function errorCode(error: unknown): string | null {
+  return error instanceof ApiRequestError ? error.code : null;
+}
+
+/** Codes that all mean "this learner's entitlement to the course is the problem". */
+const ACCESS_CODES = new Set(["LEARNING_ACCESS_EXPIRED", "COURSE_ACCESS_DENIED", "LEARNING_NOT_ENROLLED"]);
+
+/** True when a refusal was about course entitlement rather than anything the caller did wrong. */
+export function isCourseAccessError(error: unknown): boolean {
+  const code = errorCode(error);
+  return code !== null && ACCESS_CODES.has(code);
+}
+
+/** True when the learner HAD access and it ran out — the one case where renewal is the remedy. */
+export function isAccessExpired(error: unknown): boolean {
+  return errorCode(error) === "LEARNING_ACCESS_EXPIRED";
+}

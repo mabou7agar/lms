@@ -6,6 +6,7 @@ use App\Contexts\Commerce\Enums\AccessDurationType;
 use App\Contexts\Commerce\Enums\CertificateExpiryType;
 use App\Contexts\Commerce\Enums\CertificateRefundPolicy;
 use App\Contexts\Commerce\Enums\CompanyCertificateBranding;
+use App\Contexts\Commerce\Enums\PricingBasis;
 use App\Contexts\Commerce\Enums\ProductAudience;
 use App\Contexts\Commerce\Enums\ProductStatus;
 use App\Contexts\Commerce\Enums\ProductType;
@@ -234,11 +235,43 @@ class ProductResource extends Resource
                         ->default(SeatMode::NotApplicable->value)
                         ->live(),
                     TextInput::make('default_seat_count')
-                        ->label('Number of seats')
+                        ->label(fn ($get): string => (SeatMode::tryFrom((string) $get('seat_mode'))?->buyerChoosesSeats() ?? false)
+                            ? 'Seat count the buy box opens on'
+                            : 'Number of seats')
                         ->numeric()
                         ->minValue(1)
-                        ->visible(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->needsSeatCount() ?? false)
-                        ->required(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->needsSeatCount() ?? false),
+                        ->visible(fn ($get): bool => ($m = SeatMode::tryFrom((string) $get('seat_mode'))) !== null
+                            && ($m->needsSeatCount() || $m->buyerChoosesSeats()))
+                        ->required(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->needsSeatCount() ?? false)
+                        ->helperText(fn ($get): ?string => (SeatMode::tryFrom((string) $get('seat_mode'))?->buyerChoosesSeats() ?? false)
+                            ? 'Snapped to the minimum and step below, so the buyer starts on a count you actually sell.'
+                            : null),
+                    Select::make('pricing_basis')
+                        ->label('The price above buys')
+                        ->options(PricingBasis::options())
+                        ->required()
+                        ->native(false)
+                        ->default(PricingBasis::FixedBundlePrice->value)
+                        ->helperText('Per seat multiplies the listed price by the seat count on the order.'),
+                    TextInput::make('min_seats')
+                        ->label('Minimum seats')
+                        ->numeric()
+                        ->minValue(1)
+                        ->visible(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->buyerChoosesSeats() ?? false)
+                        ->helperText('Leave empty for a minimum of one.'),
+                    TextInput::make('max_seats')
+                        ->label('Maximum seats')
+                        ->numeric()
+                        ->minValue(1)
+                        ->visible(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->buyerChoosesSeats() ?? false)
+                        ->helperText('Leave empty for no ceiling. A company wanting more than this asks sales.'),
+                    TextInput::make('seat_increment')
+                        ->label('Sold in steps of')
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(1)
+                        ->visible(fn ($get): bool => SeatMode::tryFrom((string) $get('seat_mode'))?->buyerChoosesSeats() ?? false)
+                        ->helperText('1 lets a buyer pick any number; 5 sells packs of five.'),
                     Select::make('seat_reassignment_policy')
                         ->label('A company may move a seat to another employee')
                         ->options(SeatReassignmentPolicy::options())

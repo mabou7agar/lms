@@ -15,6 +15,8 @@ use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
 use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Catalog\Contracts\CourseLookupPort;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use App\Platform\Shared\Learning\Exceptions\ResourceNotDownloadableException;
+use App\Platform\Shared\Learning\Support\CourseAccessGuard;
 use App\Platform\Shared\Media\Contracts\MediaAssetLookupPort;
 use App\Platform\Shared\Media\Contracts\PlaybackPort;
 use App\Platform\Shared\Support\ApiResponse;
@@ -119,11 +121,13 @@ final class CourseResourceController extends Controller
         $courseId = (int) $resource->course_id;
 
         if (! $resource->downloadable) {
-            throw new AccessDeniedHttpException('This file is not available for download.');
+            throw new ResourceNotDownloadableException;
         }
 
-        if ($resource->visibility->requiresEntitlement() && ! $this->isEntitled($actor, $courseId)) {
-            throw new AccessDeniedHttpException('You do not have access to this course.');
+        // Staff pass on their role; everyone else is refused with a code that says whether their
+        // access ended or never existed, so the file list can offer renewal rather than a shrug.
+        if ($resource->visibility->requiresEntitlement() && ! $this->access->canManageContent($actor, $courseId)) {
+            (new CourseAccessGuard($this->enrollment))->assert($courseId, $actor->actorId());
         }
 
         $ref = $assets->refForAssetId((int) $resource->getAttribute('media_asset_id'));

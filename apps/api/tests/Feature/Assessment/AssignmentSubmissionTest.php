@@ -56,6 +56,13 @@ function asgFakeEnrollment(bool $enrolled = true): CourseEnrollmentPort
             return $this->enrolled;
         }
 
+        // No expiry in these fakes: the seat/access window is Learning's concern and is covered by
+        // its own tests. Answering false keeps a refusal here reading as "never entitled".
+        public function accessWindowElapsed(int $courseId, int $userId): bool
+        {
+            return false;
+        }
+
         public function enrolledLearnerIds(int $courseId): array
         {
             return [];

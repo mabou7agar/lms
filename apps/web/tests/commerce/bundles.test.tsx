@@ -89,8 +89,9 @@ describe("Bundle sales surfaces", () => {
     expect(screen.getByText("Negotiation")).toBeInTheDocument();
     expect(screen.getByText(/12 months of access/i)).toBeInTheDocument();
     expect(screen.getByText(/25 seats included/i)).toBeInTheDocument();
-    // Company checkout does not exist yet, so the page says where setup continues.
-    expect(screen.getByText(/Company setup continues at checkout/i)).toBeInTheDocument();
+    expect(screen.getByText(/Switch your cart to a company purchase/i)).toBeInTheDocument();
+    // A fixed-seat bundle sells a set number, so there is nothing for the buyer to choose.
+    expect(screen.queryByLabelText(/Seats for your team/i)).not.toBeInTheDocument();
   });
 
   it("adds the bundle to the cart for a signed-in buyer", async () => {
@@ -111,5 +112,73 @@ describe("Bundle sales surfaces", () => {
 
     expect(addMutate).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/login?redirect=/bundles/bundle-1");
+  });
+});
+
+/** A bundle the company sizes itself, priced per seat. */
+const buyerSelects = {
+  ...bundle,
+  prices: [
+    { currency: "SAR", amount_minor: 40000, sale_amount_minor: null, on_sale: false, effective_minor: 40000 },
+  ],
+  seats: {
+    ...bundle.seats,
+    mode: "buyer_selects" as const,
+    pricing_basis: "per_seat" as const,
+    selection: { min: 5, max: 100, increment: 5, default: 10 },
+  },
+};
+
+describe("Buyer-selected seat counts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.status = "authenticated";
+  });
+
+  it("opens on the admin's default count and prices it", () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    expect(screen.getByLabelText(/Seats for your team/i)).toHaveValue(10);
+    // 10 x SAR 400.
+    expect(screen.getByTestId("seat-total")).toHaveTextContent("4,000");
+  });
+
+  it("recalculates the price as the buyer changes the count", async () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    await userEvent.click(screen.getByRole("button", { name: /More seats/i }));
+
+    expect(screen.getByLabelText(/Seats for your team/i)).toHaveValue(15);
+    expect(screen.getByTestId("seat-total")).toHaveTextContent("6,000");
+  });
+
+  it("sends the chosen count to the cart", async () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    await userEvent.click(screen.getByRole("button", { name: /More seats/i }));
+    await userEvent.click(screen.getByRole("button", { name: /Add to cart/i }));
+
+    expect(addMutate).toHaveBeenCalledWith({ product: "bundle-1", seats: 15 }, expect.anything());
+  });
+
+  it("says the headline price is per seat", () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    expect(screen.getByText(/Price shown is per seat/i)).toBeInTheDocument();
+  });
+
+  it("offers a quote instead of a cart for a quote-only bundle", () => {
+    useProduct.mockReturnValue({
+      ...detailResult,
+      data: { ...buyerSelects, seats: { ...buyerSelects.seats, mode: "quote_only" as const, selection: null } },
+    });
+    renderWithI18n(<BundleDetailsClient />);
+
+    expect(screen.getByRole("link", { name: /Request a company quote/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Add to cart/i })).not.toBeInTheDocument();
   });
 });

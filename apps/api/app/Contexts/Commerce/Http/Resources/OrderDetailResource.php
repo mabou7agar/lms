@@ -66,6 +66,7 @@ class OrderDetailResource extends BaseResource
                 'id' => $item->getAttribute('public_id'),
                 'title' => $item->getAttribute('title'),
                 'unit_amount_minor' => (int) $item->getAttribute('unit_amount_minor'),
+                'quantity' => max(1, (int) ($item->getAttribute('quantity') ?? 1)),
             ])->values()),
 
             'invoice' => $this->whenLoaded('invoice', fn () => $this->invoicePayload($order->invoice)),

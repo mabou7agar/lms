@@ -3,10 +3,8 @@
 namespace App\Contexts\Commerce\Services;
 
 use App\Contexts\Commerce\Enums\BuyerType;
-use App\Contexts\Commerce\Enums\SeatMode;
 use App\Contexts\Commerce\Exceptions\BuyerAudienceMismatchException;
 use App\Contexts\Commerce\Exceptions\ProductUnavailableException;
-use App\Contexts\Commerce\Exceptions\SeatQuantityUnavailableException;
 use App\Contexts\Commerce\Models\Cart;
 use App\Contexts\Commerce\Models\CartItem;
 use App\Contexts\Commerce\Models\Product;
@@ -24,6 +22,7 @@ class CartService extends BaseService
         private readonly PricingService $pricing,
         private readonly CouponService $coupons,
         private readonly AnalyticsEventRecorder $analytics,
+        private readonly SeatPurchaseService $seats,
     ) {}
 
     public function currentByUserId(int $userId): Cart
@@ -34,7 +33,10 @@ class CartService extends BaseService
         );
     }
 
-    public function addProduct(Cart $cart, Product $product): CartItem
+    /**
+     * @param  int|null  $seats  the seat count the buyer chose, for a product sold by the seat.
+     */
+    public function addProduct(Cart $cart, Product $product, ?int $seats = null): CartItem
     {
         if (! $product->isActive()) {
             throw new ProductUnavailableException;
@@ -44,7 +46,7 @@ class CartService extends BaseService
         // which anything enters a cart, so a company-only licence cannot be added by an individual
         // (or the reverse) by calling the API directly.
         $this->assertAudienceAllows($cart, $product);
-        $this->assertSeatQuantitySupported($product);
+        $quantity = $this->seats->resolveQuantity($product, $cart->buyerType(), $seats);
 
         $amount = $this->pricing->effectiveMinor($product, $cart->currency);
 
@@ -54,7 +56,7 @@ class CartService extends BaseService
 
         $item = CartItem::updateOrCreate(
             ['cart_id' => $cart->id, 'product_id' => $product->id],
-            ['unit_amount_minor' => $amount],
+            ['unit_amount_minor' => $amount, 'quantity' => $quantity],
         );
 
         // The top of the purchase funnel. Keyed per (cart, product) so re-adding the same product
@@ -66,7 +68,7 @@ class CartService extends BaseService
             productId: (int) $product->id,
             productType: $product->type->value,
             buyerType: $cart->buyerType()->value,
-            valueMinor: $amount,
+            valueMinor: $this->seats->lineAmountMinor($product, $amount, $quantity),
             dedupKey: 'cart_item_added:'.$cart->id.':'.$product->id,
         ));
 
@@ -101,18 +103,15 @@ class CartService extends BaseService
     }
 
     /**
-     * Refuse a product whose seat count the buyer is supposed to choose.
+     * Re-check a line that is already in the cart against the product as it stands now.
      *
-     * Nothing in the purchase flow captures a chosen quantity, and no price row says what a quantity
-     * would cost, so the honest answer is that this product is not yet self-service. It is refused
-     * at the cart — the first point of entry — rather than at checkout, so a company never assembles
-     * an order it cannot complete.
+     * An admin can change the seat mode, the bounds or the pricing basis while a cart sits idle, so
+     * the count captured when the item was added may no longer be one this product is sold in.
+     * Checked at checkout as well as here, because that is the last moment before money moves.
      */
-    public function assertSeatQuantitySupported(Product $product): void
+    public function assertLineStillSellable(Cart $cart, CartItem $item, Product $product): void
     {
-        if ($product->seat_mode === SeatMode::BuyerSelects) {
-            throw new SeatQuantityUnavailableException;
-        }
+        $this->seats->resolveQuantity($product, $cart->buyerType(), $item->seatSelection());
     }
 
     /**
@@ -156,13 +155,15 @@ class CartService extends BaseService
     {
         $cart->loadMissing('items', 'coupon');
 
-        $subtotal = (int) $cart->items->sum('unit_amount_minor');
+        // A line's amount is the unit price times its seats for a per-seat product, and the unit
+        // price alone for everything else — so a coupon discounts what the buyer actually pays.
+        $subtotal = (int) $cart->items->sum(fn (CartItem $i): int => $this->lineAmount($i));
 
         $discount = 0;
         if ($cart->coupon !== null) {
             $lines = $cart->items->map(fn (CartItem $i) => [
                 'product_id' => $i->product_id,
-                'amount_minor' => $i->unit_amount_minor,
+                'amount_minor' => $this->lineAmount($i),
             ]);
             $discount = $this->coupons->discountMinor($cart->coupon, $lines);
         }
@@ -172,5 +173,15 @@ class CartService extends BaseService
             'discount_minor' => $discount,
             'total_minor' => max(0, $subtotal - $discount),
         ];
+    }
+
+    /** The charged amount for one cart line. */
+    public function lineAmount(CartItem $item): int
+    {
+        $product = $item->relationLoaded('product') ? $item->getRelation('product') : $item->product;
+
+        return $product instanceof Product
+            ? $this->seats->lineAmountMinor($product, (int) $item->unit_amount_minor, $item->quantityOrOne())
+            : (int) $item->unit_amount_minor;
     }
 }

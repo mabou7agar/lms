@@ -38,11 +38,13 @@ class Cart extends Model
         return $this->buyer_type ?? BuyerType::Individual;
     }
 
+    /** @return HasMany<CartItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(CartItem::class);
     }
 
+    /** @return BelongsTo<Coupon, $this> */
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);

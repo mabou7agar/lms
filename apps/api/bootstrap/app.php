@@ -9,13 +9,16 @@ use App\Platform\Media\Http\Controllers\PublicMediaController;
 use App\Platform\Shared\Http\Middleware\ResolveTenant;
 use App\Platform\Shared\Http\Middleware\SetLocale;
 use App\Platform\Shared\Support\ApiResponse;
+use App\Platform\Shared\Support\HttpRefusal;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Sentry\Laravel\Integration;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /*
  | HElbaron API bootstrap.
@@ -105,6 +108,34 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return null;
+        });
+
+        // Every other API refusal also renders as the standard envelope.
+        //
+        // Domain exceptions already do this themselves. What did not were the framework's own HTTP
+        // exceptions — a 403 from an authorization gate, a 404 from an implicit binding, a 429 from
+        // the throttler — which Laravel renders as a bare `{"message": "..."}`. A client that wants
+        // to branch on WHY a request was refused had nothing to branch on: no code, no correlation
+        // id, and a different response shape from every other error on the same API. The status
+        // stays exactly what the thrower chose, and the thrower's message is preserved, so no
+        // existing client's status handling changes — they gain a code they did not have.
+        //
+        // Validation is untouched: ValidationException is not an HttpExceptionInterface, so it never
+        // reaches here and keeps Laravel's `errors` bag, which the forms read field by field.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request): ?JsonResponse {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $status = $e->getStatusCode();
+            $message = $e->getMessage();
+
+            return ApiResponse::error(
+                HttpRefusal::codeFor($status),
+                $message !== '' ? $message : HttpRefusal::messageFor($status),
+                [],
+                $status,
+            );
         });
 
         // Domain exceptions render themselves to the standard envelope; defaults handle the rest.

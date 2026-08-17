@@ -15,8 +15,8 @@ use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
 use App\Platform\Shared\Analytics\Data\AnalyticsEventInput;
 use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use App\Platform\Shared\Learning\Support\CourseAccessGuard;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Posts an answer. Answerable by an enrolled learner OR a course instructor/super_admin. `is_instructor`
@@ -48,8 +48,8 @@ final class AnswerQuestionAction
 
         $isInstructor = $this->access->canManageContent($author, $courseId);
 
-        if (! $isInstructor && ! $this->enrollment->hasCourseAccess($courseId, $userId)) {
-            throw new AccessDeniedHttpException('You do not have access to this course.');
+        if (! $isInstructor) {
+            (new CourseAccessGuard($this->enrollment))->assert($courseId, $userId);
         }
 
         return DB::transaction(function () use ($question, $userId, $body, $isInstructor, $courseId): QuestionAnswer {

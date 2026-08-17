@@ -28,6 +28,14 @@ class CartResource extends BaseResource
                 'product_id' => $item->product->public_id,
                 'title' => $item->product->localized('title'),
                 'unit_amount_minor' => $item->unit_amount_minor,
+                // Seats and the resulting line amount are both sent: the cart has to show the buyer
+                // "25 × SAR 400 = SAR 10,000", and computing the product of those in the browser is
+                // how a UI ends up disagreeing with the invoice.
+                'quantity' => $item->quantityOrOne(),
+                'line_amount_minor' => $item->product->lineAmountMinor(
+                    (int) $item->unit_amount_minor,
+                    $item->quantityOrOne(),
+                ),
             ])->values(),
             'subtotal_minor' => $totals['subtotal_minor'],
             'discount_minor' => $totals['discount_minor'],

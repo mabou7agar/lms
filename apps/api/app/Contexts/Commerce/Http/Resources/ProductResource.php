@@ -62,6 +62,11 @@ class ProductResource extends BaseResource
                 'reassignment_policy' => $this->resource->seat_reassignment_policy?->value,
                 'reassignment_progress_threshold' => $this->resource->reassignment_progress_threshold,
                 'employee_access_expires_with_purchase' => $this->resource->employee_access_expires_with_purchase,
+                // What the buyer may choose, and what choosing costs. `selection` is null unless the
+                // buyer picks the count, so the buy box shows a seat control exactly when one is
+                // meaningful — and the bounds it shows are the ones the server will enforce.
+                'pricing_basis' => $this->resource->pricingBasis()->value,
+                'selection' => $this->resource->seatSelection(),
             ],
         ];
     }

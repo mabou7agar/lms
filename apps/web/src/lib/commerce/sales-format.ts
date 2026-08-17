@@ -161,10 +161,16 @@ export function seatLabel(seats: Product["seats"] | null | undefined, locale: Lo
       if (n === null) return null;
       return L(locale, `${n} seat${n === 1 ? "" : "s"} included`, `يشمل ${n} ${n <= 10 ? "مقاعد" : "مقعدًا"}`);
     }
-    case "buyer_selects":
-      return L(locale, "Choose your seat count", "اختر عدد المقاعد");
+    case "buyer_selects": {
+      const { min, max } = seats.selection ?? { min: 1, max: null };
+      return max === null
+        ? L(locale, `Choose your seat count (from ${min})`, `اختر عدد المقاعد (من ${min})`)
+        : L(locale, `Choose ${min}–${max} seats`, `اختر من ${min} إلى ${max} مقعدًا`);
+    }
     case "unlimited":
       return L(locale, "Unlimited seats", "مقاعد غير محدودة");
+    case "quote_only":
+      return L(locale, "Seats are arranged with our team", "تُرتَّب المقاعد مع فريقنا");
     default:
       return null;
   }

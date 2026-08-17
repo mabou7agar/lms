@@ -37,14 +37,29 @@ export type Product = {
     expiry_value: number | null;
   };
   seats?: {
-    mode: "not_applicable" | "fixed" | "buyer_selects" | "unlimited" | null;
+    mode: "not_applicable" | "fixed" | "buyer_selects" | "unlimited" | "quote_only" | null;
     default_count: number | null;
     reassignment_policy: string | null;
     reassignment_progress_threshold: number | null;
     employee_access_expires_with_purchase: boolean;
+    /** Whether the listed price buys the package or one seat of it. */
+    pricing_basis?: "fixed_bundle_price" | "per_seat";
+    /**
+     * The seat counts a company may choose, already normalised by the server. Null whenever the
+     * buyer does not choose — so its presence is what decides whether a seat control is shown.
+     */
+    selection?: { min: number; max: number | null; increment: number; default: number } | null;
   };
 };
-export type CartItem = { id: string; product_id: string; title: string; unit_amount_minor: number };
+export type CartItem = {
+  id: string;
+  product_id: string;
+  title: string;
+  /** Price of ONE unit. For a per-seat product the charged amount is line_amount_minor. */
+  unit_amount_minor: number;
+  quantity: number;
+  line_amount_minor: number;
+};
 export type BuyerType = "individual" | "company";
 
 export type Cart = {
@@ -76,7 +91,7 @@ export type Order = {
   placed_at: string | null;
   paid_at: string | null;
   fulfilled_at: string | null;
-  items?: { title: string; unit_amount_minor: number }[];
+  items?: { title: string; unit_amount_minor: number; quantity?: number }[];
   invoice?: { number: string; status: string } | null;
 };
 export type Contract = {
@@ -142,7 +157,7 @@ export const getBundles = (page = 1) =>
 export const getProduct = (publicId: string) =>
   api.data<Product>(`products/${publicId}`, { auth: false });
 export const getCart = () => api.data<Cart>("cart");
-export const addToCart = (body: { product: string; coupon_code?: string }) =>
+export const addToCart = (body: { product: string; coupon_code?: string; seats?: number }) =>
   api.post<ApiSuccess<Cart>>("cart", body);
 export const removeCartItem = (productPublicId: string) =>
   api.del<ApiSuccess<Cart>>(`cart/items/${productPublicId}`);

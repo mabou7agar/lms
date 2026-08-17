@@ -6,9 +6,9 @@ use App\Domains\Assessment\Enums\AttemptStatus;
 use App\Domains\Assessment\Models\Assessment;
 use App\Domains\Assessment\Models\AssessmentAttempt;
 use App\Platform\Shared\Learning\Contracts\CourseEnrollmentPort;
+use App\Platform\Shared\Learning\Support\CourseAccessGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Opens an attempt, or returns the learner's existing open one.
@@ -36,8 +36,8 @@ class StartAttemptAction
         // Uses course ACCESS (active OR completed), not strict active enrollment, so a learner who
         // has completed the course can still take/retake its assessments (e.g. a standalone final).
         $courseId = $assessment->course_id;
-        if ($courseId !== null && ! $this->enrollment->hasCourseAccess((int) $courseId, $userId)) {
-            throw new AccessDeniedHttpException('You do not have access to this course.');
+        if ($courseId !== null) {
+            (new CourseAccessGuard($this->enrollment))->assert((int) $courseId, $userId);
         }
 
         return DB::transaction(function () use ($assessment, $userId, $lessonId): AssessmentAttempt {

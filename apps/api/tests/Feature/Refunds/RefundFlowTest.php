@@ -18,6 +18,7 @@ use App\Contexts\Commerce\Payments\Data\RefundRequest;
 use App\Contexts\Commerce\Payments\Data\RefundResult;
 use App\Contexts\Commerce\Payments\Data\WebhookEvent;
 use App\Platform\Identity\Models\User;
+use App\Platform\Shared\Analytics\Contracts\AnalyticsEventRecorder;
 use App\Platform\Shared\Audit\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -38,7 +39,7 @@ class RefundFlowTest extends TestCase
         Event::fake([OrderRefunded::class]);
 
         $order = $this->paidOrder(10000);
-        $action = new RefundOrderAction($this->gateway(true), app(AuditLogger::class));
+        $action = new RefundOrderAction($this->gateway(true), app(AuditLogger::class), app(AnalyticsEventRecorder::class));
 
         $partial = $action->execute($order, 4000);
 
@@ -66,7 +67,7 @@ class RefundFlowTest extends TestCase
         Event::fake([OrderRefunded::class]);
 
         $order = $this->paidOrder(10000);
-        $action = new RefundOrderAction($this->gateway(true), app(AuditLogger::class));
+        $action = new RefundOrderAction($this->gateway(true), app(AuditLogger::class), app(AnalyticsEventRecorder::class));
 
         $this->expectException(RefundNotAllowedException::class);
 
@@ -82,7 +83,7 @@ class RefundFlowTest extends TestCase
 
         $this->expectException(RefundNotAllowedException::class);
 
-        (new RefundOrderAction($this->gateway(true), app(AuditLogger::class)))->execute($order);
+        (new RefundOrderAction($this->gateway(true), app(AuditLogger::class), app(AnalyticsEventRecorder::class)))->execute($order);
     }
 
     public function test_gateway_decline_marks_refund_failed_and_keeps_order_paid(): void
@@ -90,7 +91,7 @@ class RefundFlowTest extends TestCase
         Event::fake([OrderRefunded::class]);
 
         $order = $this->paidOrder(10000);
-        $action = new IssueRefundAction(new RefundOrderAction($this->gateway(false), app(AuditLogger::class)));
+        $action = new IssueRefundAction(new RefundOrderAction($this->gateway(false), app(AuditLogger::class), app(AnalyticsEventRecorder::class)));
 
         try {
             $action->execute($order, 5000);

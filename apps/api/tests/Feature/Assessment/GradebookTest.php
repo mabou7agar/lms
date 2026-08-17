@@ -33,6 +33,13 @@ function asgGradebookWith(array $rosterIds): GradebookService
             return in_array($userId, $this->ids, true);
         }
 
+        // No expiry in these fakes: the seat/access window is Learning's concern and is covered by
+        // its own tests. Answering false keeps a refusal here reading as "never entitled".
+        public function accessWindowElapsed(int $courseId, int $userId): bool
+        {
+            return false;
+        }
+
         public function enrolledLearnerIds(int $courseId): array
         {
             return $this->ids;

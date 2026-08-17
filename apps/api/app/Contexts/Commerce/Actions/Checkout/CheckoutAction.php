@@ -146,10 +146,10 @@ class CheckoutAction extends BaseAction
             $product = $item->getRelation('product');
             if ($product instanceof Product) {
                 $this->carts->assertAudienceAllows($cart, $product);
-                // Same reasoning for the seat count: an admin can switch a product to buyer-selected
-                // seats while the cart sits idle, and that product cannot be sold until quantity
-                // exists. Better a refusal here than an order for a seat count nobody chose.
-                $this->carts->assertSeatQuantitySupported($product);
+                // Same reasoning for the seat count: an admin can change the seat mode, the bounds
+                // or the pricing basis while the cart sits idle, and the count captured when the
+                // item was added may no longer be one this product is sold in.
+                $this->carts->assertLineStillSellable($cart, $item, $product);
             }
         }
 
@@ -225,7 +225,11 @@ class CheckoutAction extends BaseAction
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
                     'title' => $item->product->title,
+                    // The unit price and the seat count are recorded separately, not pre-multiplied:
+                    // the invoice apportions discount and VAT per line from exactly these two, and
+                    // fulfilment sizes the company's seat pool from the count.
                     'unit_amount_minor' => $item->unit_amount_minor,
+                    'quantity' => $item->quantityOrOne(),
                 ]);
             }
 

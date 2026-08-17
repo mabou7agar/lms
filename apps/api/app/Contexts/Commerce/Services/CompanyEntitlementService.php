@@ -37,6 +37,7 @@ class CompanyEntitlementService extends BaseService
     public function __construct(
         private readonly CompanySeatEnrollmentPort $enrollments,
         private readonly AnalyticsEventRecorder $analytics,
+        private readonly SeatPurchaseService $seats,
     ) {}
 
     /**
@@ -69,7 +70,7 @@ class CompanyEntitlementService extends BaseService
 
             $entitlement = CompanyEntitlement::firstOrCreate(
                 ['order_id' => $order->id, 'product_id' => $product->id],
-                $this->attributesFor($product, (int) $organizationId, $purchasedAt),
+                $this->attributesFor($product, (int) $organizationId, $purchasedAt, $item->quantityOrOne()),
             );
 
             if ($entitlement->wasRecentlyCreated) {
@@ -85,11 +86,11 @@ class CompanyEntitlementService extends BaseService
      *
      * @return array<string, mixed>
      */
-    private function attributesFor(Product $product, int $organizationId, Carbon $purchasedAt): array
+    private function attributesFor(Product $product, int $organizationId, Carbon $purchasedAt, int $quantity): array
     {
         return [
             'organization_id' => $organizationId,
-            'seats_purchased' => $this->resolveSeatCount($product),
+            'seats_purchased' => $this->seats->entitlementSeats($product, $quantity),
             'seats_used' => 0,
             'access_starts_at' => $purchasedAt,
             'access_ends_at' => $product->accessEndsAfter($purchasedAt),
@@ -106,25 +107,6 @@ class CompanyEntitlementService extends BaseService
             'certificate_expiry_value' => $product->certificate_expiry_value,
             'certificate_expires_at' => $product->certificate_expires_at,
         ];
-    }
-
-    /**
-     * How many seats the purchase carries. Null means unlimited.
-     *
-     * `buyer_selects` cannot reach this point: CartService refuses it at the cart and CheckoutAction
-     * refuses it again at checkout, because nothing captures a chosen quantity and no price row says
-     * what one would cost. The earlier fallback to the admin's default count is gone — it silently
-     * sold a seat count the buyer never picked.
-     */
-    private function resolveSeatCount(Product $product): ?int
-    {
-        $mode = $product->seat_mode ?? SeatMode::Fixed;
-
-        if ($mode === SeatMode::Unlimited) {
-            return null;
-        }
-
-        return max(1, (int) ($product->default_seat_count ?? 1));
     }
 
     /**
