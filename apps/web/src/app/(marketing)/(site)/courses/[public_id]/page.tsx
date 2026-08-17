@@ -3,15 +3,19 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCourse } from "@/lib/catalog/api";
 import { getSeo } from "@/lib/seo/api";
+import { notFoundMetadata } from "@/lib/seo/not-found";
 import { resolveLocale } from "@/lib/seo/locale";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { CourseDetailsClient } from "./course-details-client";
 
 /**
+ * A missing course renders the site's 404 page and is marked noindex. The HTTP status stays
+ * 200 for a reason that is not this route's doing — see notFoundMetadata.
+ */
+/**
  * Does this course exist and is it public? Cached per render, so the existence check and the
- * metadata share one request. A failure of any kind reads as "not found" — this decides a 404, and
- * an API hiccup must not turn a real course into one... which is why the page only 404s on a
- * genuine miss (see below), never on a transport error.
+ * metadata share one request. Only a genuine 404 from the API counts — an outage or a timeout must
+ * not be laundered into a permanent-looking 404 that a crawler would act on.
  */
 const loadCourse = cache(async (publicId: string) => {
   try {
@@ -34,6 +38,11 @@ type Params = { params: Promise<{ public_id: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { public_id } = await params;
 
+  // A course that is not there is marked noindex rather than 404'd — see notFoundMetadata for why
+  // the status cannot be set from here. The body still renders the 404 page.
+  const { found } = await loadCourse(public_id);
+  if (!found) return notFoundMetadata("Course not found");
+
   const fallback: Metadata = {
     title: "Course details",
     description: "View course details, curriculum, trainers and enrollment options on HElbaron.",
@@ -43,10 +52,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return buildMetadata(seo, fallback, locale);
 }
 
-/**
- * The page body still loads client-side; this only settles the HTTP STATUS. A missing course used
- * to answer 200 with a client-rendered "not found", which search engines index as a real page.
- */
+/** Backstop: metadata already 404s a missing course, but a body that renders it anyway would lie. */
 export default async function CourseDetailsPage({ params }: Params) {
   const { public_id } = await params;
   const { found } = await loadCourse(public_id);

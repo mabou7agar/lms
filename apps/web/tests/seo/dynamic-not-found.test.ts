@@ -1,14 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
- * A public page for something that does not exist must answer 404, not 200.
+ * A public page for something that does not exist must say so, and must not be indexed.
  *
  * Both course and bundle detail pages were pure client shells: the shell rendered, the browser
- * fetched, and the "not found" appeared client-side over an HTTP 200. A person sees the right
- * thing; a crawler indexes a real page, and a monitor sees a healthy response.
+ * fetched, and the "not found" appeared client-side inside the full product chrome. Now the server
+ * decides, the reader gets the site's 404 page, and the response is marked noindex.
  *
- * The other half matters just as much: an API outage must NOT be laundered into a 404. A crawler
- * that gets a 404 for a real course drops it from the index, and it will not come back on its own.
+ * The HTTP status stays 200 for a reason outside these routes — see src/lib/seo/not-found.ts.
+ *
+ * The other half matters just as much: an API outage must NOT be laundered into a not-found. A
+ * crawler told to drop a real course does drop it, and it will not come back on its own.
  */
 
 const { notFound, getCourse, getProduct } = vi.hoisted(() => ({
@@ -32,8 +34,12 @@ vi.mock("@/app/(marketing)/(site)/bundles/[public_id]/bundle-details-client", ()
   BundleDetailsClient: () => null,
 }));
 
-import CourseDetailsPage from "@/app/(marketing)/(site)/courses/[public_id]/page";
-import BundleDetailPage from "@/app/(marketing)/(site)/bundles/[public_id]/page";
+import CourseDetailsPage, {
+  generateMetadata as courseMetadata,
+} from "@/app/(marketing)/(site)/courses/[public_id]/page";
+import BundleDetailPage, {
+  generateMetadata as bundleMetadata,
+} from "@/app/(marketing)/(site)/bundles/[public_id]/page";
 
 /** What the API client throws: an error carrying the HTTP status. */
 const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
@@ -77,6 +83,49 @@ describe("course detail not-found handling", () => {
 
     await expect(CourseDetailsPage(params("c1"))).resolves.toBeTruthy();
     expect(notFound).not.toHaveBeenCalled();
+  });
+});
+
+describe("not-found metadata", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /**
+   * The status cannot be 404 (a Suspense boundary above these routes commits the 200 before an
+   * async existence check can finish), so noindex is what actually keeps a non-existent course out
+   * of a search index. If this regresses, the soft 404 gets indexed.
+   */
+  it("marks a missing course noindex", async () => {
+    getCourse.mockRejectedValue(httpError(404));
+
+    const meta = await courseMetadata(params("01a00000-0000-7000-8000-000000000000"));
+
+    expect(meta.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("marks a missing bundle noindex", async () => {
+    getProduct.mockRejectedValue(httpError(404));
+
+    const meta = await bundleMetadata(params("01a00000-0000-7000-8000-000000000000"));
+
+    expect(meta.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("leaves a real bundle indexable", async () => {
+    getProduct.mockResolvedValue({ id: "b1" });
+
+    const meta = await bundleMetadata(params("b1"));
+
+    expect(meta.robots).toBeUndefined();
+    expect(meta.title).toMatch(/Bundle/i);
+  });
+
+  it("does not mark a course noindex just because the API was unreachable", async () => {
+    getCourse.mockRejectedValue(new Error("fetch failed"));
+
+    const meta = await courseMetadata(params("c1"));
+
+    // Telling a crawler not to index a real course because of a blip is the expensive mistake.
+    expect(meta.robots).not.toEqual({ index: false, follow: false });
   });
 });
 

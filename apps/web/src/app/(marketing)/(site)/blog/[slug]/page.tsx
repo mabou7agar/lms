@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getBlogPost, pickSeoText, type BlogPost } from "@/lib/blog/api";
+import { notFoundMetadata } from "@/lib/seo/not-found";
 import { BlogPostView } from "@/components/marketing/blog/blog-post-view";
 
 /** Deduped server-side fetch shared by generateMetadata and the page render. */
@@ -16,7 +17,8 @@ type Params = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const post = await loadPost(slug);
-  if (!post) return { title: "Post not found" };
+  // Marked noindex rather than 404'd — see notFoundMetadata. The body still 404s for the reader.
+  if (!post) return notFoundMetadata("Post not found");
 
   const seo = post.seo ?? {};
   const title = pickSeoText(seo.meta_title, "en") ?? post.title.en;
