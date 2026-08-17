@@ -60,3 +60,17 @@ export function isCourseAccessError(error: unknown): boolean {
 export function isAccessExpired(error: unknown): boolean {
   return errorCode(error) === "LEARNING_ACCESS_EXPIRED";
 }
+
+/**
+ * True when the server refused because of WHO is asking, not because anything went wrong.
+ *
+ * Covers the course-entitlement codes plus the generic authorization refusals every surface can
+ * hit. The distinction matters for one reason: a refusal is not retryable, and a screen that offers
+ * "Try again" on a permission failure reads as a broken app rather than a closed door.
+ */
+export function isAuthorizationError(error: unknown): boolean {
+  const code = errorCode(error);
+  if (code === null) return false;
+
+  return ACCESS_CODES.has(code) || code === "HTTP_FORBIDDEN" || code === "UNAUTHENTICATED";
+}

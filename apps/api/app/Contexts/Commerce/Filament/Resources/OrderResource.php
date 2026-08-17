@@ -37,7 +37,10 @@ class OrderResource extends Resource
      */
     public static function adminTimezone(): string
     {
-        $timezone = Auth::user()?->timezone ?? config('shared.default_timezone', 'UTC');
+        // Auth::check() rather than `?->`: larastan types Auth::user() as never-null, so a nullsafe
+        // call reads as dead code to it, and dropping the guard entirely would fatal on the one
+        // request that reaches a resource unauthenticated.
+        $timezone = (Auth::check() ? Auth::user()->timezone : null) ?? config('shared.default_timezone', 'UTC');
 
         return is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true)
             ? $timezone

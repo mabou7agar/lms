@@ -6,7 +6,7 @@ import { PRICING_FAQ } from "@/components/marketing/pricing-faq";
 
 const TITLE = "Pricing — HElbaron";
 const DESCRIPTION =
-  "Pay for what you use: free courses, per-course pricing shown on each course, live cohorts and workshops priced per program, and custom enterprise agreements. No invented tiers or numbers.";
+  "Pay for what you use: per-course pricing shown on each course, live cohorts and workshops priced per program, and custom enterprise agreements. No invented tiers or numbers.";
 
 export const metadata: Metadata = {
   title: TITLE,

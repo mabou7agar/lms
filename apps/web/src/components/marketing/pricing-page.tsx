@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { PRICING_FAQ } from "./pricing-faq";
 import Link from "next/link";
-import { Gift, BookOpen, CalendarClock, Building2, Check, CircleDot, ChevronRight, ArrowRight } from "lucide-react";
+import { BookOpen, CalendarClock, Building2, Check, CircleDot, ChevronRight, ArrowRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,8 @@ const T = {
   eyebrow: { en: "Pricing", ar: "الأسعار" },
   title: { en: "Pay for what you actually use.", ar: "ادفع مقابل ما تستخدمه فعلًا." },
   lead: {
-    en: "No confusing tiers and no invented numbers. Start with free courses, buy individual courses at the price shown on each course, join live programs per program, or scope an enterprise rollout.",
-    ar: "لا باقات مربكة ولا أرقام مُختلقة. ابدأ بالدورات المجانية، واشترِ الدورات الفردية بالسعر المعروض على كل دورة، وانضمّ إلى البرامج المباشرة لكل برنامج، أو حدّد نطاق نشر مؤسسي.",
+    en: "No confusing tiers and no invented numbers. Buy individual courses at the price shown on each course, join live programs per program, or scope an enterprise rollout.",
+    ar: "لا باقات مربكة ولا أرقام مُختلقة. اشترِ الدورات الفردية بالسعر المعروض على كل دورة، وانضمّ إلى البرامج المباشرة لكل برنامج، أو حدّد نطاق نشر مؤسسي.",
   },
   browse: { en: "Browse courses", ar: "تصفّح الدورات" },
   talkEnterprise: { en: "Talk to enterprise", ar: "تحدّث مع فريق المؤسسات" },
@@ -45,15 +45,10 @@ interface Model {
   highlight?: boolean;
 }
 
+// No "free courses" model. Every product in the catalogue carries a price, so advertising a free
+// tier on the public pricing page — and in its FAQ structured data — promised something the
+// platform does not sell.
 const MODELS: Model[] = [
-  {
-    slug: "free",
-    icon: Gift,
-    title: { en: "Free courses", ar: "دورات مجانية" },
-    body: { en: "Selected courses are free. Create an account and start learning right away.", ar: "دورات مختارة مجانية. أنشئ حسابًا وابدأ التعلّم فورًا." },
-    meta: { en: "No payment required", ar: "بدون دفع" },
-    cta: { label: { en: "Browse courses", ar: "تصفّح الدورات" }, href: "/courses" },
-  },
   {
     slug: "per_course",
     icon: BookOpen,

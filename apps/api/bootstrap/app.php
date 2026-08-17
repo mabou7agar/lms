@@ -10,7 +10,9 @@ use App\Platform\Shared\Http\Middleware\ResolveTenant;
 use App\Platform\Shared\Http\Middleware\SetLocale;
 use App\Platform\Shared\Support\ApiResponse;
 use App\Platform\Shared\Support\HttpRefusal;
+use App\Platform\Shared\Support\MalformedIdentifier;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -108,6 +110,23 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return null;
+        });
+
+        // An identifier the database cannot represent is a 404, not a server error.
+        //
+        // See MalformedIdentifier for why this is a net rather than a per-call-site guard, and for
+        // how narrowly it is scoped. Registered BEFORE the HttpException handler because a
+        // QueryException is not an HttpException and would otherwise fall through to a 500.
+        $exceptions->render(function (QueryException $e, Request $request): ?JsonResponse {
+            if (! MalformedIdentifier::causedBy($e)) {
+                return null;
+            }
+
+            // Deliberately says nothing about the malformed value or the statement: this is the one
+            // error path a stranger can trigger at will, so it must not become a schema oracle.
+            return $request->is('api/*')
+                ? ApiResponse::error(HttpRefusal::codeFor(404), 'Not found.', [], 404)
+                : null;
         });
 
         // Every other API refusal also renders as the standard envelope.
