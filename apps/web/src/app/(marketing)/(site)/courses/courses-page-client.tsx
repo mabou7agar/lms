@@ -18,6 +18,11 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 const selectClass =
   "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
+/** Cards per catalog page. */
+const PER_PAGE = 12;
+/** Sample size used only to build the level/language dropdowns (the API caps per_page at 60). */
+const OPTIONS_SAMPLE = 60;
+
 type Sort = "relevance" | "title-asc" | "title-desc" | "featured";
 
 function CourseCardSkeleton() {
@@ -56,7 +61,8 @@ function CoursesCatalog() {
   }, [q]);
 
   // Reset to page 1 when search/filters change (adjust-state-while-rendering, guarded to run once).
-  const filterKey = `${debouncedQ}|${category}|${featured}`;
+  // level/language belong here too: they are server-side filters, so changing one re-paginates.
+  const filterKey = `${debouncedQ}|${category}|${featured}|${level}|${language}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
@@ -76,12 +82,26 @@ function CoursesCatalog() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [debouncedQ, category, featured, level, language, sort, pathname, router]);
 
-  const query = useCourses({ q: debouncedQ || undefined, category: category || undefined, featured, page, per_page: 12 });
+  const query = useCourses({
+    q: debouncedQ || undefined,
+    category: category || undefined,
+    featured,
+    page,
+    per_page: PER_PAGE,
+  });
+
+  // Level/language stay client-side: the API filters them by level/language public_id, and the list
+  // resource only ever exposes the localized NAME, so the browser has no id to send. The option lists
+  // therefore come from a wider UNFILTERED sample rather than the 12 rows on screen, so a level that
+  // exists only on page 2 is still offered (React Query dedupes/caches this query).
+  const optionsQuery = useCourses({ per_page: OPTIONS_SAMPLE });
+  const optionItems = useMemo(() => optionsQuery.data?.data ?? [], [optionsQuery.data]);
+  const levels = useMemo(() => Array.from(new Set(optionItems.map((c) => c.level).filter(Boolean))) as string[], [optionItems]);
+  const languages = useMemo(() => Array.from(new Set(optionItems.map((c) => c.language).filter(Boolean))) as string[], [optionItems]);
 
   const items = useMemo(() => query.data?.data ?? [], [query.data]);
-  const levels = useMemo(() => Array.from(new Set(items.map((c) => c.level).filter(Boolean))) as string[], [items]);
-  const languages = useMemo(() => Array.from(new Set(items.map((c) => c.language).filter(Boolean))) as string[], [items]);
 
+  // Level/language refinement and sorting both act on the CURRENT PAGE only.
   const refined = useMemo(() => {
     const r = items.filter((c) => (!level || c.level === level) && (!language || c.language === language));
     const s = [...r];
@@ -104,7 +124,12 @@ function CoursesCatalog() {
   const clearAll = () => {
     setQ(""); setDebouncedQ(""); setCategory(""); setFeatured(false); setLevel(""); setLanguage(""); setSort("relevance"); setPage(1);
   };
-  const count = refined.length;
+  // The server-filtered TOTAL across every page — not the size of the page on screen. Reporting
+  // refined.length unconditionally is what made a 26-course catalog announce "12 courses".
+  // Level/language narrow only the current page, so while one is active the count is page-scoped and
+  // says so, rather than quietly presenting a page total as a catalog total.
+  const pageScopedCount = Boolean(level || language);
+  const count = pageScopedCount ? refined.length : (query.data?.meta.total ?? 0);
 
   const filterControls = (
     <>
@@ -181,6 +206,7 @@ function CoursesCatalog() {
           <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
             <span className="font-serif text-xl font-bold text-foreground">{count}</span>{" "}
             {count === 1 ? t("catalog.courses.resultsOne") : t("catalog.courses.results")}
+            {pageScopedCount ? <span>{` ${t("catalog.courses.resultsOnThisPage")}`}</span> : null}
           </p>
           <div className="ms-auto flex items-center gap-2">
             <label className="flex items-center gap-2 text-sm">
@@ -245,7 +271,9 @@ function CoursesCatalog() {
                   <div className="stagger-in grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                     {refined.map((c) => <CourseCard key={c.id} course={c} />)}
                   </div>
-                  <Pagination page={data.meta.current_page} lastPage={data.meta.last_page} onPageChange={setPage} />
+                  {data.meta.last_page > 1 && (
+                    <Pagination page={data.meta.current_page} lastPage={data.meta.last_page} onPageChange={setPage} />
+                  )}
                 </div>
               )}
             </QueryState>
