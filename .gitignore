@@ -19,6 +19,7 @@ backups/
 apps/api/storage/app/private/certificates/
 apps/api/storage/framework/views/*.php
 apps/api/storage/framework/views/*.blade.php
+apps/api/storage/framework/cache/*.php
 apps/api/storage/framework/testing/disks/
 apps/api/bootstrap/cache/packages.php
 apps/api/bootstrap/cache/services.php
