@@ -9,6 +9,23 @@ RUN chmod +x /usr/local/bin/install-php-extensions \
 # Composer (copied from the official image)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# FrankenPHP lives in the image, not in the project directory.
+#
+# `php artisan octane:install` drops a ~160MB static binary at the project root, and in the dev
+# compose file that root is a bind mount from the Windows host. Every cold start then has to drag
+# the whole file across the 9p/virtiofs bridge before it can execute, while Octane's
+# `frankenphp build-info` probe allows it 60 seconds (Symfony Process's default) before throwing
+# ProcessTimedOutException and killing the boot. The container only ever came up because
+# `restart: unless-stopped` retried once the host had the file cached.
+#
+# Here it is read from the image's own filesystem instead, so the boot never depends on the bind
+# mount being warm. Octane's ExecutableFinder searches PATH before the project root, so this copy is
+# the one that gets used and the project-root binary (if present) is ignored. Pinned rather than
+# `latest` because this is the runtime the app boots on — a silent upgrade here is a silent
+# PHP-version change.
+ADD https://github.com/php/frankenphp/releases/download/v1.12.7/frankenphp-linux-x86_64-gnu /usr/local/bin/frankenphp
+RUN chmod +x /usr/local/bin/frankenphp
+
 WORKDIR /var/www/html
 
 # CLI memory (+ timezone). The base php:8.3-cli has no loaded php.ini and defaults memory_limit to
