@@ -5,6 +5,7 @@ import { Download, ExternalLink, FileText } from "lucide-react";
 import type { LessonPayload } from "@/lib/learning/api";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Button } from "@/components/ui/button";
+import { VideoEmbed, hasEmbeddableVideo } from "@/components/media/video-embed";
 import { EmptyState } from "@/components/states/empty-state";
 import { QuizPlayer } from "@/components/learning/quiz-player";
 
@@ -121,14 +122,23 @@ export function LessonContent({
 
   if (lesson.type === "external_link") {
     const href = typeof lesson.content?.url === "string" ? lesson.content.url : url;
-    return href ? (
-      <Button asChild>
-        <a href={href} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="size-4" aria-hidden /> {t("learn.lesson.openLink")}
-        </a>
-      </Button>
-    ) : (
-      <EmptyState title={t("learn.lesson.noContent")} />
+
+    if (!href) return <EmptyState title={t("learn.lesson.noContent")} />;
+
+    // A Vimeo/YouTube/etc. module is a video the learner came here to watch, so play it in place
+    // instead of handing them a link off the page. The link stays as a secondary escape hatch, and
+    // is the only affordance for a URL nothing can embed.
+    return (
+      <div className="space-y-3">
+        {hasEmbeddableVideo(href) ? (
+          <VideoEmbed url={href} title={lesson.title} className="overflow-hidden rounded-lg" />
+        ) : null}
+        <Button asChild variant={hasEmbeddableVideo(href) ? "outline" : "default"} size="sm">
+          <a href={href} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="size-4" aria-hidden /> {t("learn.lesson.openLink")}
+          </a>
+        </Button>
+      </div>
     );
   }
 

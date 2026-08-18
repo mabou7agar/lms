@@ -40,6 +40,33 @@ function formatKind(mime: string | null): string | null {
 }
 
 /**
+ * Hand a freshly-minted signed URL to the browser, returning false only when the browser refused
+ * every route we have. window.open is tried first (a new tab keeps the learner's place in the
+ * player); the anchor fallback covers the common case where the popup blocker rejects an open() that
+ * happens after an await.
+ */
+export function openSignedUrl(url: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (opened) return true;
+
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The files attached to a course or a lesson.
  *
  * A file the viewer may not take is still LISTED when the course chose to advertise it, because
@@ -66,7 +93,17 @@ export function ResourceList({
 
   const onDownload = (resource: CourseResource) =>
     download.mutate(resource.id, {
-      onSuccess: (res) => window.open(res.url, "_blank", "noopener,noreferrer"),
+      onSuccess: (res) => {
+        // The signed URL only arrives AFTER the round trip, by which point the browser no longer
+        // credits the click as a user gesture and window.open is silently blocked — the download
+        // then appeared to do nothing at all. Fall back to an anchor click, which survives that,
+        // and if even the anchor is refused say so instead of failing quietly.
+        if (!openSignedUrl(res.url)) {
+          toast.error(t("courseware.resources.downloadBlocked"));
+          return;
+        }
+        toast.success(t("courseware.resources.downloadStarted"));
+      },
       onError: (e) => toast.error(errorMessage(e, t("courseware.resources.downloadFailed"))),
     });
 

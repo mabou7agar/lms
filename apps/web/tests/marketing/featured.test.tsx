@@ -35,6 +35,8 @@ const featured: CourseListItem[] = [
 
 vi.mock("@/lib/catalog/hooks", () => ({
   useFeaturedCourses: () => ({ data: { data: featured } }),
+  // The editorial variant reads the general catalog query, not the featured one.
+  useCourses: () => ({ data: { data: featured } }),
 }));
 
 import { FeaturedCourses } from "@/components/marketing/featured-courses";

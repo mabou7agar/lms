@@ -64,6 +64,9 @@ const EN: Dict = {
   'player.closeMenu': 'Close',
   'player.blockComplete': 'Mark done',
   'player.blockCompleted': 'Done',
+  'player.openExternal': 'Open in a new tab',
+  'player.lessonResources': 'Lesson files',
+  'player.courseResources': 'Course files',
 };
 
 const AR: Dict = {
@@ -114,6 +117,9 @@ const AR: Dict = {
   'player.closeMenu': 'إغلاق',
   'player.blockComplete': 'وضع علامة كمنجز',
   'player.blockCompleted': 'منجز',
+  'player.openExternal': 'فتح في تبويب جديد',
+  'player.lessonResources': 'ملفات الدرس',
+  'player.courseResources': 'ملفات الدورة',
 };
 
 const DICTS: Record<PlayerLocale, Dict> = { en: EN, ar: AR };

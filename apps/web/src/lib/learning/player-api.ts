@@ -193,6 +193,12 @@ export interface LessonContent {
   type: string;
   blocks: LessonBlock[];
   /**
+   * The target of an `external_link` lesson. These lessons carry their URL on `content.url` and
+   * define NO blocks, so without this the canonical player had nothing to render and showed an
+   * empty lesson body for every externally-hosted (e.g. Vimeo) module.
+   */
+  externalUrl?: string | null;
+  /**
    * Server resume point for the lesson's primary video, so the player can seek
    * on load. There is no frozen GET for video-progress; this rides on content.
    */
@@ -305,11 +311,16 @@ export function normalizeLessonContent(payload: LessonPayload, fallbackId = ''):
       }
     : null;
 
+  const externalUrl = typeof contentObject?.url === 'string' && contentObject.url !== ''
+    ? contentObject.url
+    : null;
+
   return {
     id: typeof payload.id === 'string' ? payload.id : fallbackId,
     title: typeof payload.title === 'string' ? payload.title : '',
     type: typeof payload.type === 'string' ? payload.type : 'text',
     blocks: blocks as LessonBlock[],
+    externalUrl,
     video,
     assessment: payload.assessment as LessonContent['assessment'],
     assignment: payload.assignment as LessonContent['assignment'],

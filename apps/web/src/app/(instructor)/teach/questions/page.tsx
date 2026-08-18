@@ -3,13 +3,21 @@
 import { useState } from "react";
 import { AlertTriangle, Clock, MessageCircleQuestion } from "lucide-react";
 import { useI18n } from "@/lib/i18n/i18n-context";
-import type { QnaMetrics } from "@/lib/courseware/api";
-import { useInstructorQueue } from "@/lib/courseware/hooks";
+import { errorMessage } from "@/lib/api/errors";
+import type { CourseQuestion, QnaMetrics } from "@/lib/courseware/api";
+import {
+  useAnswerQuestion,
+  useInstructorQueue,
+  useMarkAnswerOfficial,
+  useQuestion,
+} from "@/lib/courseware/hooks";
 import { PageHeader } from "@/components/student/page-header";
 import { QueryState } from "@/components/student/query-state";
 import { ExpiryBanner } from "@/components/commerce/expiry-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 
 const FILTERS = ["unanswered", "overdue", "answered", "all"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -88,27 +96,7 @@ export default function InstructorQuestionsPage() {
             ) : (
               <ul className="divide-y rounded-lg border">
                 {data.questions.map((q) => (
-                  <li key={q.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                        {q.title}
-                        {q.is_private ? <Badge variant="secondary">{t("courseware.qna.private")}</Badge> : null}
-                        {q.awaiting_response ? (
-                          <Badge variant="outline">
-                            <Clock className="me-1 size-3" aria-hidden />
-                            {t("courseware.qna.awaiting")}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{q.body}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {q.author?.name ?? "—"}
-                        {q.first_response_minutes !== null
-                          ? ` · ${t("courseware.inbox.respondedIn")} ${formatMinutes(q.first_response_minutes, t)}`
-                          : ""}
-                      </p>
-                    </div>
-                  </li>
+                  <QueueRow key={q.id} question={q} />
                 ))}
               </ul>
             )}
@@ -116,6 +104,131 @@ export default function InstructorQuestionsPage() {
         )}
       </QueryState>
     </div>
+  );
+}
+
+/**
+ * One queue row, expandable into the full thread with a reply box.
+ *
+ * The queue used to be read-only: an instructor could see that someone had been waiting two days and
+ * had nowhere to answer them, which is the one thing this screen exists for. Expanding in place
+ * (rather than routing to a detail page) keeps the queue's ordering and the SLA context on screen
+ * while replying, and lets the instructor work straight down the list.
+ */
+function QueueRow({ question }: { question: CourseQuestion }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+
+  const thread = useQuestion(open ? question.id : null);
+  const answer = useAnswerQuestion();
+  const markOfficial = useMarkAnswerOfficial();
+
+  const submit = () => {
+    if (!body.trim()) return toast.error(t("courseware.qna.bodyRequired"));
+    answer.mutate(
+      { questionId: question.id, body: body.trim() },
+      {
+        onSuccess: () => {
+          // Clear the box and let the invalidations refresh the thread, the queue and the metrics.
+          setBody("");
+          toast.success(t("courseware.qna.answerPosted"));
+        },
+        onError: (e) => toast.error(errorMessage(e, t("common.error"))),
+      },
+    );
+  };
+
+  return (
+    <li className="p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            {question.title}
+            {question.is_private ? <Badge variant="secondary">{t("courseware.qna.private")}</Badge> : null}
+            {question.awaiting_response ? (
+              <Badge variant="outline">
+                <Clock className="me-1 size-3" aria-hidden />
+                {t("courseware.qna.awaiting")}
+              </Badge>
+            ) : null}
+          </div>
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{question.body}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {question.author?.name ?? "—"}
+            {question.first_response_minutes !== null
+              ? ` · ${t("courseware.inbox.respondedIn")} ${formatMinutes(question.first_response_minutes, t)}`
+              : ""}
+          </p>
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          data-testid={`queue-open-${question.id}`}
+        >
+          {open ? t("common.close") : t("courseware.inbox.openThread")}
+        </Button>
+      </div>
+
+      {open ? (
+        <div className="mt-4 space-y-3 rounded-lg border bg-muted/30 p-3" data-testid={`queue-thread-${question.id}`}>
+          <p className="whitespace-pre-line text-sm">{question.body}</p>
+
+          <QueryState query={thread} isEmpty={() => false} empty={null}>
+            {(data) => (
+              <ul className="space-y-2">
+                {data.answers.map((a) => (
+                  <li key={a.id} className="rounded-md border bg-background p-3">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{a.author?.name ?? "—"}</span>
+                      {a.is_instructor ? <Badge variant="secondary">{t("courseware.qna.instructor")}</Badge> : null}
+                      {a.is_official ? <Badge variant="success">{t("courseware.qna.official")}</Badge> : null}
+                      {a.accepted ? <Badge variant="outline">{t("courseware.qna.accepted")}</Badge> : null}
+                    </div>
+                    <p className="mt-1.5 whitespace-pre-line text-sm">{a.body}</p>
+                    {a.is_instructor && !a.is_official ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="mt-2"
+                        loading={markOfficial.isPending}
+                        onClick={() =>
+                          markOfficial.mutate(
+                            { answerId: a.id, questionId: question.id },
+                            { onError: (e) => toast.error(errorMessage(e, t("common.error"))) },
+                          )
+                        }
+                      >
+                        {t("courseware.qna.markOfficial")}
+                      </Button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </QueryState>
+
+          <div className="space-y-2">
+            <label htmlFor={`reply-${question.id}`} className="block text-sm font-medium">
+              {t("courseware.qna.answerLabel")}
+            </label>
+            <Textarea
+              id={`reply-${question.id}`}
+              rows={3}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder={t("courseware.qna.answerPlaceholder")}
+            />
+            <Button size="sm" loading={answer.isPending} onClick={submit} data-testid={`queue-reply-${question.id}`}>
+              {t("courseware.qna.submitAnswer")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </li>
   );
 }
 

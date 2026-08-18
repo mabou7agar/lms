@@ -10,6 +10,7 @@ import {
   LearningPlayerI18nProvider,
   useLearningPlayerI18n,
 } from '@/lib/learning/player-i18n';
+import { ResourceList } from '@/components/courseware/resource-list';
 import { CurriculumSidebar } from './CurriculumSidebar';
 import { LessonView } from './LessonView';
 import { PlayerError } from './PlayerError';
@@ -165,6 +166,12 @@ function CoursePlayerShellInner({
           ) : (
             <p className="text-sm text-muted-foreground">{t('player.loading')}</p>
           )}
+
+          {/* Course-wide files (handbooks, templates) belong to the whole course rather than to the
+              lesson on screen, so they sit below the lesson and stay reachable from every module. */}
+          <div className="mt-8 border-t border-border/60 pt-6">
+            <ResourceList courseId={courseId} title={t('player.courseResources')} />
+          </div>
         </main>
       </div>
     </div>

@@ -17,6 +17,14 @@ vi.mock('@/components/ui', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// The player now surfaces lesson/course files. These tests render without a QueryClient, so stub the
+// resource hooks rather than pulling React Query into every player test.
+vi.mock('@/lib/courseware/hooks', () => ({
+  useCourseResources: () => ({ isPending: false, isError: false, refetch: vi.fn(), data: { items: [], entitled: true } }),
+  useLessonResources: () => ({ isPending: false, isError: false, refetch: vi.fn(), data: { items: [], entitled: true } }),
+  useDownloadResource: () => ({ mutate: vi.fn(), isPending: false, variables: undefined }),
+}));
+
 vi.mock('@/lib/api/client', () => ({
   api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn(), data: (x: any) => x },
   ApiRequestError: class ApiRequestError extends Error {},

@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 
 import { Skeleton } from '@/components/ui';
+import { ResourceList } from '@/components/courseware/resource-list';
+import { VideoEmbed, hasEmbeddableVideo } from '@/components/media/video-embed';
 import { flattenLessons, type RuntimeCurriculum } from '@/lib/learning/player-api';
 import {
   useCompleteBlock,
@@ -47,6 +49,7 @@ export function LessonView({
 
   const viewed = useMarkLessonViewed(courseId);
   const content = useLessonContent(lessonId, { enabled: !locked });
+  const externalUrl = content.data?.externalUrl ?? null;
   const completeBlock = useCompleteBlock(courseId);
 
   // Fire "viewed" exactly once per unlocked lesson entry.
@@ -86,6 +89,27 @@ export function LessonView({
         />
       ) : content.data ? (
         <>
+          {/*
+            An external_link lesson (a Vimeo module, say) defines no blocks — its target lives on
+            content.url. Play it inline here rather than leaving the lesson body empty; the raw link
+            stays available underneath for anything the embedder cannot render.
+          */}
+          {externalUrl ? (
+            <div className="space-y-2" data-testid="lesson-external-embed">
+              {hasEmbeddableVideo(externalUrl) ? (
+                <VideoEmbed url={externalUrl} title={content.data.title} className="overflow-hidden rounded-lg" />
+              ) : null}
+              <a
+                href={externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
+              >
+                {t('player.openExternal')}
+              </a>
+            </div>
+          ) : null}
+
           <div className="space-y-6">
             {content.data.blocks.map((block, idx) => (
               <BlockRenderer
@@ -99,6 +123,9 @@ export function LessonView({
               />
             ))}
           </div>
+
+          {/* The files attached to THIS lesson, in the canonical player rather than only on /lessons. */}
+          <ResourceList lessonId={lessonId} title={t('player.lessonResources')} />
 
           {content.data.assessment && onLaunchAssessment ? (
             <AssessmentLaunch
