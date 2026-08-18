@@ -95,7 +95,9 @@ class NavigationSeeder extends Seeder
                     'position' => 10, 'url' => '#', 'label' => ['en' => 'Learn', 'ar' => 'تعلّم'],
                     'children' => [
                         ['position' => 10, 'label' => ['en' => 'Courses', 'ar' => 'الدورات'], 'url' => '/courses'],
-                        ['position' => 20, 'label' => ['en' => 'Products', 'ar' => 'المنتجات'], 'url' => '/products'],
+                        // "Bundles", not "Products": the public surface sells Courses and Bundles, and
+                        // /products is an internal listing name that means nothing to a buyer.
+                        ['position' => 20, 'label' => ['en' => 'Bundles', 'ar' => 'الباقات'], 'url' => '/bundles'],
                         ['position' => 30, 'label' => ['en' => 'Live cohorts', 'ar' => 'الأفواج'], 'url' => '/cohorts'],
                         ['position' => 40, 'label' => ['en' => 'Workshops', 'ar' => 'الورش'], 'url' => '/workshops'],
                         ['position' => 50, 'label' => ['en' => 'Events', 'ar' => 'الفعاليات'], 'url' => '/events'],

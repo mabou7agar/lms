@@ -29,7 +29,10 @@ class OrderController extends Controller
             ->latest('id')
             ->paginate($perPage);
 
-        return ApiResponse::success(OrderDetailResource::collection($orders));
+        // paginated(), not success(): the success envelope emits `data` only, so wrapping a paginator
+        // in it silently drops `meta`/`links`. The orders page reads meta.current_page and crashed
+        // with "Cannot read properties of undefined" — the one page checkout sends a buyer to.
+        return ApiResponse::paginated($orders, OrderDetailResource::class);
     }
 
     public function show(Request $request, string $order, GetOrderForUserAction $action): JsonResponse

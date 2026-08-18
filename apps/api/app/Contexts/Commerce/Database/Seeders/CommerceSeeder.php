@@ -16,7 +16,10 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Seeds commerce permissions, the active terms contract, and a product per published course.
- * Idempotent.
+ *
+ * Idempotent in both directions: the product is keyed by slug, the course link uses
+ * syncWithoutDetaching, and a price is only created when the product has none — so re-running never
+ * duplicates a product and never overwrites a price an admin has since changed.
  */
 class CommerceSeeder extends Seeder
 {
@@ -36,7 +39,11 @@ class CommerceSeeder extends Seeder
             ['title' => 'Terms & Conditions', 'body' => 'By enrolling you accept the HElbaron terms.', 'is_active' => true],
         );
 
-        Course::query()->where('status', 'published')->orderBy('id')->limit(3)->get()->each(function (Course $course): void {
+        // EVERY published course, not the first three. The limit was a demo-era convenience that
+        // silently stopped applying as the catalogue grew: courses 4-12 had no product, so the public
+        // card and detail page both said "Not available yet" for three quarters of the catalogue.
+        // There are no free courses here — a published course that cannot be bought is a defect.
+        Course::query()->where('status', 'published')->orderBy('id')->get()->each(function (Course $course): void {
             $product = Product::firstOrCreate(
                 ['slug' => Slug::make($course->title).'-product'],
                 ['type' => ProductType::Course->value, 'title' => $course->title, 'status' => ProductStatus::Active->value],

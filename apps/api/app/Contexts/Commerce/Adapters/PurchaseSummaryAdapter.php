@@ -55,8 +55,15 @@ class PurchaseSummaryAdapter implements PurchaseSummaryPort
                 continue;
             }
 
-            // Quote the single-course product when there is one; otherwise the (only) bundle.
-            $primary = $granting->firstWhere('type', ProductType::Course) ?? $granting->first();
+            // Quote the single-course product when there is one; otherwise the bundle.
+            //
+            // Sorted by id first, because "which product sells this course" must not depend on the
+            // order the database happened to return rows in. A course can end up with more than one
+            // active course-product (an import, a duplicate, a QA fixture), and when it does an
+            // unordered pick means the catalogue card, the detail page and the cart can each quote a
+            // different price for the same course. Oldest wins: it is the one already advertised.
+            $ordered = $granting->sortBy('id');
+            $primary = $ordered->firstWhere('type', ProductType::Course) ?? $ordered->first();
             $bundleIds = $granting
                 ->filter(fn (Product $p): bool => $p->type === ProductType::Bundle && $p->id !== $primary->id)
                 ->map(fn (Product $p): string => (string) $p->public_id)
