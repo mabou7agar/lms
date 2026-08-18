@@ -56,6 +56,9 @@ docs/verification/ga/evidence/
 # Runtime uploaded media + Livewire temp uploads (local media store), and Octane runtime state.
 apps/api/storage/app/public/media/
 apps/api/storage/app/private/livewire-tmp/
+# Operator-supplied source images staged for import (course covers, trainer portraits). Real people's
+# photographs — kept on disk as the labelled recovery copy, never committed. See docs/ops/LOCAL_QA_RUNBOOK.md.
+apps/api/storage/app/private/manual-import/
 apps/api/storage/logs/*.json
 # One-off local SQL + QA scripts that must never ship.
 _relink.sql

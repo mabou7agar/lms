@@ -1,5 +1,6 @@
 <?php
 
+use App\Platform\Navigation\Database\Seeders\NavigationSeeder;
 use App\Platform\Navigation\Enums\MenuLocation;
 use App\Platform\Navigation\Enums\NavAuthVisibility;
 use App\Platform\Navigation\Enums\NavUrlType;
@@ -124,4 +125,50 @@ it('never renders an unsafe URL through the safeUrl accessor', function () {
     expect($item->safeUrl())->toBe('#')
         ->and(NavUrl::isSafe(NavUrlType::External, 'https://ok.com'))->toBeTrue()
         ->and(NavUrl::isSafe(NavUrlType::Internal, 'javascript:alert(1)'))->toBeFalse();
+});
+
+/*
+ | AppShell renders the CMS menu INSTEAD of the frontend's nav.ts when a menu exists for the location,
+ | so an instructor surface that is missing from the seeded menu is unreachable from the sidebar no
+ | matter what the frontend config lists. /teach/questions was exactly that: present in nav.ts,
+ | absent from the seeded menu, and therefore invisible.
+ */
+it('seeds the instructor Q&A queue into the instructor sidebar', function () {
+    $this->seed(NavigationSeeder::class);
+
+    $menu = NavMenu::query()->forLocation(MenuLocation::InstructorSidebar->value)->firstOrFail();
+    $item = NavItem::query()->where('menu_id', $menu->id)->where('url', '/teach/questions')->firstOrFail();
+
+    expect($item->label['en'])->toBe('Questions')
+        ->and($item->label['ar'])->toBe('الأسئلة')
+        ->and($item->is_enabled)->toBeTrue();
+
+    // Between Students and Profile, so the queue sits with the other teaching surfaces.
+    $students = NavItem::query()->where('menu_id', $menu->id)->where('url', '/teach/students')->firstOrFail();
+    $profile = NavItem::query()->where('menu_id', $menu->id)->where('url', '/profile')->firstOrFail();
+
+    expect($item->position)->toBeGreaterThan($students->position)
+        ->and($item->position)->toBeLessThan($profile->position);
+});
+
+it('does not duplicate navigation when the seeder runs twice', function () {
+    $this->seed(NavigationSeeder::class);
+    $this->seed(NavigationSeeder::class);
+
+    $menu = NavMenu::query()->forLocation(MenuLocation::InstructorSidebar->value)->firstOrFail();
+
+    expect(NavItem::query()->where('menu_id', $menu->id)->where('url', '/teach/questions')->count())->toBe(1);
+});
+
+it('adds a newly shipped entry to an environment seeded before it existed', function () {
+    // Simulate the deployed state: everything seeded, then the Questions row removed as it would be
+    // on an environment provisioned before this entry shipped.
+    $this->seed(NavigationSeeder::class);
+    $menu = NavMenu::query()->forLocation(MenuLocation::InstructorSidebar->value)->firstOrFail();
+    NavItem::query()->where('menu_id', $menu->id)->where('url', '/teach/questions')->delete();
+
+    // Re-running the seeder is the whole upgrade path — no migration needed.
+    $this->seed(NavigationSeeder::class);
+
+    expect(NavItem::query()->where('menu_id', $menu->id)->where('url', '/teach/questions')->exists())->toBeTrue();
 });

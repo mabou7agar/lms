@@ -175,3 +175,37 @@ cd apps/api && DB_HOST=127.0.0.1 DB_PORT=55432 REDIS_HOST=127.0.0.1 REDIS_PORT=6
 
 Never run two Pest processes at once: they share `helbaron_test` and will fail each other's
 `RefreshDatabase` in ways that look like real defects.
+
+## Operator-supplied source images (`manual-import`)
+
+`apps/api/storage/app/private/manual-import/` holds the images an operator staged before importing
+them through the admin MediaPicker — course covers named after their course, and `avatars/Picture*.png`
+(the trainer portraits). It is **gitignored**: these are photographs of real people and must not be
+committed.
+
+Keep the folder. Once imported, the bytes also live under `storage/app/public/media/` — but only
+under a UUID filename, so `manual-import` is the sole copy that still says *which* image is whose.
+It is the labelled recovery source if `media_assets` is ever lost, and neither directory is covered
+by a database dump. Back both up alongside the DB.
+
+`avatars/Picture1..5.png` are unlabelled by name; the mapping applied is Picture1→Omar Farouk,
+2→Karim Saleh, 3→Yara Adel, 4→Nour Hassan, 5→Laila Mansour. **"Nour Hassan" is a unisex name** and
+was matched to the remaining male portrait on supply grounds — reassign if that is wrong.
+
+## Navigation is CMS-driven, not `nav.ts`
+
+`AppShell` renders the CMS menu for a location when one exists and falls back to `apps/web/src/config/nav.ts`
+only when it does not. A sidebar entry therefore has to exist in `nav_menus`/`nav_items` to be visible —
+adding it to `nav.ts` alone changes nothing on a seeded environment. This is how `/teach/questions`
+came to be missing from the instructor sidebar while being present in the frontend config.
+
+`NavigationSeeder` is keyed on `(menu_id, parent_id, position)`, so shipping a definition at an unused
+position adds it to an already-seeded database. To apply new entries after deploy:
+
+```bash
+php artisan db:seed --class="App\Platform\Navigation\Database\Seeders\NavigationSeeder" --force
+```
+
+It never edits an existing row (so it cannot stomp an admin's edits): changing the label or URL of a
+position already in the database has no effect, and reusing an occupied position silently keeps the
+old entry. Give every new item its own position.

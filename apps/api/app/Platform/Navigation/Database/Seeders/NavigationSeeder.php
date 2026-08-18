@@ -18,6 +18,16 @@ use Illuminate\Database\Seeder;
  * Idempotent: firstOrCreate the menu by location, then firstOrCreate each item keyed by
  * (menu_id, parent_id, position). Re-running never duplicates. All 10 MenuLocation cases get a
  * menu row (some intentionally empty — MobileMenu/AdminQuickLinks/MegaMenu — ready for admin use).
+ *
+ * ADDING AN ENTRY TO AN ALREADY-SEEDED ENVIRONMENT: because the key includes `position`, a new
+ * definition at an unused position is CREATED on re-run, so shipping one and running
+ *
+ *   php artisan db:seed --class="App\Platform\Navigation\Database\Seeders\NavigationSeeder"
+ *
+ * is the whole upgrade path — no migration required. The corollary is that this seeder never EDITS
+ * an existing row: changing the label/url of a position already in the database has no effect (that
+ * is deliberate, so it cannot stomp an admin's edits), and reusing a position another entry already
+ * occupies would silently keep the old entry. Give a new item its own position.
  */
 class NavigationSeeder extends Seeder
 {
@@ -141,6 +151,9 @@ class NavigationSeeder extends Seeder
                 ['position' => 20, 'label' => ['en' => 'My Courses', 'ar' => 'دوراتي'], 'url' => '/teach/courses', 'icon' => 'Presentation'],
                 ['position' => 30, 'label' => ['en' => 'Media', 'ar' => 'الوسائط'], 'url' => '/teach/media', 'icon' => 'Film'],
                 ['position' => 40, 'label' => ['en' => 'Students', 'ar' => 'الطلاب'], 'url' => '/teach/students', 'icon' => 'Users'],
+                // The Q&A queue. AppShell renders the CMS menu INSTEAD of nav.ts when one exists, so an
+                // entry missing here is invisible to instructors no matter what the frontend config says.
+                ['position' => 50, 'label' => ['en' => 'Questions', 'ar' => 'الأسئلة'], 'url' => '/teach/questions', 'icon' => 'MessageCircleQuestion'],
                 ['position' => 70, 'label' => ['en' => 'Profile', 'ar' => 'الملف الشخصي'], 'url' => '/profile', 'icon' => 'User'],
             ],
 
