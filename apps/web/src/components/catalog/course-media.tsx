@@ -1,19 +1,34 @@
+import { CoverArt } from "@/components/marketing/course-cover/cover-art";
+import { familyFromTitle } from "@/components/marketing/course-cover/adapter";
+import { FAMILY_FIELD } from "@/components/marketing/course-cover/palette";
 import { proxyMediaUrl } from "@/lib/media/proxy";
 import { cn } from "@/lib/utils";
 
 /**
- * Course cover. When a real thumbnail URL is supplied (a published MediaAsset resolved server-side by
- * PublicAssetUrlResolver, or a legacy URL), it renders that image. Otherwise it falls back to a
- * designed, brand-palette SVG placeholder — deterministic per title — so a card is never blank.
+ * Catalogue cover art. When a real image is supplied (a published MediaAsset resolved server-side
+ * by PublicAssetUrlResolver, or a legacy URL) it renders that image.
+ *
+ * Otherwise it draws the same editorial field the HElbaron course covers use: a deep family
+ * gradient, the deterministic technical artwork seeded from the title, and the gold hairline that
+ * marks the brand. The earlier fallback set a single huge initial across the frame, which read as
+ * a placeholder waiting for a real picture — twelve of them in a grid looked like an unfinished
+ * catalogue rather than a designed one. Nothing here is invented data: the artwork is decorative
+ * and stable per title, so a card is distinctive without claiming anything about the course.
+ *
+ * Purely decorative, so the SVG is aria-hidden and the surrounding card supplies the name.
  */
-const PALETTES: [string, string][] = [
-  ["var(--primary)", "oklch(0.27 0.04 190)"],
-  ["var(--copper)", "var(--primary)"],
-  ["var(--gold)", "var(--copper)"],
-  ["oklch(0.30 0.045 190)", "var(--primary)"],
-];
-
-export function CourseMedia({ title, src, className }: { title: string; src?: string | null; className?: string }) {
+export function CatalogMedia({
+  title,
+  src,
+  seed,
+  className,
+}: {
+  title: string;
+  src?: string | null;
+  /** Overrides the title as the artwork seed — used where two items share a name. */
+  seed?: string;
+  className?: string;
+}) {
   const resolvedSrc = proxyMediaUrl(src);
   if (resolvedSrc) {
     return (
@@ -30,34 +45,30 @@ export function CourseMedia({ title, src, className }: { title: string; src?: st
     );
   }
 
-  const hash = Array.from(title).reduce((a, c) => a + c.charCodeAt(0), 0);
-  const [c1, c2] = PALETTES[hash % PALETTES.length];
-  const initial = title.trim().charAt(0).toUpperCase() || "H";
-  const gid = `cm-${hash % PALETTES.length}`;
+  const family = familyFromTitle(title);
+  const field = FAMILY_FIELD[family];
 
   return (
-    <svg
-      viewBox="0 0 400 225"
-      className={cn("aspect-video w-full", className)}
-      preserveAspectRatio="xMidYMid slice"
-      role="img"
+    <div
+      className={cn("relative aspect-video w-full overflow-hidden", className)}
+      style={{
+        background: `linear-gradient(160deg, ${field.from} 0%, ${field.to} 100%)`,
+      }}
       aria-hidden
     >
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={c1} />
-          <stop offset="1" stopColor={c2} />
-        </linearGradient>
-      </defs>
-      <rect width="400" height="225" fill={`url(#${gid})`} />
-      <circle cx="335" cy="42" r="72" fill="#fff" opacity="0.08" />
-      <circle cx="58" cy="196" r="94" fill="#000" opacity="0.06" />
-      <g stroke="#fff" strokeOpacity="0.14" strokeWidth="1.5" fill="none">
-        <path d="M0 165 C 90 135, 150 185, 240 145 S 360 118, 400 148" />
-        <path d="M0 192 C 90 162, 150 212, 240 172 S 360 142, 400 172" />
-      </g>
-      <text x="30" y="152" fontFamily="var(--font-serif, Georgia, serif)" fontSize="118" fontWeight="700" fill="#fff" fillOpacity="0.92">{initial}</text>
-      <rect x="30" y="176" width="48" height="6" rx="3" fill="var(--gold)" />
-    </svg>
+      <CoverArt
+        family={family}
+        seed={seed ?? title}
+        className="absolute inset-0 size-full"
+      />
+      {/* Depth: light gathers at the top corner, the base settles into shadow. */}
+      <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_82%_-10%,rgba(255,255,255,0.16),transparent_58%)]" />
+      <span className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/35 to-transparent" />
+      {/* The gold rule is the brand signature every HElbaron cover carries. */}
+      <span className="absolute bottom-4 start-5 h-[3px] w-10 rounded-full bg-[var(--gold)] opacity-90" />
+    </div>
   );
 }
+
+/** Historical name — courses were the only thing with a cover when this was written. */
+export const CourseMedia = CatalogMedia;

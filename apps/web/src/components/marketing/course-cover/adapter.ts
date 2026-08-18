@@ -91,7 +91,7 @@ export function deriveInitials(name: string): string {
 }
 
 /** Best-effort artwork family from a real course title (only affects the fallback art / press code). */
-function familyFromTitle(title: string): CoverFamily {
+export function familyFromTitle(title: string): CoverFamily {
   const t = title.toLowerCase();
   if (/\bai\b|artificial|machine learning|\bml\b/.test(t)) return "ai";
   if (/data|analyt|finance|financ|invest|trading|analysis|account/.test(t)) return "data";
