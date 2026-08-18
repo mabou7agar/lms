@@ -26,6 +26,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $company_name
  * @property string|null $company_logo_url
  * @property string|null $branding_mode
+ * @property array<string, mixed>|null $metadata
+ * @property array<string, mixed>|null $rendered_snapshot
+ * @property string|null $signature_name
+ * @property string|null $signature_title
  */
 class Certificate extends Model
 {

@@ -16,18 +16,19 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $title
+ * @property Carbon $ends_at
+ * @property string $timezone
  */
 class LiveSession extends Model
 {
-    /** @use HasFactory<LiveSessionFactory> */
-    use HasFactory;
-
     // T1 Option-N tenancy (matrix: Live sessions are SHARED-OR-OWNED/NULLABLE). Public events are global
     // (organization_id NULL); org-private cohorts get a non-null org, stamped server-side on create from
     // the resolved tenant. Registrations/attendance stay USER-OWNED (no tenant column). organization_id
     // is intentionally NOT in $fillable, so it can never be mass-assigned from a request payload.
     use BelongsToTenantNullable;
 
+    /** @use HasFactory<LiveSessionFactory> */
+    use HasFactory;
     use HasPublicId;
     use SoftDeletes;
 

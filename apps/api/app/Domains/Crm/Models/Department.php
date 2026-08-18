@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Carbon|null $created_at
+ * @property string $name
+ * @property string $public_id
+ */
 class Department extends Model
 {
     use BelongsToTenant;

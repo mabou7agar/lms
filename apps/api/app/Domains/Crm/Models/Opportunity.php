@@ -11,6 +11,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int|null $amount_minor
+ * @property Carbon|null $closed_at
+ * @property Carbon|null $created_at
+ * @property string|null $currency
+ * @property Carbon|null $expected_close_date
+ * @property string|null $lost_reason
+ * @property string $name
+ * @property int|null $owner_id
+ * @property int|null $pipeline_id
+ * @property int $probability
+ * @property string|null $product_ref
+ * @property string $public_id
+ * @property OpportunityStatus $status
+ * @property Carbon|null $won_at
+ */
 class Opportunity extends Model
 {
     use HasActivities;

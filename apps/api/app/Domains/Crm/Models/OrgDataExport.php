@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $organization_id
  * @property string $public_id
+ * @property array<string, mixed>|null $manifest
+ * @property OrgExportStatus $status
+ * @property string|null $storage_prefix
  */
 class OrgDataExport extends Model
 {

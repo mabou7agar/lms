@@ -8,6 +8,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @mixin OrgDataExport
+ *
+ * @property mixed $completed_at
+ * @property mixed $created_at
+ * @property mixed $dataset
+ * @property mixed $manifest
+ * @property mixed $row_count
+ * @property mixed $status
  */
 class OrgDataExportResource extends JsonResource
 {

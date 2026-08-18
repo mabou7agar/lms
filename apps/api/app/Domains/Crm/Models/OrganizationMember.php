@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property Carbon|null $invitation_expires_at
+ * @property MemberRole $role
+ * @property MemberStatus $status
+ */
 class OrganizationMember extends Model
 {
     use BelongsToTenant;

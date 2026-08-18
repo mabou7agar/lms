@@ -6,6 +6,12 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property Carbon|null $assigned_at
+ * @property int $member_id
+ * @property string $public_id
+ * @property mixed|null $revoked_at
+ */
 class SeatAssignment extends Model
 {
     use HasPublicId;

@@ -17,17 +17,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Nested category. A category may have a parent and many children (self-referential tree).
+ *
+ * @property string|null $image_path
+ * @property bool $is_active
  */
 class Category extends Model
 {
-    /** @use HasFactory<CategoryFactory> */
-    use HasFactory;
-
     // T1 Option-N tenancy (matrix: categories are SHARED-OR-OWNED/NULLABLE). Global taxonomy by default
     // (organization_id NULL); optional org-private categories when non-null. organization_id is
     // intentionally NOT in $fillable, so it can never be mass-assigned from a request payload.
     use BelongsToTenantNullable;
 
+    /** @use HasFactory<CategoryFactory> */
+    use HasFactory;
     use HasPublicId;
     use HasSeo;
     use HasSlug;

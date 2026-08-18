@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A PDPL/GDPR data-subject request (access, portability, erasure, rectification) and its lifecycle.
+ *
+ * @property Carbon|null $completed_at
+ * @property string $public_id
+ * @property Carbon $requested_at
+ * @property DataRequestStatus $status
+ * @property DataRequestType $type
  */
 class DataSubjectRequest extends Model
 {

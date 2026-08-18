@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property Carbon|null $created_at
+ * @property int|null $department_id
+ * @property string $name
+ * @property string $public_id
+ */
 class Team extends Model
 {
     use BelongsToTenant;

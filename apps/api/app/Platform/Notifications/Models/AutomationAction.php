@@ -7,6 +7,12 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property AutomationActionType $action_type
+ * @property string $category
+ * @property mixed|null $config
+ * @property string $template_key
+ */
 class AutomationAction extends Model
 {
     use HasPublicId;

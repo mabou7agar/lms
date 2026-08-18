@@ -35,13 +35,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $responded_by
  * @property \Illuminate\Support\Carbon|null $responded_at
  * @property int $helpful_count
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class CourseReview extends Model
 {
+    use CanBeReported;
+
     /** @use HasFactory<CourseReviewFactory> */
     use HasFactory;
-
-    use CanBeReported;
     use HasPublicId;
     use InheritsCourseTenancy;
     use SoftDeletes;

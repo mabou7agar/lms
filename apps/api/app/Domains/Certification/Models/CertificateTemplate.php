@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, mixed>|null $design
  * @property string|null $orientation
  * @property bool $is_active
+ * @property string $key
  */
 class CertificateTemplate extends Model
 {

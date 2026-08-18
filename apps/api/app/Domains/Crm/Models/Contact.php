@@ -10,6 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon|null $created_at
+ * @property string|null $email
+ * @property string $first_name
+ * @property string|null $last_name
+ * @property string|null $phone
+ * @property string $public_id
+ * @property string|null $title
+ */
 class Contact extends Model
 {
     use HasActivities;

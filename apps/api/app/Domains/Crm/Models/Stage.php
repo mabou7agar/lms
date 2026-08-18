@@ -6,6 +6,12 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property mixed $is_lost
+ * @property bool $is_won
+ * @property string $name
+ * @property int $pipeline_id
+ */
 class Stage extends Model
 {
     use HasPublicId;

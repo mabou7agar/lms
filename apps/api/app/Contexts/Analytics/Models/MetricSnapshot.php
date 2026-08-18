@@ -14,13 +14,16 @@ use Illuminate\Database\Eloquent\Model;
  * (organization_id IS NULL) plus its OWN org's buckets — never another org's — and org buckets are
  * stamped on create when a tenant is active. With no resolved tenant the scope no-ops and the write
  * path records a global (NULL) row, so the pre-tenancy behaviour is byte-for-byte preserved.
+ *
+ * @property mixed $enrollments
+ * @property mixed $label
  */
 class MetricSnapshot extends Model
 {
+    use BelongsToTenantNullable;
+
     /** @use HasFactory<MetricSnapshotFactory> */
     use HasFactory;
-
-    use BelongsToTenantNullable;
 
     protected $fillable = ['organization_id', 'metric_key', 'granularity', 'period', 'dimension_key', 'dimension_value', 'value'];
 

@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $verified_at
  * @property string $verification_token
  * @property int|null $created_by
+ * @property Carbon|null $created_at
  */
 class CustomDomain extends Model
 {

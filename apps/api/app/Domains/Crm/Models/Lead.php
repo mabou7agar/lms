@@ -16,6 +16,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int|null $company_id
+ * @property string|null $company_name
+ * @property string|null $company_size
+ * @property string|null $country
+ * @property string|null $currency
+ * @property string|null $email
+ * @property Carbon|null $last_contacted_at
+ * @property int|null $lead_score
+ * @property bool $marketing_consent
+ * @property Carbon|null $next_follow_up_at
+ * @property int|null $owner_id
+ * @property string $public_id
+ * @property string|null $request_type
+ * @property LeadStatus $status
+ * @property string|null $utm_campaign
+ * @property string|null $utm_medium
+ * @property string|null $utm_source
+ * @property int|null $value_minor
+ */
 class Lead extends Model
 {
     /** @use HasFactory<LeadFactory> */

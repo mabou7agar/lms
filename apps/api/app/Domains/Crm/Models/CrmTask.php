@@ -8,6 +8,17 @@ use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int|null $assigned_to
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $due_at
+ * @property string|null $priority
+ * @property string $public_id
+ * @property TaskStatus $status
+ * @property string $title
+ * @property CrmTaskType $type
+ */
 class CrmTask extends Model
 {
     use HasPublicId;

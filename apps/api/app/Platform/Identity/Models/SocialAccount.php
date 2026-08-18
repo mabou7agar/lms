@@ -11,6 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * The unique (provider, provider_subject) pair is the stable key a returning social login is matched
  * on — never the email, which can change. Owned by Identity (the only layer permitted to touch User).
+ *
+ * @property Carbon|null $created_at
+ * @property string|null $email
+ * @property string $provider
+ * @property string $public_id
+ * @property int $user_id
  */
 class SocialAccount extends Model
 {

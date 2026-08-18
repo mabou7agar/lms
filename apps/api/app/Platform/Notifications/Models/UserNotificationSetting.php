@@ -6,6 +6,11 @@ use App\Platform\Notifications\Enums\DigestFrequency;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property bool $quiet_hours_enabled
+ * @property string|null $quiet_hours_end
+ * @property string|null $quiet_hours_start
+ */
 class UserNotificationSetting extends Model
 {
     use HasPublicId;

@@ -5,6 +5,10 @@ namespace App\Domains\Certification\Models;
 use App\Platform\Shared\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string $issuer_name
+ * @property string|null $signature_image_path
+ */
 class CertificateSetting extends Model
 {
     use HasTranslations;

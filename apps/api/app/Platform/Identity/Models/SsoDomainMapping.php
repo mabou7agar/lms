@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $organization_id
  * @property string $domain
  * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property Carbon|null $created_at
+ * @property SsoDomainMode $mode
+ * @property string $public_id
  */
 class SsoDomainMapping extends Model
 {

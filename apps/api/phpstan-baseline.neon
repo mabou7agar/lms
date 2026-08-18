@@ -235,12 +235,6 @@ parameters:
 			path: app/Contexts/Analytics/Jobs/ProcessExportJob.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Analytics/Listeners/MetricEventSubscriber.php
-
-		-
 			message: '#^Method App\\Contexts\\Analytics\\Listeners\\MetricEventSubscriber\:\:subscribe\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -487,12 +481,6 @@ parameters:
 			path: app/Contexts/Commerce/Actions/Payment/FulfillOrderAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Contexts/Commerce/Actions/Payment/InitiatePaymentAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -502,12 +490,6 @@ parameters:
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Contexts/Commerce/Actions/Payment/InitiatePaymentAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
-			identifier: property.notFound
-			count: 2
 			path: app/Contexts/Commerce/Actions/Payment/InitiatePaymentAction.php
 
 		-
@@ -521,12 +503,6 @@ parameters:
 			identifier: helbaron.crossContextEloquent
 			count: 1
 			path: app/Contexts/Commerce/Database/Factories/OrderFactory.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Contexts/Commerce/Database/Seeders/CommerceSeeder.php
 
 		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Domains\\Catalog\\Models\\Course'' from context ''Commerce''\. Query another context only through its Port / read model\.$#'
@@ -613,12 +589,6 @@ parameters:
 			path: app/Contexts/Commerce/Http/Resources/ContractResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$discount_minor\.$#'
 			identifier: property.notFound
 			count: 1
@@ -661,12 +631,6 @@ parameters:
 			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Http/Resources/OrderResource.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$number\.$#'
 			identifier: property.notFound
 			count: 1
@@ -701,12 +665,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Contexts/Commerce/Listeners/FulfillOnContractAccepted.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Listeners/RevokeEnrollmentsOnRefund.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$course_id\.$#'
@@ -949,22 +907,10 @@ parameters:
 			path: app/Contexts/Commerce/Policies/ContractPolicy.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Policies/OrderPolicy.php
-
-		-
 			message: '#^Property App\\Contexts\\Commerce\\Providers\\CommerceServiceProvider\:\:\$routeFiles type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Contexts/Commerce/Providers/CommerceServiceProvider.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Coupon\:\:\$is_active\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Commerce/Services/CouponService.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Coupon\:\:\$scope\.$#'
@@ -1219,18 +1165,6 @@ parameters:
 			path: app/Contexts/Learning/Http/Resources/MyLearningItemResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$course_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Listeners/UpdateLearningSession.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Listeners/UpdateLearningSession.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1279,22 +1213,10 @@ parameters:
 			path: app/Contexts/Learning/Models/LessonProgress.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Policies/EnrollmentPolicy.php
-
-		-
 			message: '#^Property App\\Contexts\\Learning\\Providers\\LearningServiceProvider\:\:\$routeFiles type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Contexts/Learning/Providers/LearningServiceProvider.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$course_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Services/ContinueLearningService.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$updated_at\.$#'
@@ -1313,18 +1235,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Contexts/Learning/Services/LessonAccessService.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$completed_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Services/ProgressService.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$course_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Contexts/Learning/Services/ProgressService.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$progress_percentage\.$#'
@@ -1405,12 +1315,6 @@ parameters:
 			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Lesson\:\:\$section_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Section\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1430,24 +1334,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$thumbnail_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Domains/Authoring/Curriculum/CurriculumReadAdapter.php
@@ -1639,12 +1525,6 @@ parameters:
 			path: app/Domains/Authoring/Http/Resources/LessonResource.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Http/Resources/LessonResource.php
-
-		-
 			message: '#^Method App\\Domains\\Authoring\\Http\\Resources\\LessonResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1676,18 +1556,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Section\:\:\$publish_state\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Http/Resources/SectionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Section\:\:\$summary\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Http/Resources/SectionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Section\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Authoring/Http/Resources/SectionResource.php
@@ -1849,12 +1717,6 @@ parameters:
 			path: app/Domains/Authoring/Services/CurriculumTreeService.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Authoring\\Models\\Lesson\:\:\$section_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Authoring/Services/CurriculumValidator.php
-
-		-
 			message: '#^Cross\-context Model reference\: ''App\\Domains\\Catalog\\Models\\Course'' is used from context ''Authoring''\. Access another context''s data through a Port or a published read model, not its Eloquent Model\.$#'
 			identifier: helbaron.crossContextModel
 			count: 1
@@ -1885,12 +1747,6 @@ parameters:
 			path: app/Domains/Catalog/Database/Seeders/CatalogSeeder.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Controllers/Api/V1/Instructor/AnnouncementController.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\CourseAnnouncement\:\:\$body\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1909,12 +1765,6 @@ parameters:
 			path: app/Domains/Catalog/Http/Controllers/Api/V1/Instructor/AnnouncementController.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Controllers/Api/V1/Instructor/StudentController.php
-
-		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Contexts\\Learning\\Models\\Enrollment'' from context ''Catalog''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
 			count: 1
@@ -1931,18 +1781,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Domains/Catalog/Http/Requests/CourseIndexRequest.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Category\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Category\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CategoryResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Category\:\:\$position\.$#'
@@ -1993,40 +1831,10 @@ parameters:
 			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$subtitle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$thumbnail_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
-
-		-
 			message: '#^Method App\\Domains\\Catalog\\Http\\Resources\\CourseListResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Domains/Catalog/Http/Resources/CourseListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$is_featured\.$#'
@@ -2047,67 +1855,7 @@ parameters:
 			path: app/Domains/Catalog/Http/Resources/CourseResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$seo\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$subtitle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$thumbnail_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$visibility\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Catalog/Http/Resources/CourseResource.php
@@ -2115,18 +1863,6 @@ parameters:
 		-
 			message: '#^Method App\\Domains\\Catalog\\Http\\Resources\\CourseResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/CourseResource.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
 			count: 1
 			path: app/Domains/Catalog/Http/Resources/CourseResource.php
 
@@ -2183,48 +1919,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$subtitle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$thumbnail_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$visibility\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorCourseResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$completed_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorStudentResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$enrolled_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Http/Resources/Instructor/InstructorStudentResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$progress_percentage\.$#'
@@ -2299,42 +1993,6 @@ parameters:
 			path: app/Domains/Catalog/Models/Category.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$seo\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Catalog\\Models\\Course\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Generic type Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Domains\\Catalog\\Models\\CourseTrainer\> in PHPDoc tag @return does not specify all template types of class Illuminate\\Database\\Eloquent\\Relations\\HasMany\: TRelatedModel, TDeclaringModel$#'
-			identifier: generics.lessTypes
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:categories\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany does not specify its types\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \(2\-4 required\)$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:language\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:level\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
 			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:scopeFeatured\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -2367,18 +2025,6 @@ parameters:
 		-
 			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:scopeVisible\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
 			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:tags\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany does not specify its types\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \(2\-4 required\)$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Catalog/Models/Course.php
-
-		-
-			message: '#^Method App\\Domains\\Catalog\\Models\\Course\:\:trainerLinks\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Domains\\Catalog\\Models\\CourseTrainer\> but returns Illuminate\\Database\\Eloquent\\Relations\\HasMany\<App\\Domains\\Catalog\\Models\\CourseTrainer, \$this\(App\\Domains\\Catalog\\Models\\Course\)\>\.$#'
-			identifier: return.type
 			count: 1
 			path: app/Domains/Catalog/Models/Course.php
 
@@ -2449,18 +2095,6 @@ parameters:
 			path: app/Domains/Catalog/Services/CourseSearchService.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$course_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Catalog/Services/InstructorAnalyticsService.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$enrolled_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Services/InstructorAnalyticsService.php
-
-		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$progress_percentage\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2468,12 +2102,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Catalog/Services/InstructorAnalyticsService.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Catalog/Services/InstructorAnalyticsService.php
@@ -2498,12 +2126,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$pdf_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Actions/EnsureCertificatePdfAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Actions/EnsureCertificatePdfAction.php
@@ -2545,12 +2167,6 @@ parameters:
 			path: app/Domains/Certification/Actions/ReissueCertificateAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$verification_code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Actions/ShareCertificateAction.php
-
-		-
 			message: '#^Cross\-context Eloquent access\: static call on ''App\\Domains\\Catalog\\Models\\Course'' from context ''Certification''\. Query another context only through its Port / read model\.$#'
 			identifier: helbaron.crossContextEloquent
 			count: 1
@@ -2561,24 +2177,6 @@ parameters:
 			identifier: helbaron.crossContextEloquent
 			count: 1
 			path: app/Domains/Certification/Database/Factories/CertificateFactory.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Certification/Filament/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Controllers/Api/V1/CertificateController.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Controllers/Api/V1/CertificateFileController.php
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$pdf_path\.$#'
@@ -2599,49 +2197,7 @@ parameters:
 			path: app/Domains/Certification/Http/Resources/CertificateListItemResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$issued_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$revoked_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Http/Resources/CertificateResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$verification_code\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Http/Resources/CertificateResource.php
@@ -2669,12 +2225,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Domains/Certification/Http/Resources/VerificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Listeners/GenerateCertificateOnCourseCompleted.php
 
 		-
 			message: '#^Parameter \#2 \$course of method App\\Domains\\Certification\\Actions\\GenerateCertificateAction\:\:executeByUserId\(\) expects App\\Domains\\Catalog\\Models\\Course, Illuminate\\Database\\Eloquent\\Model given\.$#'
@@ -2725,54 +2275,6 @@ parameters:
 			path: app/Domains/Certification/Providers/CertificationServiceProvider.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$issued_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$verification_code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\CertificateSetting\:\:\$issuer_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$html\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/CertificateRenderService.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$revoked_at\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2791,52 +2293,10 @@ parameters:
 			path: app/Domains/Certification/Services/CertificateVerificationService.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$course_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$issued_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$signature_hash\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$verification_code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/SignatureService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$verification_code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Certification/Services/VerificationUrlService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$company_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Actions/Lead/ConvertLeadAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Actions/Lead/ConvertLeadAction.php
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$name\.$#'
@@ -2864,18 +2324,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$pipeline_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Actions/Lead/MoveLeadStageAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Stage\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Actions/Lead/MoveLeadStageAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Stage\:\:\$pipeline_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Crm/Actions/Lead/MoveLeadStageAction.php
@@ -2947,18 +2395,6 @@ parameters:
 			path: app/Domains/Crm/Http/Resources/LeadResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/LeadResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/LeadResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2971,25 +2407,7 @@ parameters:
 			path: app/Domains/Crm/Http/Resources/LeadResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/LeadResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$source\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/LeadResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/LeadResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$value_minor\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Crm/Http/Resources/LeadResource.php
@@ -3025,18 +2443,6 @@ parameters:
 			path: app/Domains/Crm/Http/Resources/OrganizationMemberResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\OrganizationMember\:\:\$role\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/OrganizationMemberResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\OrganizationMember\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/OrganizationMemberResource.php
-
-		-
 			message: '#^Method App\\Domains\\Crm\\Http\\Resources\\OrganizationMemberResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3044,12 +2450,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Organization\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Http/Resources/OrganizationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Organization\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Crm/Http/Resources/OrganizationResource.php
@@ -3089,12 +2489,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Crm/Listeners/LogConsultingRequestActivity.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$owner_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Listeners/LogLeadCreatedActivity.php
 
 		-
 			message: '#^Method App\\Domains\\Crm\\Models\\BillingProfile\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
@@ -3217,18 +2611,6 @@ parameters:
 			path: app/Domains/Crm/Models/ConsultingSession.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Contact\:\:\$first_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Models/Contact.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Contact\:\:\$last_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Models/Contact.php
-
-		-
 			message: '#^Method App\\Domains\\Crm\\Models\\Contact\:\:activities\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\MorphMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -3293,12 +2675,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Domains/Crm/Models/Department.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\Lead\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Models/Lead.php
 
 		-
 			message: '#^Class App\\Domains\\Crm\\Models\\Lead uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
@@ -3415,12 +2791,6 @@ parameters:
 			path: app/Domains/Crm/Models/Organization.php
 
 		-
-			message: '#^Method App\\Domains\\Crm\\Models\\OrganizationMember\:\:organization\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Domains/Crm/Models/OrganizationMember.php
-
-		-
 			message: '#^Method App\\Domains\\Crm\\Models\\OrganizationMember\:\:scopeForTenant\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -3437,12 +2807,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Domains/Crm/Models/Pipeline.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\SeatAssignment\:\:\$revoked_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Crm/Models/SeatAssignment.php
 
 		-
 			message: '#^Method App\\Domains\\Crm\\Models\\SeatAssignment\:\:member\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
@@ -3637,19 +3001,7 @@ parameters:
 			path: app/Domains/Live/Actions/Session/CompleteSessionAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Actions/Session/RescheduleSessionAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$starts_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Actions/Session/RescheduleSessionAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Actions/Session/RescheduleSessionAction.php
@@ -3709,12 +3061,6 @@ parameters:
 			path: app/Domains/Live/Http/Resources/EventDetailResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Live/Http/Resources/EventDetailResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -3728,12 +3074,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Domains/Live/Http/Resources/EventDetailResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Domains/Live/Http/Resources/EventDetailResource.php
@@ -3757,12 +3097,6 @@ parameters:
 			path: app/Domains/Live/Http/Resources/EventListResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/EventListResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -3776,12 +3110,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/EventListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Http/Resources/EventListResource.php
@@ -3793,12 +3121,6 @@ parameters:
 			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$public_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -3812,12 +3134,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Http/Resources/LiveSessionListResource.php
@@ -3836,12 +3152,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
@@ -3868,12 +3178,6 @@ parameters:
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$timezone\.$#'
-			identifier: property.notFound
-			count: 2
 			path: app/Domains/Live/Http/Resources/LiveSessionResource.php
 
 		-
@@ -4087,12 +3391,6 @@ parameters:
 			path: app/Domains/Live/Reminders/FakeReminderScheduler.php
 
 		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Services/JoinTokenService.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$starts_at\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4103,12 +3401,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Domains/Live/Services/JoinTokenService.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$ends_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Domains/Live/Services/RegistrationValidationService.php
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Live\\Models\\LiveSession\:\:\$status\.$#'
@@ -4187,12 +3479,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Identity/Actions/Auth/LoginAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$phone\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Actions/Auth/VerifyPhoneAction.php
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserDevice\:\:\$public_id\.$#'
@@ -4303,18 +3589,6 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/DeviceResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserProfile\:\:\$avatar_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/ProfileResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserProfile\:\:\$bio\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/ProfileResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserProfile\:\:\$city\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4351,22 +3625,10 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/ProfileResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserProfile\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/ProfileResource.php
-
-		-
 			message: '#^Method App\\Platform\\Identity\\Http\\Resources\\ProfileResource\:\:toArray\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Platform/Identity/Http/Resources/ProfileResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$is_active\.$#'
@@ -4375,19 +3637,7 @@ parameters:
 			path: app/Platform/Identity/Http/Resources/UserResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$locale\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$mfa_enabled\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Http/Resources/UserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$phone\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Identity/Http/Resources/UserResource.php
@@ -4412,30 +3662,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$locked_until\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Models/User.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Platform/Identity/Models/User.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$public_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Models/User.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avatar_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Identity/Models/User.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$bio\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Identity/Models/User.php
@@ -4493,12 +3719,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Platform/Identity/Models/UserOtp.php
-
-		-
-			message: '#^Method App\\Platform\\Identity\\Models\\UserProfile\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Platform/Identity/Models/UserProfile.php
 
 		-
 			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\UserDevice\:\:\$user_id\.$#'
@@ -4645,30 +3865,6 @@ parameters:
 			path: app/Platform/Notifications/Http/Resources/NotificationResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$total_minor\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Commerce\\Models\\Order\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
-			message: '#^Access to an undefined property App\\Contexts\\Learning\\Models\\Enrollment\:\:\$user_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
-			message: '#^Access to an undefined property App\\Domains\\Certification\\Models\\Certificate\:\:\$number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\ConsultingRequest\:\:\$requested_by\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4676,12 +3872,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Domains\\Crm\\Models\\ConsultingRequest\:\:\$subject\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
-
-		-
-			message: '#^Access to an undefined property App\\Platform\\Identity\\Models\\User\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Platform/Notifications/Listeners/NotificationEventSubscriber.php
@@ -4883,12 +4073,6 @@ parameters:
 			identifier: trait.unused
 			count: 1
 			path: app/Platform/Shared/Traits/HasStatus.php
-
-		-
-			message: '#^Trait App\\Platform\\Shared\\Traits\\HasTranslations is used zero times and is not analysed\.$#'
-			identifier: trait.unused
-			count: 1
-			path: app/Platform/Shared/Traits/HasTranslations.php
 
 		-
 			message: '#^Cross\-context Model reference\: ''App\\Platform\\Identity\\Models\\User'' is used from context ''Pages''\. Access another context''s data through a Port or a published read model, not its Eloquent Model\.$#'

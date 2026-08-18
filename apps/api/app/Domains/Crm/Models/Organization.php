@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * CRM corporate account. Distinct from Identity's tenant organization (different table).
+ *
+ * @property string $public_id
  */
 class Organization extends Model
 {

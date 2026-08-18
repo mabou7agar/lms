@@ -30,6 +30,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $organization_id
  * @property string|null $timezone
  * @property Carbon|null $password_set_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $email_verified_at
+ * @property string $locale
+ * @property string|null $phone
  */
 class User extends Authenticatable implements Actor, FilamentUser, HasName
 {

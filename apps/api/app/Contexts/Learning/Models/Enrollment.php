@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $enrolled_at
  * @property Carbon|null $expires_at
  * @property Carbon|null $completed_at
+ * @property int $course_id
  */
 class Enrollment extends Model
 {

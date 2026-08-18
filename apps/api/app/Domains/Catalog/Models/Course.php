@@ -4,6 +4,8 @@ namespace App\Domains\Catalog\Models;
 
 use App\Domains\Catalog\Database\Factories\CourseFactory;
 use App\Domains\Catalog\Enums\CourseStatus;
+use App\Platform\Identity\Contracts\Data\UserRef;
+use App\Platform\Shared\Commerce\Data\PurchaseSummary;
 use App\Platform\Shared\Enums\Visibility;
 use App\Platform\Shared\Search\SearchableText;
 use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
@@ -28,21 +30,30 @@ use Illuminate\Support\Facades\DB;
  * @property CourseStatus $status
  * @property string|null $trailer_path
  * @property int|null $duration_minutes
- *
- * @property-read \App\Platform\Shared\Commerce\Data\PurchaseSummary|null $purchase_summary How the
+ * @property-read PurchaseSummary|null $purchase_summary How the
  *   course is sold, stashed by CourseController from the Shared PurchaseSummaryPort so a listing
  *   resolves every row in one call. NOT a column and NOT a relation — Catalog never reads a Commerce
  *   model; only this DTO crosses.
- * @property-read list<\App\Platform\Identity\Contracts\Data\UserRef>|null $trainer_refs Boundary-safe
+ * @property-read list<UserRef>|null $trainer_refs Boundary-safe
  *   trainer display refs, resolved via UserLookupPort and stashed by CourseController::attachTrainerRefs
  *   for the API listing resource. NOT a column and NOT an Eloquent relation — trainer ids live on the
  *   course_trainer pivot (CourseTrainer); the Catalog context never imports Identity's User model.
+ * @property string|null $description
+ * @property array<string, mixed>|null $description_i18n
+ * @property int|null $language_id
+ * @property array<string, mixed>|null $learning_objectives_i18n
+ * @property int|null $level_id
+ * @property array<string, mixed>|null $requirements_i18n
+ * @property array<string, mixed>|null $seo
+ * @property string|null $subtitle
+ * @property array<string, mixed>|null $subtitle_i18n
+ * @property array<string, mixed>|null $target_audience_i18n
+ * @property string|null $thumbnail_path
+ * @property array<string, mixed>|null $title_i18n
+ * @property Visibility $visibility
  */
 class Course extends Model
 {
-    /** @use HasFactory<CourseFactory> */
-    use HasFactory;
-
     // T1 Option-N tenancy: adds SharedOrOwnedTenantScope (global rows [organization_id IS NULL] OR the
     // active tenant's own rows) and stamps organization_id on create ONLY when a tenant is resolved
     // (else NULL = global). The tenant is derived server-side from the acting user's organization —
@@ -50,6 +61,8 @@ class Course extends Model
     // organization_id/tenant_id in a request payload can never be mass-assigned onto a course.
     use BelongsToTenantNullable;
 
+    /** @use HasFactory<CourseFactory> */
+    use HasFactory;
     use HasPublicId;
     use HasSeo;
     use HasSlug;
