@@ -21,10 +21,11 @@ import {
   LearningExperience,
   LearningJourney,
   Testimonials,
-  Instructors,
   EnterpriseTrust,
 } from "@/components/landing/home-sections";
 import { FeaturedCourses } from "@/components/marketing/featured-courses";
+import { FeaturedBundles } from "@/components/marketing/featured-bundles";
+import { FeaturedTrainers } from "@/components/marketing/featured-trainers";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { BlockRenderer } from "@/components/homepage/registry";
 import { PersonaPaths } from "@/components/landing/persona-paths";
@@ -98,6 +99,37 @@ export default async function LandingPage({
       // so the trailing fallback <FeaturedCourses /> must be suppressed to avoid a duplicate section.
       (b.type === "brand_section" && b.content?.key === "featured_courses"),
   );
+  const hasCmsTrainers = bodyBlocks.some(
+    (b) =>
+      b.type === "team" ||
+      (b.type === "brand_section" && b.content?.key === "instructors"),
+  );
+
+  const socialProofIndex = bodyBlocks.findIndex((section) => section.type === "testimonials" || section.type === "faq");
+  const salesInsertionIndex = socialProofIndex === -1 ? bodyBlocks.length : socialProofIndex;
+  const cmsCourseSurfaceIndex = bodyBlocks.findIndex(
+    (section) =>
+      section.type === "featured_courses" ||
+      (section.type === "brand_section" && section.content?.key === "featured_courses"),
+  );
+  const trainerInsertionIndex = hasCmsFeaturedCourses && cmsCourseSurfaceIndex !== -1
+    ? cmsCourseSurfaceIndex + 1
+    : salesInsertionIndex;
+
+  const dynamicSalesSections = bodyBlocks.flatMap((section) => {
+    const index = bodyBlocks.indexOf(section);
+
+    // Put the sales proof high on the page: after the service/features story and before testimonials
+    // or FAQ. The prior fallback rendered courses at the very end, which made the homepage feel like
+    // it had no catalogue.
+    return [
+      ...(!hasCmsFeaturedCourses && index === salesInsertionIndex
+        ? [<FeaturedCourses key="home-real-courses" />, <FeaturedBundles key="home-real-bundles" />]
+        : []),
+      ...(!hasCmsTrainers && index === trainerInsertionIndex ? [<FeaturedTrainers key="home-real-trainers" />] : []),
+      <BlockRenderer key={section.key} section={section} />,
+    ];
+  });
 
   // Never render an empty homepage: if the API is unreachable, fall back to the built-in brand
   // sections (the block components default to brand content when no CMS content is supplied).
@@ -106,9 +138,14 @@ export default async function LandingPage({
   const body =
     bodyBlocks.length > 0 ? (
       <>
-        {bodyBlocks.map((section) => <BlockRenderer key={section.key} section={section} />)}
-        {/* Fallback only — suppressed when a CMS featured-courses block already provides real courses. */}
-        {!hasCmsFeaturedCourses && <FeaturedCourses />}
+        {dynamicSalesSections}
+        {!hasCmsFeaturedCourses && salesInsertionIndex === bodyBlocks.length ? (
+          <>
+            <FeaturedCourses />
+            <FeaturedBundles />
+          </>
+        ) : null}
+        {!hasCmsTrainers && trainerInsertionIndex === bodyBlocks.length ? <FeaturedTrainers /> : null}
       </>
     ) : (
       // Built-in premium brand homepage (rendered when the CMS has no published blocks).
@@ -121,8 +158,11 @@ export default async function LandingPage({
         <LearningExperience />
         <LearningJourney />
         <FeaturedCourses />
+        {/* Bundles sit with the courses, not after the FAQ: they are the larger purchase and the
+            one a visitor is least likely to go looking for on their own. */}
+        <FeaturedBundles />
+        <FeaturedTrainers />
         <Testimonials />
-        <Instructors />
         <EnterpriseTrust />
         <FinalCta />
       </>
