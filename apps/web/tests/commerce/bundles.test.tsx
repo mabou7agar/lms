@@ -3,12 +3,13 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithI18n } from "../render";
 
-const { useBundles, useProduct, addMutate, push, authState } = vi.hoisted(() => ({
+const { useBundles, useProduct, addMutate, push, authState, toastError } = vi.hoisted(() => ({
   useBundles: vi.fn(),
   useProduct: vi.fn(),
   addMutate: vi.fn(),
   push: vi.fn(),
   authState: { status: "authenticated" as "authenticated" | "guest" },
+  toastError: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -16,6 +17,7 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ public_id: "bundle-1" }),
 }));
 vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => authState }));
+vi.mock("sonner", () => ({ toast: { error: toastError, success: vi.fn() } }));
 vi.mock("@/lib/commerce/hooks", () => ({
   useBundles,
   useProduct,
@@ -24,6 +26,7 @@ vi.mock("@/lib/commerce/hooks", () => ({
 
 import { BundlesPageClient } from "@/app/(marketing)/(site)/bundles/bundles-page-client";
 import { BundleDetailsClient } from "@/app/(marketing)/(site)/bundles/[public_id]/bundle-details-client";
+import { ApiRequestError } from "@/lib/api/client";
 
 const bundle = {
   id: "bundle-1",
@@ -169,6 +172,40 @@ describe("Buyer-selected seat counts", () => {
     renderWithI18n(<BundleDetailsClient />);
 
     expect(screen.getByText(/Price shown is per seat/i)).toBeInTheDocument();
+  });
+
+  it("says up front that the bundle is bought for a company", () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    // A seat-priced bundle cannot go in a personal cart. Saying so beside the seat control beats
+    // letting the buyer choose 15 seats and only then be refused.
+    expect(screen.getByText(/Bought for a company/i)).toBeInTheDocument();
+  });
+
+  it("does not claim a company purchase for a bundle sold as one package", () => {
+    useProduct.mockReturnValue(detailResult);
+    renderWithI18n(<BundleDetailsClient />);
+
+    expect(screen.queryByText(/Bought for a company/i)).not.toBeInTheDocument();
+  });
+
+  it("explains the company purchase when the server refuses a personal cart", async () => {
+    useProduct.mockReturnValue({ ...detailResult, data: buyerSelects });
+    renderWithI18n(<BundleDetailsClient />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Add to cart/i }));
+
+    // The audience gate refuses a per-seat bundle before the seat count is read, so this is the
+    // code the personal-cart attempt now comes back with. The buyer must still be told what to do
+    // about it rather than shown the raw refusal.
+    const onError = addMutate.mock.calls[0]?.[1]?.onError as (e: unknown) => void;
+    onError(new ApiRequestError(422, "COMMERCE_BUYER_AUDIENCE_MISMATCH", "This product is sold to companies only."));
+
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringMatching(/company/i),
+      expect.objectContaining({ action: expect.anything() }),
+    );
   });
 
   it("offers a quote instead of a cart for a quote-only bundle", () => {

@@ -170,6 +170,29 @@ class Product extends Model
         return $query->whereIn('audience', [ProductAudience::Individual->value, ProductAudience::Both->value]);
     }
 
+    /**
+     * Who this product is *actually* sold to, which is not always what the audience column says.
+     *
+     * Per-seat pricing reads the listed amount as the price of one seat, and seats exist only in a
+     * company purchase — so a product priced that way has nothing an individual can buy, whatever
+     * its audience is set to. The admin form refuses that combination now, but rows written before
+     * it did still exist, and advertising a buyer path the cart will reject is worse than not
+     * advertising it at all. Derived in one place so the catalogue, the cart and the API agree.
+     *
+     * Null stays null: a product saved before the commercial-policy wave records no audience and is
+     * deliberately still sold to everyone.
+     */
+    public function effectiveAudience(): ?ProductAudience
+    {
+        $audience = $this->audience;
+
+        if ($audience?->allowsIndividual() && $this->pricingBasis() === PricingBasis::PerSeat) {
+            return ProductAudience::Company;
+        }
+
+        return $audience;
+    }
+
     /** The default price row, or the first one when none is flagged default. */
     public function defaultPrice(): ?ProductPrice
     {

@@ -37,7 +37,9 @@ class ProductResource extends BaseResource
             // Null-safe throughout: the columns carry database defaults, so a model that has not
             // been persisted (or predates the policy migration) has no value in memory and must not
             // fatal a response.
-            'audience' => $this->resource->audience?->value,
+            // Effective, not raw: a per-seat product is a company purchase however its column reads,
+            // and the badge on the public bundle card is drawn straight from this value.
+            'audience' => $this->resource->effectiveAudience()?->value,
             // Courses are read through getAttribute so this Commerce resource never depends on the
             // Catalog model's property shape (the models stay in separate contexts).
             'courses' => $this->whenLoaded('courses', fn () => $this->resource->courses->map(fn ($c): array => [

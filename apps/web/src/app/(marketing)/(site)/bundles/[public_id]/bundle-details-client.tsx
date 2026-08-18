@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Award, Clock, Layers, ShoppingCart, Users } from "lucide-react";
-import { errorMessage } from "@/lib/api/errors";
+import { ArrowLeft, ArrowRight, Award, Building2, Clock, Layers, ShoppingCart, Users } from "lucide-react";
+import { errorCode, errorMessage } from "@/lib/api/errors";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useAddToCart, useProduct } from "@/lib/commerce/hooks";
 import {
@@ -38,7 +38,7 @@ export function BundleDetailsClient() {
   const params = useParams<{ public_id: string }>();
   const publicId = params.public_id;
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const query = useProduct(publicId);
   const add = useAddToCart();
   const authed = status === "authenticated";
@@ -46,6 +46,9 @@ export function BundleDetailsClient() {
   // Named for the count, not "seats": the render callback below already binds `seats` to the seat
   // RULES label, and shadowing it silently typed this as a string.
   const [seatCount, setSeatCount] = useState<number | null>(null);
+  // Seats only exist for a company purchase; a bundle that sells by the seat cannot go in a personal
+  // cart whatever its audience says.
+  const seatsAreCompanyOnly = Boolean(query.data?.seats?.selection);
 
   const onAdd = (chosenSeats: number | null) => {
     if (!authed) {
@@ -59,7 +62,30 @@ export function BundleDetailsClient() {
           toast.success(t("commerce.bundles.added"), {
             action: { label: t("commerce.bundles.goToCart"), onClick: () => router.push("/cart") },
           }),
-        onError: (e) => toast.error(errorMessage(e, t("common.error"))),
+        onError: (e) => {
+          // A seat-priced bundle is refused to a personal cart. That is correct, but the server's
+          // wording ("switch to a company purchase") describes a control the buyer is not looking
+          // at, so point them at the one that does it — or at company registration if they have no
+          // company to buy for yet.
+          // Two codes, one situation: the audience gate now refuses a per-seat bundle to an
+          // individual before the seat count is ever read, so the same personal-cart attempt can
+          // come back as either. Both mean "this is a company purchase".
+          const code = errorCode(e);
+          if (
+            (code === "COMMERCE_BUYER_AUDIENCE_MISMATCH" || code === "COMMERCE_SEAT_QUANTITY_INVALID") &&
+            seatsAreCompanyOnly
+          ) {
+            const toCompany = Boolean(user?.is_org_manager);
+            toast.error(t(toCompany ? "commerce.seats.switchToCompany" : "commerce.seats.needCompany"), {
+              action: {
+                label: t(toCompany ? "commerce.cart.buyForCompany" : "commerce.seats.registerCompany"),
+                onClick: () => router.push(toCompany ? "/cart" : "/register?type=company"),
+              },
+            });
+            return;
+          }
+          toast.error(errorMessage(e, t("common.error")));
+        },
       },
     );
   };
@@ -136,6 +162,13 @@ export function BundleDetailsClient() {
                   <PriceTag price={price} size="lg" />
                   {perSeat ? (
                     <p className="-mt-2 text-xs text-muted-foreground">{t("commerce.seats.perSeat")}</p>
+                  ) : null}
+
+                  {selection ? (
+                    <p className="-mt-1 flex items-center gap-2 rounded-lg bg-surface/60 p-2.5 text-xs text-muted-foreground">
+                      <Building2 className="size-4 shrink-0 text-copper" aria-hidden />
+                      {t("commerce.seats.companyPurchase")}
+                    </p>
                   ) : null}
 
                   {selection ? (

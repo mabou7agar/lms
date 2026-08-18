@@ -80,10 +80,13 @@ class CartService extends BaseService
      *
      * A product with no audience recorded (created before the commercial-policy wave) is treated as
      * sold to everyone, so an older catalogue keeps working instead of becoming unbuyable.
+     *
+     * Reads the *effective* audience, so a per-seat product is refused to an individual even if its
+     * audience column still says otherwise — the same answer the catalogue advertised.
      */
     public function assertAudienceAllows(Cart $cart, Product $product): void
     {
-        $audience = $product->audience;
+        $audience = $product->effectiveAudience();
 
         if ($audience === null) {
             return;
@@ -126,7 +129,7 @@ class CartService extends BaseService
                 continue;
             }
 
-            $audience = $product->audience;
+            $audience = $product->effectiveAudience();
             if ($audience === null) {
                 continue;
             }

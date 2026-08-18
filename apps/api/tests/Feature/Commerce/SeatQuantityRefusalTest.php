@@ -115,9 +115,12 @@ it('refuses an individual buying a product sold by the seat', function (): void 
     [$product] = seatBuyer();
     test()->putJson('/api/v1/cart/buyer', ['buyer_type' => 'individual'])->assertOk();
 
+    // Refused as an audience mismatch, not as a bad seat count: a per-seat price IS a company price,
+    // so the honest reason is that this product is not sold to individuals at all. The buyer needs
+    // to hear "switch to a company purchase", not "pick a different number of seats".
     test()->postJson('/api/v1/cart', ['product' => $product->public_id, 'seats' => 25])
         ->assertStatus(422)
-        ->assertJsonPath('error.code', 'COMMERCE_SEAT_QUANTITY_INVALID');
+        ->assertJsonPath('error.code', 'COMMERCE_BUYER_AUDIENCE_MISMATCH');
 });
 
 it('keeps a quote-only product out of self-service entirely', function (): void {

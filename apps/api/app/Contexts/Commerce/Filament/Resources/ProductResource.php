@@ -17,6 +17,7 @@ use App\Contexts\Commerce\Enums\SeatReassignmentPolicy;
 use App\Contexts\Commerce\Filament\Resources\ProductResource\Pages;
 use App\Contexts\Commerce\Models\Product;
 use App\Platform\Shared\Filament\Forms\Components\MediaPicker;
+use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -252,7 +253,17 @@ class ProductResource extends Resource
                         ->required()
                         ->native(false)
                         ->default(PricingBasis::FixedBundlePrice->value)
-                        ->helperText('Per seat multiplies the listed price by the seat count on the order.'),
+                        ->helperText('Per seat multiplies the listed price by the seat count on the order.')
+                        // A per-seat price is a company price: there is one amount on the product and
+                        // it means "one seat", so a product sold this way has nothing an individual
+                        // can buy. Letting an admin save "individuals and companies" alongside it
+                        // puts a Buy button on the public page that the cart then refuses.
+                        ->rule(static fn ($get) => static function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                            $audience = ProductAudience::tryFrom((string) $get('audience'));
+                            if ($value === PricingBasis::PerSeat->value && ($audience?->allowsIndividual() ?? false)) {
+                                $fail('Per-seat pricing is a company price. Set "Who can buy this" to companies only, or price the whole package.');
+                            }
+                        }),
                     TextInput::make('min_seats')
                         ->label('Minimum seats')
                         ->numeric()
