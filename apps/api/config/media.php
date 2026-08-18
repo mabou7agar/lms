@@ -77,9 +77,15 @@ return [
      | the asset public id, so they are already partitioned per asset). The disk itself stays shared.
      */
     'images' => [
-        // Disk that both the original and its derived variants live on. Defaults to the S3 ingestion
-        // disk so variants sit beside the original object. Overridable for local/dev.
-        'disk' => env('MEDIA_IMAGE_DISK', env('MEDIA_S3_DISK', 's3')),
+        // Disk that both the original and its derived variants live on: variants must sit beside the
+        // original object, so this MUST follow whichever ingestion provider actually stored it. Under the
+        // dev `local` provider the original lives on the local media disk, and defaulting to S3 there made
+        // the on-Ready variant job resolve an unconfigured s3 disk and throw ("Missing required client
+        // configuration options: region") — which, on a synchronous queue, took the whole admin upload
+        // down with it. Explicit MEDIA_IMAGE_DISK still overrides both branches.
+        'disk' => env('MEDIA_IMAGE_DISK', env('MEDIA_INGESTION_PROVIDER', 'fake') === 'local'
+            ? env('MEDIA_LOCAL_DISK', 'media_local')
+            : env('MEDIA_S3_DISK', 's3')),
 
         // Key prefix under which derived variants are written (never the original's key).
         'variant_prefix' => env('MEDIA_IMAGE_VARIANT_PREFIX', 'media/variants'),

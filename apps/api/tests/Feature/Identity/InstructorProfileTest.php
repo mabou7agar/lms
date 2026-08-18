@@ -11,6 +11,10 @@ use App\Platform\Shared\Media\Enums\MediaType;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -124,4 +128,37 @@ it('rejects a foreign media asset the operator does not own', function () {
         ->assertHasFormErrors(['profile_photo']);
 
     expect($profile->fresh()->profile_photo)->toBeNull();
+});
+
+/*
+ | Upload-through-the-picker coverage for the avatar. As with the course thumbnail, the tests above only
+ | exercised PICKING an existing asset, so a broken "Upload new" action left `profile_photo` empty and
+ | every trainer card fell back to its initials placeholder.
+ */
+it('uploads a new profile photo through the picker and persists it as the avatar reference', function () {
+    config()->set('media.ingestion.default', 'local');
+    config()->set('media.local.disk', 'media_local');
+    Storage::fake('media_local');
+    Storage::fake(FileUploadConfiguration::disk());
+    // Variant derivation is a queued job in dev/production; keep it queued so this covers the upload path.
+    Queue::fake();
+    // An admin upload must never reach the network (the local provider writes straight to disk).
+    Http::preventStrayRequests();
+
+    actAsIdentityAdmin();
+    $profile = makeInstructorProfile();
+
+    $component = Livewire::test(EditInstructorProfile::class, ['record' => $profile->public_id])
+        ->mountFormComponentAction('profile_photo', 'upload')
+        // A real Livewire temporary upload, so the action receives a genuine TemporaryUploadedFile.
+        ->set('mountedActions.0.data.file', fakePngUpload('avatar.png', 400, 400))
+        ->callMountedFormComponentAction()
+        ->assertHasNoErrors();
+
+    $asset = MediaAsset::query()->sole();
+
+    $component->call('save')->assertHasNoFormErrors();
+
+    expect($profile->fresh()->profile_photo)->toBe((string) $asset->public_id)
+        ->and(MediaPicker::classifyValue($profile->fresh()->profile_photo))->toBe('reference');
 });

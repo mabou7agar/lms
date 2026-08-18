@@ -5,6 +5,7 @@ namespace App\Domains\Catalog\Providers;
 use App\Domains\Catalog\Access\CourseAccessAdapter;
 use App\Domains\Catalog\Adapters\CourseLookupAdapter;
 use App\Domains\Catalog\Console\Commands\PublishScheduledCoursesCommand;
+use App\Domains\Catalog\Console\Commands\RecoverCourseThumbnailsCommand;
 use App\Domains\Catalog\Contracts\CoursePublishGuard;
 use App\Domains\Catalog\Contracts\NullCoursePublishGuard;
 use App\Domains\Catalog\Models\Category;
@@ -71,7 +72,7 @@ class CatalogServiceProvider extends BaseDomainServiceProvider
         $this->app->bind(LearnerHistoryPort::class, NullLearnerHistoryPort::class);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([PublishScheduledCoursesCommand::class]);
+            $this->commands([PublishScheduledCoursesCommand::class, RecoverCourseThumbnailsCommand::class]);
         }
     }
 }

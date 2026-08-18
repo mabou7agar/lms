@@ -6,6 +6,7 @@ use App\Platform\Media\Exceptions\MediaValidationException;
 use App\Platform\Media\Ingestion\Data\AdminUploadOutcome;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Shared\Media\Data\DirectUploadInstructions;
+use App\Platform\Shared\Media\Enums\MediaProvider;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaType;
 use Illuminate\Support\Facades\Http;
@@ -65,7 +66,7 @@ class MediaAdminUploadService
             idempotencyKey: (string) Str::uuid(),
         );
 
-        $this->pushBytes($ticket->instructions, $contents, $mimeType);
+        $this->pushBytes($ticket->instructions, $contents, $mimeType, $ticket->asset->provider);
 
         return $this->ingestion->finalizeUpload($ticket->asset, $ticket->uploadToken);
     }
@@ -138,14 +139,28 @@ class MediaAdminUploadService
      * touches the object bytes and it exists purely because an admin upload originates on the server
      * rather than in the learner's browser. Idempotency/lifecycle remain the engine's.
      */
-    private function pushBytes(DirectUploadInstructions $instructions, string $contents, string $mimeType): void
-    {
+    private function pushBytes(
+        DirectUploadInstructions $instructions,
+        string $contents,
+        string $mimeType,
+        MediaProvider $provider,
+    ): void {
         // Dev local provider: write straight to the disk. The admin upload originates on the server, and
         // the dev API is a single `artisan serve` worker, so a loopback HTTP PUT would deadlock. This is the
         // one path that skips the network — every hosted provider (Mux/S3) still forwards over HTTP below.
         if ($instructions->localDisk !== null && $instructions->localKey !== null) {
             Storage::disk($instructions->localDisk)->put($instructions->localKey, $contents);
 
+            return;
+        }
+
+        // The credential-free `fake` provider — the DEFAULT whenever MEDIA_INGESTION_PROVIDER is unset —
+        // hands back a SENTINEL upload URL (https://upload.fake.test/<ref>) and stores no bytes at all; it
+        // "verifies" any ref as ready by construction. Forwarding to that host turned every admin upload
+        // into `cURL error 6: Could not resolve host: upload.fake.test`, which aborted the upload before it
+        // could become a usable reference (the file stayed stranded in Livewire's temp directory). The fake
+        // provider must never touch the network — that is the whole point of it.
+        if ($provider === MediaProvider::Fake) {
             return;
         }
 

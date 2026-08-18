@@ -7,6 +7,7 @@ use App\Domains\Authoring\Models\Section;
 use App\Domains\Authoring\Services\ContentVersioningService;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\SocialAuth\Jwt\Der;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 // Bind the Laravel TestCase so config()/response() helpers work in both suites.
@@ -137,5 +138,39 @@ if (! function_exists('einvoicePayload')) {
             1500,
             11500,
         );
+    }
+}
+
+/*
+ | Shared media-upload test helpers. The container's PHP has no GD extension, so
+ | UploadedFile::fake()->image() (which calls imagecreatetruecolor) is unavailable — and a
+ | ->create() fake carries a REPORTED size but no bytes, which the MediaPicker correctly refuses
+ | as unreadable. These build a real, minimal PNG of exact dimensions with pure PHP + zlib, so the
+ | upload path can be exercised for real (including Filament's `dimensions:ratio` gate, which reads
+ | the header via getimagesize()).
+ */
+if (! function_exists('rawPngBytes')) {
+    function rawPngBytes(int $width, int $height): string
+    {
+        $raw = '';
+        for ($y = 0; $y < $height; $y++) {
+            // Each scanline: a zero filter byte, then $width RGB triplets.
+            $raw .= chr(0).str_repeat(chr(200).chr(120).chr(60), $width);
+        }
+
+        $chunk = static fn (string $type, string $data): string => pack('N', strlen($data))
+            .$type.$data.pack('N', crc32($type.$data));
+
+        return "\x89PNG\r\n\x1a\n"
+            .$chunk('IHDR', pack('N2C5', $width, $height, 8, 2, 0, 0, 0)) // 8-bit truecolour RGB
+            .$chunk('IDAT', (string) gzcompress($raw, 6))
+            .$chunk('IEND', '');
+    }
+}
+
+if (! function_exists('fakePngUpload')) {
+    function fakePngUpload(string $name, int $width, int $height): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent($name, rawPngBytes($width, $height));
     }
 }

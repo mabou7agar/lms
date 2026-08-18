@@ -13,8 +13,12 @@ use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use SplFileInfo;
+use Throwable;
 
 /**
  * Phase 6 / U1 - Reusable Filament media picker (Shared layer).
@@ -444,8 +448,19 @@ class MediaPicker extends Field
                             : (is_array($ratios) && count($ratios) === 1 ? $ratios[0] : null);
 
                         if ($single !== null) {
-                            $file->imageAspectRatio($single)->automaticallyOpenImageEditorForAspectRatio();
+                            // imageAspectRatio() is NOT just an editor hint: it also attaches a strict
+                            // `dimensions:ratio=` validation rule, whose tolerance is ~1/width. Declaring the
+                            // ratio WITHOUT also telling the uploader to crop to it meant any image whose own
+                            // pixel ratio missed that window (e.g. 806x453 against 16:9) was rejected by the
+                            // modal — the upload never reached the media engine and the file was left stranded
+                            // in Livewire's temp directory. automaticallyCropImagesToAspectRatio() makes the
+                            // uploader actually produce the declared ratio, so the rule describes the file it
+                            // validates instead of vetoing it.
+                            $file->imageAspectRatio($single)
+                                ->automaticallyCropImagesToAspectRatio()
+                                ->automaticallyOpenImageEditorForAspectRatio();
                         } elseif (is_array($ratios) && $ratios !== []) {
+                            // Multiple selectable ratios: editor options only — no ratio gate to satisfy.
                             $file->imageEditorAspectRatios($ratios);
                         }
                     }
@@ -457,30 +472,118 @@ class MediaPicker extends Field
                 $purpose = $component->getPurpose();
 
                 if ($purpose === null) {
-                    return;
+                    // The button is only visible when a purpose is bound, so reaching here means the field
+                    // is misconfigured (or the action was driven directly) — say so instead of no-op'ing.
+                    self::failUpload('This field has no upload purpose configured, so a new file cannot be uploaded here.');
                 }
 
-                $file = $data['file'] ?? null;
+                $file = self::readUploadedFile($data['file'] ?? null);
 
-                if (is_array($file)) {
-                    $file = reset($file);
+                if ($file === null) {
+                    // Previously a silent `return`: the modal closed, the field stayed empty and the operator
+                    // had no way to tell the upload never happened, while the bytes sat stranded in Livewire's
+                    // temp directory forever. An unreadable upload is now always surfaced.
+                    self::failUpload('The uploaded file could not be read. Please choose the file again and retry.');
                 }
 
-                if (! $file instanceof TemporaryUploadedFile) {
-                    return;
-                }
+                try {
+                    $publicId = $component->port()->upload(
+                        actorId: $component->resolveActorId() ?? 0,
+                        purpose: $purpose,
+                        filename: $file['filename'],
+                        mimeType: $file['mimeType'],
+                        sizeBytes: $file['sizeBytes'],
+                        contents: $file['contents'],
+                    );
+                } catch (Halt $halt) {
+                    throw $halt;
+                } catch (Throwable $e) {
+                    // The media engine rejects by throwing (type/size/provider/authorization). Log it and tell
+                    // the operator, instead of letting the action unwind into a silently empty field.
+                    report($e);
 
-                $publicId = $component->port()->upload(
-                    actorId: $component->resolveActorId() ?? 0,
-                    purpose: $purpose,
-                    filename: $file->getClientOriginalName(),
-                    mimeType: $file->getMimeType() ?: 'application/octet-stream',
-                    sizeBytes: (int) $file->getSize(),
-                    contents: (string) file_get_contents($file->getRealPath()),
-                );
+                    self::failUpload($e->getMessage());
+                }
 
                 $component->state($publicId);
             });
+    }
+
+    /**
+     * Normalise whatever the upload modal's FileUpload handed back into the four facts the media engine
+     * needs. `storeFiles(false)` normally yields `[<upload uuid> => TemporaryUploadedFile]`, but a bare
+     * file, a plain UploadedFile or an SplFileInfo are all tolerated, so a shape change in the upload
+     * component degrades into a CLEAR error rather than a silent no-op.
+     *
+     * @return array{filename: string, mimeType: string, sizeBytes: int, contents: string}|null
+     */
+    public static function readUploadedFile(mixed $file): ?array
+    {
+        // FileUpload keeps its state as an array keyed by an upload uuid; unwrap to the first entry.
+        while (is_array($file)) {
+            if ($file === []) {
+                return null;
+            }
+
+            $file = reset($file);
+        }
+
+        if ($file instanceof UploadedFile) {
+            // TemporaryUploadedFile::get() reads through the Livewire temp DISK, so this also works when
+            // temporary uploads are kept on S3 rather than on the local filesystem.
+            try {
+                $contents = (string) $file->get();
+            } catch (Throwable) {
+                return null;
+            }
+
+            if ($contents === '') {
+                return null;
+            }
+
+            return [
+                'filename' => $file->getClientOriginalName(),
+                'mimeType' => $file->getMimeType() ?: 'application/octet-stream',
+                'sizeBytes' => (int) $file->getSize(),
+                'contents' => $contents,
+            ];
+        }
+
+        if ($file instanceof SplFileInfo && $file->isFile()) {
+            $contents = @file_get_contents($file->getPathname());
+
+            if (! is_string($contents) || $contents === '') {
+                return null;
+            }
+
+            return [
+                'filename' => $file->getFilename(),
+                'mimeType' => (string) (@mime_content_type($file->getPathname()) ?: 'application/octet-stream'),
+                'sizeBytes' => (int) $file->getSize(),
+                'contents' => $contents,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Fail an upload LOUDLY: a danger notification the operator actually sees, plus a Halt so the action
+     * stops without the field being left silently empty. The rollback flag applies only when the action
+     * was configured to run in a database transaction; it is a safeguard, not the mechanism.
+     *
+     * @throws Halt
+     */
+    protected static function failUpload(string $message): never
+    {
+        Notification::make()
+            ->title('Upload failed')
+            ->body($message)
+            ->danger()
+            ->persistent()
+            ->send();
+
+        throw (new Halt)->rollBackDatabaseTransaction();
     }
 
     /**
