@@ -22,7 +22,7 @@ final class JwtVerifier
 
     /**
      * @param  array<int, array<string, mixed>>  $jwks  the provider's JWKS `keys` array
-     * @return array<string, mixed>  the signature-verified claims
+     * @return array<string, mixed> the signature-verified claims
      *
      * @throws InvalidSocialClaimsException
      */

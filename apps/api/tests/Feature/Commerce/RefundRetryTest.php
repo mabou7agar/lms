@@ -2,6 +2,7 @@
 
 use App\Contexts\Commerce\Actions\Refund\IssueRefundAction;
 use App\Contexts\Commerce\Contracts\PaymentGateway;
+use App\Contexts\Commerce\Enums\CommercePermission;
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\RefundStatus;
 use App\Contexts\Commerce\Filament\Resources\RefundResource;
@@ -197,7 +198,7 @@ it('R4: a double retry cannot over-refund or mint a duplicate credit note (idemp
 
 it('R4: retry is a finance-only capability — support cannot manage refunds, finance can', function () {
     test()->seed(RolePermissionSeeder::class);
-    foreach (\App\Contexts\Commerce\Enums\CommercePermission::values() as $permission) {
+    foreach (CommercePermission::values() as $permission) {
         Permission::findOrCreate($permission, 'web');
     }
     test()->seed(StaffRoleTemplatesSeeder::class);

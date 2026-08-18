@@ -14,6 +14,7 @@ use App\Platform\Search\Search\HybridSearchService;
 use App\Platform\Search\Stores\PgVectorStore;
 use App\Platform\Search\Stores\PortableVectorStore;
 use App\Platform\Search\Support\TextCanonicalizer;
+use App\Platform\Shared\Search\Contracts\IndexableContentPort;
 use App\Platform\Shared\Search\Contracts\KnowledgeRetrievalPort;
 use App\Platform\Shared\Search\Contracts\SearchIndexer;
 use Illuminate\Support\Facades\Route;
@@ -50,7 +51,7 @@ final class SearchServiceProvider extends ServiceProvider
         // Ingestion pulls from every domain adapter tagged `search.indexers`. Bound (not singleton)
         // so the tag set is resolved fresh after all domain providers have registered.
         $this->app->bind(IngestionService::class, function ($app): IngestionService {
-            /** @var iterable<\App\Platform\Shared\Search\Contracts\IndexableContentPort> $tagged */
+            /** @var iterable<IndexableContentPort> $tagged */
             $tagged = $app->tagged('search.indexers');
 
             return new IngestionService(

@@ -9,6 +9,7 @@ use App\Platform\Shared\Media\Enums\MediaStatus;
 use App\Platform\Shared\Media\Enums\MediaType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -57,7 +58,7 @@ it('does nothing for a MediaReady referencing an unknown asset', function () {
 
     // A syntactically valid but absent UUID: the lookup resolves to null (public_id is a uuid column,
     // so a non-uuid string would error at the DB rather than exercise the "unknown asset" path).
-    MediaReady::dispatch((string) \Illuminate\Support\Str::uuid());
+    MediaReady::dispatch((string) Str::uuid());
 
     Bus::assertNotDispatched(GenerateImageVariantsJob::class);
 });

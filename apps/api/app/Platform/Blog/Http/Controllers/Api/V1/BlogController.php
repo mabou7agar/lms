@@ -112,7 +112,7 @@ class BlogController extends Controller
      * Batch-resolve each post's author_id to a boundary-safe UserRef in a single port call and stash
      * it on the post as `author_ref` (read by the list/detail resources). No N+1, no User model.
      *
-     * @param  \Illuminate\Support\Collection<int, BlogPost>  $posts
+     * @param  Collection<int, BlogPost>  $posts
      */
     private function attachAuthorRefs(Collection $posts, UserLookupPort $users): void
     {

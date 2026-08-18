@@ -1,6 +1,7 @@
 <?php
 
 use App\Platform\Media\Models\MediaAsset;
+use App\Platform\Shared\Helpers\Uuid;
 use App\Platform\Shared\Media\Contracts\PublicAssetUrlResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -79,7 +80,7 @@ it('returns null for empty / whitespace / null input', function () {
 
 it('returns null for a missing or soft-deleted asset (no broken/secret-leaking URL)', function () {
     // A well-formed but unknown public_id reference.
-    $unknown = \App\Platform\Shared\Helpers\Uuid::v7();
+    $unknown = Uuid::v7();
     expect($this->resolver->resolve($unknown))->toBeNull();
 
     // A deleted PUBLIC asset resolves to null, safely.

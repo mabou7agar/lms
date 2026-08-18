@@ -64,7 +64,7 @@ class ImpersonationManager extends BaseService
         $impersonatorId = $this->impersonatorId();
 
         if ($impersonatorId === null) {
-            throw new NotImpersonatingException();
+            throw new NotImpersonatingException;
         }
 
         $impersonator = User::find($impersonatorId);
@@ -74,7 +74,7 @@ class ImpersonationManager extends BaseService
             Session::forget(self::SESSION_KEY);
             Auth::logout();
 
-            throw new NotImpersonatingException();
+            throw new NotImpersonatingException;
         }
 
         $current = Auth::user();

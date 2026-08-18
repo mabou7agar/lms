@@ -12,10 +12,12 @@ use Illuminate\Events\Dispatcher;
 
 /**
  * Fans a new forum reply out to notifications: the thread author receives `forum_reply`, and every
+ *
  * @mentioned user receives `forum_mention`. Both go through the Shared {@see LearningNotificationPort},
  * so this wiring depends only on Shared + Identity contracts — no Notifications<->Forum Deptrac edge.
  *
  * Self-notification is skipped (you are never notified for replying to your own thread, nor for
+ *
  * @mentioning yourself). @mention handles are resolved to users by their external public_id — the
  * only resolvable handle, since there is no username column (see UserLookupPort / MentionParser);
  * handles that resolve to no user are silently dropped. Dedup is per (post, recipient), so a redeliver

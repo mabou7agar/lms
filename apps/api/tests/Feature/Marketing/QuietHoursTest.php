@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Crm\Models\Lead;
+use App\Platform\Notifications\Enums\Channel;
 use App\Platform\Notifications\Enums\EnrollmentStatus;
 use App\Platform\Notifications\Enums\MarketingSendStatus;
 use App\Platform\Notifications\Enums\NotificationCategory;
@@ -10,7 +11,6 @@ use App\Platform\Notifications\Models\NotificationTemplate;
 use App\Platform\Notifications\Services\CampaignEnrollmentService;
 use App\Platform\Notifications\Services\CampaignRunner;
 use App\Platform\Notifications\Services\MarketingDispatcher;
-use App\Platform\Notifications\Enums\Channel;
 use App\Platform\Shared\Marketing\Data\MarketingRecipient;
 use App\Platform\Shared\Tenancy\TenantContext;
 use App\Platform\Shared\Tenancy\TenantId;

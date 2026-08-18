@@ -2,16 +2,17 @@
 
 namespace App\Platform\Media\Services;
 
+use App\Platform\Media\Exceptions\MediaValidationException;
 use App\Platform\Media\Ingestion\Data\AdminUploadOutcome;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Shared\Media\Data\DirectUploadInstructions;
 use App\Platform\Shared\Media\Enums\MediaPurpose;
 use App\Platform\Shared\Media\Enums\MediaType;
-use RuntimeException;
-use Throwable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
 
 /**
  * Phase 1 / D5 + Phase 8 / D4 - Server-side upload orchestration for the Filament DAM. The DAM stays
@@ -39,7 +40,7 @@ class MediaAdminUploadService
     /**
      * Upload a single file through the engine and return the resulting (typically Ready) asset.
      *
-     * @throws \App\Platform\Media\Exceptions\MediaValidationException on a type/size rejection.
+     * @throws MediaValidationException on a type/size rejection.
      */
     public function upload(
         int $actorId,

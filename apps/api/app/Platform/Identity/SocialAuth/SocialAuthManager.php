@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Platform\Identity\SocialAuth;
 
+use App\Platform\Identity\SocialAuth\Apple\AppleClientSecret;
 use App\Platform\Identity\SocialAuth\Contracts\SocialIdentityProvider;
 use App\Platform\Identity\SocialAuth\Exceptions\SocialProviderDisabledException;
 use App\Platform\Identity\SocialAuth\Exceptions\SsoDisabledException;
 use App\Platform\Identity\SocialAuth\Exceptions\UnknownSocialProviderException;
-use App\Platform\Identity\SocialAuth\Apple\AppleClientSecret;
 use App\Platform\Identity\SocialAuth\Exceptions\UnsupportedSocialDriverException;
 use App\Platform\Identity\SocialAuth\Jwt\JwksClient;
 use App\Platform\Identity\SocialAuth\Jwt\JwtVerifier;

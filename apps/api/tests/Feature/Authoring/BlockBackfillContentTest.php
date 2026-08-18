@@ -1,8 +1,8 @@
 <?php
 
 use App\Domains\Authoring\Enums\BlockType;
-use App\Domains\Authoring\Enums\PublishState;
 use App\Domains\Authoring\Enums\LessonType;
+use App\Domains\Authoring\Enums\PublishState;
 use App\Domains\Authoring\Models\Block;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Services\BlockBackfillService;

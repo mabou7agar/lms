@@ -13,6 +13,7 @@ use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
 use App\Platform\Shared\Marketing\Data\MarketingRecipient;
 use App\Platform\Shared\Services\BaseService;
 use App\Platform\Shared\Tenancy\TenantScope;
+use Carbon\CarbonInterface;
 
 /**
  * The MARKETING delivery path — the single place the three marketing-only guardrails are enforced,
@@ -119,7 +120,7 @@ class MarketingDispatcher extends BaseService
     }
 
     /** Resolve the recipient's quiet-hours window and return the deferral instant, or null. */
-    private function quietHoursDeferral(MarketingRecipient $recipient): ?\Carbon\CarbonInterface
+    private function quietHoursDeferral(MarketingRecipient $recipient): ?CarbonInterface
     {
         [$enabled, $start, $end, $timezone] = $this->quietHoursWindow($recipient);
 

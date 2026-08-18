@@ -30,6 +30,7 @@ class Category extends Model
 
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
+
     use HasPublicId;
     use HasSeo;
     use HasSlug;

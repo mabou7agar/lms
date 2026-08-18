@@ -11,7 +11,7 @@ final readonly class VariantSpec
 {
     /**
      * @param  'fit'|'cover'  $mode  'fit' contains within the box (aspect kept, never upscaled);
-     *                                'cover' fills the box then centre-crops to EXACT width x height.
+     *                               'cover' fills the box then centre-crops to EXACT width x height.
      * @param  'webp'|'jpeg'|'png'|'avif'  $format
      */
     public function __construct(

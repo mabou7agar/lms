@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Authoring\Enums\BlockType;
 use App\Domains\Authoring\Models\Block;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Models\Section;
@@ -25,7 +26,7 @@ it('captures block content_i18n and config in a snapshot when the flag is on', f
     config()->set('authoring.blocks_enabled', true);
     [$course, $lesson] = blockSnapshotCourse();
 
-    Block::factory()->for($lesson)->ofType(\App\Domains\Authoring\Enums\BlockType::Article)->create([
+    Block::factory()->for($lesson)->ofType(BlockType::Article)->create([
         'position' => 0,
         'content_i18n' => ['en' => ['html' => '<p>EN</p>'], 'ar' => ['html' => '<p>AR</p>']],
         'config' => ['collapsed' => true],
@@ -48,7 +49,7 @@ it('restores blocks (content_i18n + config) from a version, replacing the curren
     config()->set('authoring.blocks_enabled', true);
     [$course, $lesson] = blockSnapshotCourse();
 
-    Block::factory()->for($lesson)->ofType(\App\Domains\Authoring\Enums\BlockType::Article)->create([
+    Block::factory()->for($lesson)->ofType(BlockType::Article)->create([
         'position' => 0,
         'content_i18n' => ['en' => ['html' => '<p>original</p>']],
         'config' => ['k' => 'v'],

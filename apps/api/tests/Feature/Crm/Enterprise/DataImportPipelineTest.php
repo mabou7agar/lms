@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Crm\Exceptions\CsvImportException;
 use App\Domains\Crm\Import\MemberImportPipeline;
 use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Models\OrganizationMember;
@@ -90,5 +91,5 @@ it('rejects an oversized upload before parsing', function (): void {
     $org = Organization::factory()->create();
 
     expect(fn () => app(MemberImportPipeline::class)->analyze($org, importCsv()))
-        ->toThrow(\App\Domains\Crm\Exceptions\CsvImportException::class);
+        ->toThrow(CsvImportException::class);
 });

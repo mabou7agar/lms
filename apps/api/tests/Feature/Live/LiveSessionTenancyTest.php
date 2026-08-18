@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Live\Models\LiveSession;
 use App\Domains\Live\Models\SessionRegistration;
+use App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable;
 use App\Platform\Shared\Tenancy\TenantContext;
 use App\Platform\Shared\Tenancy\TenantId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,7 +95,7 @@ it('keeps registrations USER-OWNED with no tenant column (never tenant-scoped)',
 
     // And the model does not adopt the nullable tenancy trait.
     expect(in_array(
-        \App\Platform\Shared\Tenancy\Concerns\BelongsToTenantNullable::class,
+        BelongsToTenantNullable::class,
         class_uses(SessionRegistration::class),
         true,
     ))->toBeFalse();

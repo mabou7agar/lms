@@ -126,15 +126,15 @@ class SubscriptionResource extends Resource
             // user email / plan name columns (N+1 guard).
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['user', 'plan']))
             ->columns([
-            TextColumn::make('public_id')->label('Subscription')->searchable(),
-            TextColumn::make('user.email')->label('User')->toggleable(),
-            TextColumn::make('plan.name')->label('Plan')->toggleable(),
-            TextColumn::make('status')->badge()
-                ->formatStateUsing(fn ($state) => $state instanceof SubscriptionStatus ? ucfirst($state->value) : $state)
-                ->color(fn ($state) => $state === SubscriptionStatus::Active || $state === SubscriptionStatus::Trialing ? 'success' : 'gray'),
-            IconColumn::make('cancel_at_period_end')->boolean()->label('Cancel pending')->toggleable(),
-            TextColumn::make('current_period_end')->dateTime(timezone: self::adminTimezone())->label('Period ends')->sortable(),
-        ])->defaultSort('id', 'desc')
+                TextColumn::make('public_id')->label('Subscription')->searchable(),
+                TextColumn::make('user.email')->label('User')->toggleable(),
+                TextColumn::make('plan.name')->label('Plan')->toggleable(),
+                TextColumn::make('status')->badge()
+                    ->formatStateUsing(fn ($state) => $state instanceof SubscriptionStatus ? ucfirst($state->value) : $state)
+                    ->color(fn ($state) => $state === SubscriptionStatus::Active || $state === SubscriptionStatus::Trialing ? 'success' : 'gray'),
+                IconColumn::make('cancel_at_period_end')->boolean()->label('Cancel pending')->toggleable(),
+                TextColumn::make('current_period_end')->dateTime(timezone: self::adminTimezone())->label('Period ends')->sortable(),
+            ])->defaultSort('id', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->options(collect(SubscriptionStatus::cases())->mapWithKeys(fn (SubscriptionStatus $s) => [$s->value => ucfirst($s->value)])->all()),

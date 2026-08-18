@@ -17,6 +17,7 @@ use App\Domains\Reviews\Support\CourseTenantVisibility;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Shared\Moderation\Enums\ReportReason;
 use App\Platform\Shared\Support\ApiResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -166,7 +167,7 @@ class CourseReviewController
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<CourseReview>  $query
+     * @param  Builder<CourseReview>  $query
      */
     private function applySort($query, string $sort): void
     {

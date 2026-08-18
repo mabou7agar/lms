@@ -14,7 +14,7 @@ use RuntimeException;
  */
 class BrowsershotPdfGenerator implements PdfGenerator
 {
-    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions()): PdfResult
+    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions): PdfResult
     {
         throw new RuntimeException('Browsershot PDF rendering is not configured (install spatie/browsershot + Chromium).');
     }

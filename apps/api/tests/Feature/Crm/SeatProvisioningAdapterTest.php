@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Crm\Exceptions\SeatPoolExhaustedException;
 use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Models\SeatPool;
@@ -8,7 +9,6 @@ use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
 use App\Platform\Shared\Seats\Data\SeatCounts;
 use App\Platform\Shared\Seats\Exceptions\SeatDowngradeBelowAssignedException;
-use App\Domains\Crm\Exceptions\SeatPoolExhaustedException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

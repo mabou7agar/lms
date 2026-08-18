@@ -1,9 +1,12 @@
 <?php
 
+use App\Contexts\Commerce\EInvoicing\Data\EInvoiceLine;
+use App\Contexts\Commerce\EInvoicing\Data\EInvoicePayload;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Models\Section;
 use App\Domains\Authoring\Services\ContentVersioningService;
 use App\Domains\Catalog\Models\Course;
+use App\Platform\Identity\SocialAuth\Jwt\Der;
 use Tests\TestCase;
 
 // Bind the Laravel TestCase so config()/response() helpers work in both suites.
@@ -110,7 +113,7 @@ if (! function_exists('ssoEcKey')) {
             $der = '';
             openssl_sign($head.'.'.$body, $der, $resource, OPENSSL_ALGO_SHA256);
 
-            return $head.'.'.$body.'.'.ssoB64u(App\Platform\Identity\SocialAuth\Jwt\Der::ecSignatureFromDer($der));
+            return $head.'.'.$body.'.'.ssoB64u(Der::ecSignatureFromDer($der));
         };
 
         return [$jwk, $sign, $resource];
@@ -119,9 +122,9 @@ if (! function_exists('ssoEcKey')) {
 
 // Shared e-invoicing test helper (Sprint 0.6b): a minimal canonical invoice payload.
 if (! function_exists('einvoicePayload')) {
-    function einvoicePayload(string $number = 'INV-1'): App\Contexts\Commerce\EInvoicing\Data\EInvoicePayload
+    function einvoicePayload(string $number = 'INV-1'): EInvoicePayload
     {
-        return new App\Contexts\Commerce\EInvoicing\Data\EInvoicePayload(
+        return new EInvoicePayload(
             $number,
             '2026-08-07T10:00:00Z',
             'SAR',
@@ -129,7 +132,7 @@ if (! function_exists('einvoicePayload')) {
             '300000000000003',
             'Buyer Name',
             null,
-            [new App\Contexts\Commerce\EInvoicing\Data\EInvoiceLine('Course enrolment', 1, 10000, 15.0, 1500, 11500)],
+            [new EInvoiceLine('Course enrolment', 1, 10000, 15.0, 1500, 11500)],
             10000,
             1500,
             11500,

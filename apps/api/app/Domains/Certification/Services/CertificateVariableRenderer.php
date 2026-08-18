@@ -37,7 +37,7 @@ class CertificateVariableRenderer extends BaseService
      * Fill a template body with a real certificate's values.
      *
      * @param  array<string, mixed>  $design  Designer image references (company_logo, signature_image,
-     *                                         background_image, signature_2_*), from the template/snapshot.
+     *                                        background_image, signature_2_*), from the template/snapshot.
      */
     public function render(string $html, Certificate $certificate, array $design = [], ?string $locale = null): string
     {

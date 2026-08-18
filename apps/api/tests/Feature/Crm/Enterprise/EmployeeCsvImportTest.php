@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Crm\Exceptions\EmployeeImportException;
 use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Services\EmployeeCsvImporter;
@@ -75,5 +76,5 @@ it('rejects an oversized upload', function (): void {
     $org = Organization::factory()->create();
 
     expect(fn () => app(EmployeeCsvImporter::class)->analyze($org, sampleCsv()))
-        ->toThrow(\App\Domains\Crm\Exceptions\EmployeeImportException::class);
+        ->toThrow(EmployeeImportException::class);
 });

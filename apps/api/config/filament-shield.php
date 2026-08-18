@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Platform\Identity\Models\User;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -25,7 +26,7 @@ return [
     'tenant_model' => null,
 
     // Platform User model (DDD-located; NOT the default App\Models\User).
-    'auth_provider_model' => \App\Platform\Identity\Models\User::class,
+    'auth_provider_model' => User::class,
 
     // Central super-admin bypass via Laravel Gate::before (Shield-native, not hand-rolled).
     'super_admin' => [

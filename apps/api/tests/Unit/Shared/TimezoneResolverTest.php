@@ -6,7 +6,7 @@ use Carbon\CarbonImmutable;
 
 beforeEach(function () {
     config(['shared.default_timezone' => 'UTC']);
-    $this->tz = new TimezoneResolver();
+    $this->tz = new TimezoneResolver;
 });
 
 it('accepts only IANA identifiers', function () {

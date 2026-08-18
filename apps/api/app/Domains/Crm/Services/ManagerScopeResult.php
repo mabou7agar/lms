@@ -17,9 +17,9 @@ final readonly class ManagerScopeResult
 {
     /**
      * @param  list<int>  $departmentIds  departments this user manages
-     * @param  list<int>  $teamIds        teams this user manages
-     * @param  list<int>  $memberIds      organization_members.id covered by this scope
-     * @param  list<int>  $userIds        distinct users.id covered by this scope (members with an account)
+     * @param  list<int>  $teamIds  teams this user manages
+     * @param  list<int>  $memberIds  organization_members.id covered by this scope
+     * @param  list<int>  $userIds  distinct users.id covered by this scope (members with an account)
      */
     public function __construct(
         public int $organizationId,

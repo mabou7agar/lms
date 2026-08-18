@@ -10,6 +10,7 @@ use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Moderation\Concerns\CanBeReported;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,7 +41,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ForumPost> $posts
+ * @property-read Collection<int, ForumPost> $posts
  * @property-read ForumPost|null $solvedPost
  */
 class ForumThread extends Model
@@ -51,11 +52,11 @@ class ForumThread extends Model
     use HasFactory;
 
     use HasPublicId;
+
     // T1 Option-N tenancy inherited from the owning Course (forum_threads.course_id). No tenant
     // column is consulted: CourseTenantScope filters to threads whose course is global or owned by
     // the active tenant, and dormant when no tenant is resolved.
     use InheritsCourseTenancy;
-
     use SoftDeletes;
 
     /**

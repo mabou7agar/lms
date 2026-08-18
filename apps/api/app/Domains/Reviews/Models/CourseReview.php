@@ -44,6 +44,7 @@ class CourseReview extends Model
 
     /** @use HasFactory<CourseReviewFactory> */
     use HasFactory;
+
     use HasPublicId;
     use InheritsCourseTenancy;
     use SoftDeletes;

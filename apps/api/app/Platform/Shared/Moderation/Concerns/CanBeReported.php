@@ -5,6 +5,7 @@ namespace App\Platform\Shared\Moderation\Concerns;
 use App\Platform\Shared\Moderation\Enums\ReportReason;
 use App\Platform\Shared\Moderation\Enums\ReportStatus;
 use App\Platform\Shared\Moderation\Models\ContentReport;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  *       a repeat call while a pending report exists returns that same report instead of stacking
  *       duplicates. Once the moderator resolves/dismisses it, the reporter may report again.
  *
- * @mixin \Illuminate\Database\Eloquent\Model
+ * @mixin Model
  */
 trait CanBeReported
 {

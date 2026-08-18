@@ -1,5 +1,7 @@
 <?php
 
+use App\Contexts\Learning\Services\CourseCompletionPolicyResolver;
+use App\Contexts\Learning\Support\CompletionPolicy;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,9 +11,9 @@ use Illuminate\Support\Facades\Schema;
  * a course either has a policy or does not — there is no separate surrogate id to reconcile.
  *
  * The critical invariant: a course with NO row behaves EXACTLY as before this table existed —
- * "100% of published lessons complete". {@see \App\Contexts\Learning\Support\CompletionPolicy::default()}
+ * "100% of published lessons complete". {@see CompletionPolicy::default()}
  * is that behaviour expressed as a value object (require_all_lessons = true, every other rule off),
- * and {@see \App\Contexts\Learning\Services\CourseCompletionPolicyResolver} returns it when the row
+ * and {@see CourseCompletionPolicyResolver} returns it when the row
  * is absent. Storing a row only ever ADDS gates on top of (or, if require_all_lessons is disabled,
  * replaces) the lesson rule.
  *

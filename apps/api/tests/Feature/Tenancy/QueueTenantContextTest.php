@@ -51,7 +51,7 @@ it('restores the dispatching tenant on the worker even when the ambient context 
 
     // Dispatch under tenant 7...
     $context->set(TenantId::from(7));
-    $job = new TenantAwareProbeJob();
+    $job = new TenantAwareProbeJob;
 
     // ...then simulate a worker with no ambient tenant (no authenticated user).
     $context->forget();
@@ -69,7 +69,7 @@ it('runs a job dispatched outside any tenant unscoped (backward compatible no-op
     $context = app(TenantContext::class);
     $context->forget();
 
-    $job = new TenantAwareProbeJob(); // captures null
+    $job = new TenantAwareProbeJob; // captures null
     dispatch($job);
 
     expect(TenantContextProbeState::$seen)->toBeNull();

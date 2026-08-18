@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Platform\AI\Providers\Anthropic;
 
-use App\Platform\AI\Data\ChatMessage;
 use App\Platform\AI\Data\ChatResult;
 use App\Platform\AI\Data\ModelOptions;
 use App\Platform\AI\Data\TokenUsage;

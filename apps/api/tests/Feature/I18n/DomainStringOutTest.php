@@ -6,7 +6,6 @@ use App\Domains\Authoring\Http\Resources\LessonResource;
 use App\Domains\Authoring\Http\Resources\SectionResource;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Models\Section;
-use App\Domains\Catalog\Models\Course;
 use App\Domains\Certification\Models\CertificateTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

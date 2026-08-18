@@ -3,6 +3,7 @@
 namespace App\Platform\Media\Imaging;
 
 use App\Platform\Media\Exceptions\ImageProcessingException;
+use App\Platform\Media\Exceptions\ImageRejectedException;
 use App\Platform\Media\Imaging\Data\ProcessedVariant;
 use App\Platform\Media\Imaging\Data\VariantSpec;
 use App\Platform\Media\Models\MediaAsset;
@@ -40,8 +41,8 @@ class ImageVariantService
      *
      * @return list<MediaVariant>
      *
-     * @throws \App\Platform\Media\Exceptions\ImageRejectedException  permanent input rejection (mime/bomb/oversize).
-     * @throws ImageProcessingException  the original is missing, or a GD decode/encode failure.
+     * @throws ImageRejectedException permanent input rejection (mime/bomb/oversize).
+     * @throws ImageProcessingException the original is missing, or a GD decode/encode failure.
      */
     public function generate(MediaAsset $asset, ?string $surface = null): array
     {

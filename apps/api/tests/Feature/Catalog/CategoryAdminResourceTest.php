@@ -7,6 +7,7 @@ use App\Domains\Catalog\Models\Category;
 use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Database\Seeders\RolePermissionSeeder;
 use App\Platform\Identity\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
@@ -21,7 +22,7 @@ if (! function_exists('categoryResourceAdminPanel')) {
         $admin = User::factory()->create();
         $admin->assignRole('super_admin');
         test()->actingAs($admin, 'web');
-        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         return $admin;
     }

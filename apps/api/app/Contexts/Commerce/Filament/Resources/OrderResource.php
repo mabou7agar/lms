@@ -109,13 +109,13 @@ class OrderResource extends Resource
             // Eager-load the purchasing user so the customer column never issues a per-row query.
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('user'))
             ->columns([
-            TextColumn::make('public_id')->label('Order')->searchable(),
-            TextColumn::make('user.email')->label('User')->toggleable(),
-            TextColumn::make('status')->badge(),
-            TextColumn::make('total_minor')->label('Total (minor)')->sortable(),
-            TextColumn::make('currency'),
-            TextColumn::make('paid_at')->dateTime()->toggleable(),
-        ])->defaultSort('id', 'desc')
+                TextColumn::make('public_id')->label('Order')->searchable(),
+                TextColumn::make('user.email')->label('User')->toggleable(),
+                TextColumn::make('status')->badge(),
+                TextColumn::make('total_minor')->label('Total (minor)')->sortable(),
+                TextColumn::make('currency'),
+                TextColumn::make('paid_at')->dateTime()->toggleable(),
+            ])->defaultSort('id', 'desc')
             ->recordActions([
                 ViewAction::make(),
                 // Orchestration only: delegates to the domain RefundOrderAction (locking,

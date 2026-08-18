@@ -8,6 +8,7 @@ use App\Platform\Notifications\Enums\NotificationCategory;
 use App\Platform\Notifications\Models\CampaignEnrollment;
 use App\Platform\Notifications\Models\CampaignSend;
 use App\Platform\Notifications\Models\CampaignStep;
+use App\Platform\Notifications\Models\MarketingCampaign;
 use App\Platform\Shared\Marketing\Data\MarketingRecipient;
 use App\Platform\Shared\Services\BaseService;
 use App\Platform\Shared\Tenancy\TenantScope;
@@ -122,7 +123,7 @@ class CampaignRunner extends BaseService
 
     private function settleAfterOutcome(
         CampaignEnrollment $enrollment,
-        \App\Platform\Notifications\Models\MarketingCampaign $campaign,
+        MarketingCampaign $campaign,
         CampaignStep $step,
         MarketingSendStatus $status,
     ): void {

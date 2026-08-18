@@ -13,6 +13,7 @@ use App\Platform\Shared\Commerce\Contracts\PurchaseSummaryPort;
 use App\Platform\Shared\Support\ApiResponse;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -23,7 +24,7 @@ class CourseController extends Controller
     {
         $perPage = (int) ($request->validated()['per_page'] ?? config('catalog.pagination.per_page'));
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator<int, Course> $paginator */
+        /** @var LengthAwarePaginator<int, Course> $paginator */
         $paginator = $search->paginate($request->validated(), $perPage);
 
         // Attach each course's trainers (boundary-safe refs) so listings can show instructor avatars.

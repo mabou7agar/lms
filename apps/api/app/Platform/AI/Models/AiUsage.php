@@ -31,10 +31,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class AiUsage extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<AiUsageFactory> */
     use HasFactory;
-
-    use BelongsToTenant;
     use HasPublicId;
 
     public $timestamps = false;

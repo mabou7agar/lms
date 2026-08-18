@@ -2,6 +2,7 @@
 
 use App\Contexts\Commerce\Enums\OrderStatus;
 use App\Contexts\Commerce\Enums\PaymentAttemptStatus;
+use App\Contexts\Commerce\Filament\Resources\OrderResource;
 use App\Contexts\Commerce\Filament\Resources\OrderResource\Pages\ViewOrder;
 use App\Contexts\Commerce\Models\Order;
 use App\Contexts\Commerce\Models\PaymentAttempt;
@@ -92,7 +93,7 @@ it('S1: the order surface exposes no mutation page for attempts (read-only)', fu
 
     // The order detail is a ViewRecord: only index + view pages are registered — no edit/create page,
     // and the payment-attempts section is a read-only infolist (the form schema is empty).
-    $pages = \App\Contexts\Commerce\Filament\Resources\OrderResource::getPages();
+    $pages = OrderResource::getPages();
 
     expect(array_keys($pages))->toBe(['index', 'view']);
 

@@ -79,7 +79,7 @@ class MediaFolderService
      */
     public function delete(MediaFolder $folder, int $actorId): void
     {
-        DB::transaction(function () use ($folder, $actorId): void {
+        DB::transaction(function () use ($folder): void {
             // Assets survive: they fall back to root (folder_id = null). query()->update bypasses the
             // asset's mass-assignment guard without touching any engine state.
             MediaAsset::query()->where('folder_id', $folder->getKey())->update(['folder_id' => null]);

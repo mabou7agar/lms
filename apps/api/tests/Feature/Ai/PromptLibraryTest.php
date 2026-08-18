@@ -5,6 +5,7 @@ use App\Platform\AI\Enums\AiFeature;
 use App\Platform\AI\Exceptions\PromptNotFoundException;
 use App\Platform\AI\Models\AiUsage;
 use App\Platform\AI\Prompts\PromptLibrary;
+use App\Platform\AI\Providers\AiServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->app->register(\App\Platform\AI\Providers\AiServiceProvider::class);
+    $this->app->register(AiServiceProvider::class);
     Artisan::call('migrate', ['--force' => true]);
     config(['ai.enabled' => true, 'ai.default_provider' => 'fake']);
     Http::preventStrayRequests();

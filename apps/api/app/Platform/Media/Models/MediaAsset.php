@@ -62,9 +62,6 @@ use Illuminate\Support\Carbon;
  */
 class MediaAsset extends Model
 {
-    /** @use HasFactory<MediaAssetFactory> */
-    use HasFactory;
-
     // T1 Option-N tenancy (SHARED-OR-OWNED / NULLABLE): adds SharedOrOwnedTenantScope so a resolved
     // tenant sees global rows (organization_id IS NULL) PLUS its own rows and NEVER another org's
     // private assets, and stamps organization_id on create ONLY when a tenant is resolved (else the
@@ -73,6 +70,8 @@ class MediaAsset extends Model
     // forged organization_id in a request payload can never be mass-assigned onto an asset.
     use BelongsToTenantNullable;
 
+    /** @use HasFactory<MediaAssetFactory> */
+    use HasFactory;
     use HasPublicId;
     use SoftDeletes;
 

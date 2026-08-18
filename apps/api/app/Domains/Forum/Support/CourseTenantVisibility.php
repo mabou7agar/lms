@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Forum\Support;
 
+use App\Domains\Forum\Tenancy\CourseTenantScope;
 use App\Platform\Shared\Tenancy\TenancyBypassPolicy;
 use App\Platform\Shared\Tenancy\TenantContext;
 
@@ -11,7 +12,7 @@ use App\Platform\Shared\Tenancy\TenantContext;
  * T1 (Option N) — decides whether a course is reachable by the ACTIVE tenant under the
  * "global-OR-own-org" rule, so a WRITE path (creating a thread) can reject an attempt to post into
  * another organization's private course BEFORE persisting. Read isolation is already handled by
- * {@see \App\Domains\Forum\Tenancy\CourseTenantScope}; this covers the create path, which resolves a
+ * {@see CourseTenantScope}; this covers the create path, which resolves a
  * course id first and must not stamp a thread onto a course the caller cannot see.
  *
  * The bypass / no-op conditions mirror the scope exactly, so it is a no-op wherever the scope is: no

@@ -9,6 +9,7 @@ use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Moderation\Concerns\CanBeReported;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,7 +35,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read ForumThread $thread
  * @property-read ForumPost|null $parent
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ForumPost> $replies
+ * @property-read Collection<int, ForumPost> $replies
  */
 class ForumPost extends Model
 {

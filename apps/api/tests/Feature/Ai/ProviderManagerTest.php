@@ -9,6 +9,7 @@ use App\Platform\AI\Exceptions\AiProviderDisabledException;
 use App\Platform\AI\Exceptions\FakeProviderNotAllowedException;
 use App\Platform\AI\Exceptions\ProviderCredentialsRequiredException;
 use App\Platform\AI\Exceptions\UnknownAiProviderException;
+use App\Platform\AI\Providers\AiServiceProvider;
 use App\Platform\AI\Providers\Fake\FakeChatModel;
 use App\Platform\AI\Providers\Fake\FakeEmbeddingModel;
 use App\Platform\AI\Providers\OpenAi\OpenAiChatModel;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Http;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->app->register(\App\Platform\AI\Providers\AiServiceProvider::class);
+    $this->app->register(AiServiceProvider::class);
     Artisan::call('migrate', ['--force' => true]);
     config(['ai.enabled' => true, 'ai.default_provider' => 'fake']);
     // Any accidental network call fails the test — the foundation must be credential-free.

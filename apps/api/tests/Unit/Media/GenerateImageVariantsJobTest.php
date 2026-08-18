@@ -1,6 +1,7 @@
 <?php
 
 use App\Platform\Media\Events\MediaVariantsGenerated;
+use App\Platform\Media\Exceptions\ImageProcessingException;
 use App\Platform\Media\Imaging\ImageVariantService;
 use App\Platform\Media\Jobs\GenerateImageVariantsJob;
 use App\Platform\Media\Models\MediaAsset;
@@ -105,7 +106,7 @@ it('lets a transient failure propagate for retry', function () {
     $asset = d6JobAsset('media/lesson_image/missing.png', '');
 
     (new GenerateImageVariantsJob($asset->id))->handle(app(ImageVariantService::class), app(AuditLogger::class));
-})->throws(App\Platform\Media\Exceptions\ImageProcessingException::class);
+})->throws(ImageProcessingException::class);
 
 it('dead-letters to the audit trail on failed()', function () {
     $asset = d6JobAsset('media/lesson_image/x.png', d6JobImage(50, 50));

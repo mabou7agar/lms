@@ -21,7 +21,7 @@ function seedTemplatePermissions(): void
 
 it('seeds each staff role template with exactly its declared permissions', function () {
     seedTemplatePermissions();
-    (new StaffRoleTemplatesSeeder())->run();
+    (new StaffRoleTemplatesSeeder)->run();
 
     foreach (StaffRoleTemplatesSeeder::templates() as $roleName => $permissions) {
         $role = SpatieRole::where('name', $roleName)->where('guard_name', 'web')->first();
@@ -33,14 +33,14 @@ it('seeds each staff role template with exactly its declared permissions', funct
 
 it('is idempotent and never overwrites an administrator-customised template', function () {
     seedTemplatePermissions();
-    (new StaffRoleTemplatesSeeder())->run();
+    (new StaffRoleTemplatesSeeder)->run();
     $roleCount = SpatieRole::count();
 
     $support = SpatieRole::findByName('support_agent', 'web');
     $support->syncPermissions(['crm.view']);
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-    (new StaffRoleTemplatesSeeder())->run();
+    (new StaffRoleTemplatesSeeder)->run();
 
     expect(SpatieRole::count())->toBe($roleCount)
         ->and(SpatieRole::findByName('support_agent', 'web')->permissions->pluck('name')->all())
@@ -49,7 +49,7 @@ it('is idempotent and never overwrites an administrator-customised template', fu
 
 it('keeps finance and support scoped to their function (least privilege)', function () {
     seedTemplatePermissions();
-    (new StaffRoleTemplatesSeeder())->run();
+    (new StaffRoleTemplatesSeeder)->run();
 
     $finance = User::factory()->create();
     $finance->assignRole(SpatieRole::findByName('finance_manager', 'web'));

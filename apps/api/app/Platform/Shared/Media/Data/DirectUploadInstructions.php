@@ -16,11 +16,11 @@ final readonly class DirectUploadInstructions
      * @param  array<string, string>  $headers
      * @param  array<string, string>  $fields
      * @param  string|null  $localDisk  Dev-only: when set, a SERVER-SIDE admin upload writes the bytes
-     *                                   straight to this filesystem disk (at $localKey) instead of
-     *                                   forwarding them to $uploadUrl over HTTP. Lets the credential-free
-     *                                   local provider avoid a self-request (the dev server is a single
-     *                                   `artisan serve` worker, which a loopback PUT would deadlock).
-     *                                   Never serialized to the client (see DirectUploadTicketResource).
+     *                                  straight to this filesystem disk (at $localKey) instead of
+     *                                  forwarding them to $uploadUrl over HTTP. Lets the credential-free
+     *                                  local provider avoid a self-request (the dev server is a single
+     *                                  `artisan serve` worker, which a loopback PUT would deadlock).
+     *                                  Never serialized to the client (see DirectUploadTicketResource).
      * @param  string|null  $localKey  Storage key on $localDisk to write to.
      */
     public function __construct(

@@ -3,13 +3,14 @@
 use App\Platform\AI\Exceptions\AiQuotaExceededException;
 use App\Platform\AI\Metering\AiQuotaGuard;
 use App\Platform\AI\Models\AiUsage;
+use App\Platform\AI\Providers\AiServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->app->register(\App\Platform\AI\Providers\AiServiceProvider::class);
+    $this->app->register(AiServiceProvider::class);
     Artisan::call('migrate', ['--force' => true]);
     config(['ai.enabled' => true]);
     // Isolate one limit per test — everything else unlimited.

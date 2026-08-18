@@ -91,7 +91,7 @@ class MediaPickerAssetValidator
             $this->validate($publicId, $actorId, $acceptedTypes, $purpose, $ownerScope);
 
             return true;
-        } catch (MediaAccessDeniedException | MediaValidationException) {
+        } catch (MediaAccessDeniedException|MediaValidationException) {
             return false;
         }
     }

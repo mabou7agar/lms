@@ -3,6 +3,9 @@
 namespace App\Platform\Media\Services;
 
 use App\Platform\Media\Events\MediaReplaced;
+use App\Platform\Media\Exceptions\MediaAccessDeniedException;
+use App\Platform\Media\Exceptions\MediaNotReadyException;
+use App\Platform\Media\Exceptions\MediaValidationException;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaAttachment;
 use App\Platform\Shared\Audit\AuditLogger;
@@ -42,9 +45,9 @@ class MediaReplacementService
      * (the engine's owner-only mutation rule); $new must be Ready. Returns the number of references
      * that were repointed.
      *
-     * @throws \App\Platform\Media\Exceptions\MediaAccessDeniedException when the actor owns neither asset.
-     * @throws \App\Platform\Media\Exceptions\MediaNotReadyException when $new is not Ready.
-     * @throws \App\Platform\Media\Exceptions\MediaValidationException on a cross-course mismatch.
+     * @throws MediaAccessDeniedException when the actor owns neither asset.
+     * @throws MediaNotReadyException when $new is not Ready.
+     * @throws MediaValidationException on a cross-course mismatch.
      */
     public function replace(MediaAsset $old, MediaAsset $new, int $actorId): int
     {

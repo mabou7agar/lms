@@ -53,13 +53,12 @@ class Assignment extends Model
     /** @use HasFactory<AssignmentFactory> */
     use HasFactory;
 
+    use HasPublicId;
+    use HasTranslations;
     // T1 Option-N tenancy inherited from the owning Course (assignments.course_id) — NO tenant column
     // on assignments, rubrics, criteria or levels. CourseTenantScope filters to assignments whose
     // course is global or owned by the active tenant; dormant when no tenant is resolved.
     use InheritsCourseTenancy;
-
-    use HasPublicId;
-    use HasTranslations;
     use SoftDeletes;
 
     /** @var list<string> */

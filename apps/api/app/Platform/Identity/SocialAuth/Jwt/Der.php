@@ -25,7 +25,7 @@ final class Der
 
         $bytes = '';
         while ($length > 0) {
-            $bytes = chr($length & 0xff).$bytes;
+            $bytes = chr($length & 0xFF).$bytes;
             $length >>= 8;
         }
 
@@ -102,7 +102,7 @@ final class Der
             return $first;
         }
 
-        $count = $first & 0x7f;
+        $count = $first & 0x7F;
         $length = 0;
         for ($i = 0; $i < $count; $i++) {
             $length = ($length << 8) | ord($der[$offset++]);

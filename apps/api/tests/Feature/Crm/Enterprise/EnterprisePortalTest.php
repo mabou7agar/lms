@@ -11,15 +11,20 @@ use App\Contexts\Commerce\Payments\Data\ChargeResult;
 use App\Contexts\Commerce\Payments\Data\RefundRequest;
 use App\Contexts\Commerce\Payments\Data\RefundResult;
 use App\Contexts\Commerce\Payments\Data\WebhookEvent;
+use App\Contexts\Learning\Models\Enrollment;
+use App\Domains\Catalog\Models\Course;
 use App\Domains\Crm\Models\Organization;
 use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Models\SeatAssignment;
 use App\Domains\Crm\Models\SeatPool;
 use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Audit\AuditLogger;
+use App\Platform\Shared\Enterprise\Contracts\ManagerReportPort;
 use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
 use App\Platform\Shared\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -136,24 +141,24 @@ it('denies a plain member every manager endpoint', function (): void {
 
     $this->getJson('/api/v1/enterprise/report')->assertForbidden();
     $this->getJson('/api/v1/enterprise/members')->assertForbidden();
-    $this->postJson('/api/v1/enterprise/seats/assign', ['member_id' => (string) \Illuminate\Support\Str::uuid()])->assertForbidden();
+    $this->postJson('/api/v1/enterprise/seats/assign', ['member_id' => (string) Str::uuid()])->assertForbidden();
     $this->postJson('/api/v1/enterprise/departments', ['name' => 'X'])->assertForbidden();
 });
 
 it('bounds the manager report query count regardless of learner volume', function (): void {
     $org = Organization::factory()->create();
-    $course = \App\Domains\Catalog\Models\Course::factory()->published()->create();
+    $course = Course::factory()->published()->create();
 
     foreach (range(1, 25) as $i) {
         $u = User::factory()->create();
         OrganizationMember::create(['organization_id' => $org->id, 'user_id' => $u->id, 'email' => "u{$i}@corp.com", 'role' => 'member', 'status' => 'active']);
-        \App\Contexts\Learning\Models\Enrollment::factory()->create(['user_id' => $u->id, 'course_id' => $course->id, 'progress_percentage' => 10]);
+        Enrollment::factory()->create(['user_id' => $u->id, 'course_id' => $course->id, 'progress_percentage' => 10]);
     }
 
-    \Illuminate\Support\Facades\DB::enableQueryLog();
-    app(\App\Platform\Shared\Enterprise\Contracts\ManagerReportPort::class)->report($org->id, null, 30);
-    $count = count(\Illuminate\Support\Facades\DB::getQueryLog());
-    \Illuminate\Support\Facades\DB::disableQueryLog();
+    DB::enableQueryLog();
+    app(ManagerReportPort::class)->report($org->id, null, 30);
+    $count = count(DB::getQueryLog());
+    DB::disableQueryLog();
 
     // A handful of bounded aggregates — NOT a query per learner.
     expect($count)->toBeLessThan(12);

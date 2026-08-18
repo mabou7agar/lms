@@ -31,6 +31,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -87,11 +88,11 @@ class CourseResource extends Resource
             Toggle::make('is_featured'),
             Section::make('Taxonomy')->columns(2)->schema([
                 Select::make('categories')
-                    ->relationship('categories', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->select(['categories.id', 'categories.name']))
+                    ->relationship('categories', 'name', fn (Builder $query) => $query->select(['categories.id', 'categories.name']))
                     ->multiple()->preload()->searchable()
                     ->helperText('Catalog categories this course belongs to (course_category).'),
                 Select::make('tags')
-                    ->relationship('tags', 'name', fn (\Illuminate\Database\Eloquent\Builder $query) => $query->select(['course_tags.id', 'course_tags.name']))
+                    ->relationship('tags', 'name', fn (Builder $query) => $query->select(['course_tags.id', 'course_tags.name']))
                     ->multiple()->preload()->searchable()
                     ->helperText('Free-form marketing tags (course_tag).'),
             ]),

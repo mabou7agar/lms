@@ -5,7 +5,6 @@ namespace App\Platform\Identity\Actions\Privacy;
 use App\Platform\Identity\Models\DataSubjectRequest;
 use App\Platform\Identity\Models\SocialAccount;
 use App\Platform\Identity\Models\User;
-use App\Platform\Identity\Models\UserConsent;
 use App\Platform\Identity\Models\UserDevice;
 use App\Platform\Identity\Services\ConsentManager;
 use App\Platform\Shared\Actions\BaseAction;

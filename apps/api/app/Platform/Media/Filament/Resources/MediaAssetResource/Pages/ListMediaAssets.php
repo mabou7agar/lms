@@ -96,7 +96,6 @@ class ListMediaAssets extends ListRecords
     /**
      * Turn Filament's temporary uploads into the shape MediaAdminUploadService::uploadMany expects.
      *
-     * @param  mixed  $uploads
      * @return list<array{filename: string, mime_type: string, size_bytes: int, contents: string}>
      */
     private function normalizeUploads(mixed $uploads): array

@@ -3,6 +3,7 @@
 namespace App\Platform\Shared\Learning\Data;
 
 use App\Platform\Shared\Curriculum\Data\LessonRef;
+use App\Platform\Shared\Learning\Contracts\WatchTimePort;
 
 /**
  * One learner's progress through one course, for the instructor drill-down — assembled by Learning
@@ -15,7 +16,7 @@ use App\Platform\Shared\Curriculum\Data\LessonRef;
  * enrollment's stored figure rather than recomputing, so this can never drift from the completion
  * rule's own number.
  *
- * A null return from {@see \App\Platform\Shared\Learning\Contracts\WatchTimePort::learnerProgressDetail()}
+ * A null return from {@see WatchTimePort::learnerProgressDetail()}
  * — not a zeroed instance of this — is the signal that the learner is not enrolled.
  */
 final readonly class LearnerProgressDetail

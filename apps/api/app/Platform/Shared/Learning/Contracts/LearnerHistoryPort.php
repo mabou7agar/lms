@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Platform\Shared\Learning\Contracts;
 
+use App\Platform\Shared\Learning\Adapters\NullLearnerHistoryPort;
+
 /**
  * Read-only projection of a learner's course history for RECOMMENDATIONS. Declared in Shared and
  * implemented by the context that owns enrollments (Learning); Catalog's RecommendationService only
  * consumes it, so recommendations never read Learning's tables directly.
  *
- * The default {@see \App\Platform\Shared\Learning\Adapters\NullLearnerHistoryPort} returns empty
+ * The default {@see NullLearnerHistoryPort} returns empty
  * history, so the "continue learning" / "next course" surfaces are simply empty until Learning binds
  * a real adapter — the deterministic category/tag recommendations do not depend on it.
  *

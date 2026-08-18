@@ -4,7 +4,7 @@ use App\Platform\Shared\I18n\TranslationResolver;
 
 beforeEach(function () {
     config(['shared.fallback_locale' => 'en']);
-    $this->resolver = new TranslationResolver();
+    $this->resolver = new TranslationResolver;
 });
 
 it('returns the value for the requested locale', function () {

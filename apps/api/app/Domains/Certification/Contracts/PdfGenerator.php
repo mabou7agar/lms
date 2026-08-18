@@ -14,5 +14,5 @@ use App\Domains\Certification\Pdf\Data\PdfResult;
  */
 interface PdfGenerator
 {
-    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions()): PdfResult;
+    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions): PdfResult;
 }

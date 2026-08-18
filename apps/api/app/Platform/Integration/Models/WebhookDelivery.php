@@ -36,11 +36,10 @@ use Illuminate\Support\Carbon;
  */
 class WebhookDelivery extends Model
 {
-    /** @use HasFactory<WebhookDeliveryFactory> */
-    use HasFactory;
-
     use BelongsToTenant;
 
+    /** @use HasFactory<WebhookDeliveryFactory> */
+    use HasFactory;
     use HasPublicId;
 
     protected $table = 'webhook_deliveries';

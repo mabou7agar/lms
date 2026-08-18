@@ -4,6 +4,7 @@ namespace App\Platform\Blog\Models;
 
 use App\Platform\Blog\Database\Factories\BlogPostFactory;
 use App\Platform\Blog\Enums\PostStatus;
+use App\Platform\Identity\Contracts\Data\UserRef;
 use App\Platform\Shared\Html\HtmlSanitizer;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,8 +44,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $reviewer_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- *
- * @property-read \App\Platform\Identity\Contracts\Data\UserRef|null $author_ref Boundary-safe author
+ * @property-read UserRef|null $author_ref Boundary-safe author
  *   display ref, resolved via UserLookupPort and stashed by the controller for the API resources.
  *   NOT a column and NOT an Eloquent relation — author_id / reviewer_id are plain integer FKs; the
  *   Blog context never imports Identity's User model (cross-context boundary).

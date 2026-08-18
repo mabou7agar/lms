@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Contexts\Learning\Models\Enrollment;
+use App\Domains\Catalog\Models\Course;
 use App\Domains\Reviews\Models\CourseReview;
 use App\Domains\Reviews\Services\ReviewAggregateService;
-use App\Domains\Catalog\Models\Course;
 use App\Platform\Identity\Database\Seeders\RolePermissionSeeder;
 use App\Platform\Identity\Enums\Role;
 use App\Platform\Identity\Models\User;

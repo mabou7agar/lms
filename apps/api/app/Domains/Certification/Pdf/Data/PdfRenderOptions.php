@@ -19,6 +19,6 @@ final readonly class PdfRenderOptions
 
     public static function landscape(): self
     {
-        return new self();
+        return new self;
     }
 }

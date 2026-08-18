@@ -35,13 +35,12 @@ use Illuminate\Support\Carbon;
  */
 class WebhookEndpoint extends Model
 {
-    /** @use HasFactory<WebhookEndpointFactory> */
-    use HasFactory;
-
     // Tenant ownership: filtered to the active tenant and stamped organization_id on create when a
     // tenant is resolved (else NULL = platform-level). Never trusts a client-supplied organization_id.
     use BelongsToTenant;
 
+    /** @use HasFactory<WebhookEndpointFactory> */
+    use HasFactory;
     use HasPublicId;
 
     protected $table = 'webhook_endpoints';

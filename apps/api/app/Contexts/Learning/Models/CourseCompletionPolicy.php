@@ -4,6 +4,7 @@ namespace App\Contexts\Learning\Models;
 
 use App\Contexts\Learning\Support\CompletionPolicy;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * Stored, per-course completion policy. Keyed BY course_id (its primary key, non-incrementing): one
@@ -20,8 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $require_final_exam
  * @property int|null $final_exam_assessment_id
  * @property bool $require_required_assignments
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class CourseCompletionPolicy extends Model
 {

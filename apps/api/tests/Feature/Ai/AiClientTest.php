@@ -5,6 +5,8 @@ use App\Platform\AI\Data\LabeledChatResult;
 use App\Platform\AI\Enums\AiFeature;
 use App\Platform\AI\Models\AiPrompt;
 use App\Platform\AI\Models\AiUsage;
+use App\Platform\AI\Providers\AiServiceProvider;
+use App\Platform\Shared\Audit\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Http;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->app->register(\App\Platform\AI\Providers\AiServiceProvider::class);
+    $this->app->register(AiServiceProvider::class);
     Artisan::call('migrate', ['--force' => true]);
     config(['ai.enabled' => true, 'ai.default_provider' => 'fake']);
     Http::preventStrayRequests();
@@ -72,5 +74,5 @@ it('writes an audit entry alongside every AI run', function () {
 
     app(AiClient::class)->chat(AiFeature::Tutor, 'tutor.explain', ['topic' => 'x', 'level' => 'beginner']);
 
-    expect(\App\Platform\Shared\Audit\AuditLog::query()->where('action', 'ai.run')->count())->toBe(1);
+    expect(AuditLog::query()->where('action', 'ai.run')->count())->toBe(1);
 });

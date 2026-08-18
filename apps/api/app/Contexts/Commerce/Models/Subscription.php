@@ -25,7 +25,6 @@ use Illuminate\Support\Carbon;
  * subscription additionally carries a purchased seat capacity (seats) and the CRM seat pool it
  * provisioned (seat_pool_id); the recurring charge is still the plan's price, so the lifecycle
  * (renewal/upgrade/cancel/grace/expire) is reused unchanged for both subscriber kinds.
- *
  * @property string $public_id
  * @property int $id
  * @property int|null $user_id

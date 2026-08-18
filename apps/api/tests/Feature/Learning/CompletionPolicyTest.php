@@ -10,11 +10,15 @@ use App\Contexts\Learning\Models\LessonVideoProgress;
 use App\Contexts\Learning\Services\CourseCompletionEvaluator;
 use App\Domains\Assessment\Models\Assessment;
 use App\Domains\Assessment\Models\AssessmentAttempt;
+use App\Domains\Authoring\Models\Lesson;
+use App\Domains\Catalog\Models\Course;
 use App\Domains\Certification\Models\Certificate;
 use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Learning\Contracts\AssignmentRequirementPort;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -22,7 +26,7 @@ require_once __DIR__.'/Helpers.php';
 require_once __DIR__.'/RuntimeSupport.php';
 
 /**
- * @return array{0: \App\Domains\Catalog\Models\Course, 1: \Illuminate\Support\Collection<int, \App\Domains\Authoring\Models\Lesson>, 2: User, 3: Enrollment}
+ * @return array{0: Course, 1: Collection<int, Lesson>, 2: User, 3: Enrollment}
  */
 function enrollForPolicy(int $lessonCount = 1): array
 {
@@ -36,7 +40,7 @@ function enrollForPolicy(int $lessonCount = 1): array
     return [$course, $lessons, $user, $enrollment];
 }
 
-function completeLesson(string $lessonPublicId): \Illuminate\Testing\TestResponse
+function completeLesson(string $lessonPublicId): TestResponse
 {
     return test()->postJson("/api/v1/lessons/{$lessonPublicId}/progress", ['status' => 'completed']);
 }

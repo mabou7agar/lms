@@ -71,8 +71,7 @@ final class UserLookupAdapter implements UserLookupPort
 
         usort(
             $refs,
-            static fn (InstructorProfileRef $a, InstructorProfileRef $b): int
-                => [$a->displayOrder, $a->name] <=> [$b->displayOrder, $b->name],
+            static fn (InstructorProfileRef $a, InstructorProfileRef $b): int => [$a->displayOrder, $a->name] <=> [$b->displayOrder, $b->name],
         );
 
         return $refs;

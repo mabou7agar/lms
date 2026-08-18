@@ -29,6 +29,7 @@ class LiveSession extends Model
 
     /** @use HasFactory<LiveSessionFactory> */
     use HasFactory;
+
     use HasPublicId;
     use SoftDeletes;
 

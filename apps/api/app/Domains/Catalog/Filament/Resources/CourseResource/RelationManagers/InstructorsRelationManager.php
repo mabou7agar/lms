@@ -86,17 +86,15 @@ class InstructorsRelationManager extends RelationManager
                     ->label('Make primary')
                     ->icon('heroicon-o-star')
                     ->visible(fn (CourseTrainer $record): bool => ! $record->is_primary)
-                    ->action(fn (CourseTrainer $record, InstructorsRelationManager $livewire): mixed
-                        => app(CourseInstructorService::class)
-                            ->setPrimary($livewire->ownerCourse(), (int) $record->user_id, $livewire->actor())),
+                    ->action(fn (CourseTrainer $record, InstructorsRelationManager $livewire): mixed => app(CourseInstructorService::class)
+                        ->setPrimary($livewire->ownerCourse(), (int) $record->user_id, $livewire->actor())),
                 Action::make('detach')
                     ->label('Detach')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (CourseTrainer $record, InstructorsRelationManager $livewire): mixed
-                        => app(CourseInstructorService::class)
-                            ->unassign($livewire->ownerCourse(), (int) $record->user_id, $livewire->actor())),
+                    ->action(fn (CourseTrainer $record, InstructorsRelationManager $livewire): mixed => app(CourseInstructorService::class)
+                        ->unassign($livewire->ownerCourse(), (int) $record->user_id, $livewire->actor())),
             ])
             ->toolbarActions([]);
     }

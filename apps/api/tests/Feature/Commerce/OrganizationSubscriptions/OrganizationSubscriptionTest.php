@@ -7,7 +7,6 @@ use App\Contexts\Commerce\Actions\Subscription\ChangeOrganizationSeatsAction;
 use App\Contexts\Commerce\Actions\Subscription\EnterGraceAction;
 use App\Contexts\Commerce\Actions\Subscription\ReactivateSubscriptionAction;
 use App\Contexts\Commerce\Actions\Subscription\RenewSubscriptionAction;
-use App\Contexts\Commerce\Actions\Subscription\SubscribeAction;
 use App\Contexts\Commerce\Actions\Subscription\SubscribeOrganizationAction;
 use App\Contexts\Commerce\Contracts\PaymentGateway;
 use App\Contexts\Commerce\Enums\SubscriptionStatus;
@@ -28,6 +27,7 @@ use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Models\SeatPool;
 use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Audit\AuditLogger;
+use App\Platform\Shared\Seats\Contracts\SeatProvisioningPort;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
@@ -109,7 +109,7 @@ it('creates an organization subscription and provisions a seat pool sized to the
     $plan = orgPlan(amount: 9900);
     $gateway = orgGateway(true);
 
-    $subscription = (new SubscribeOrganizationAction($gateway, app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction($gateway, app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 5, currency: 'SAR');
 
     expect($subscription->statusEnum())->toBe(SubscriptionStatus::Active)
@@ -133,7 +133,7 @@ it('rejects an organization subscription with fewer than one seat', function () 
     $org = Organization::factory()->create();
     $plan = orgPlan();
 
-    expect(fn () => (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    expect(fn () => (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 0))
         ->toThrow(SubscriptionException::class);
 });
@@ -141,7 +141,7 @@ it('rejects an organization subscription with fewer than one seat', function () 
 it('is idempotent for an active organization subscription to the same plan', function () {
     $org = Organization::factory()->create();
     $plan = orgPlan();
-    $action = new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class));
+    $action = new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class));
 
     $first = $action->execute($org->id, $plan, seats: 3, currency: 'SAR');
     $second = $action->execute($org->id, $plan, seats: 3, currency: 'SAR');
@@ -156,7 +156,7 @@ it('drops an organization subscription to past_due when the first charge fails',
     $plan = orgPlan();
 
     try {
-        (new SubscribeOrganizationAction(orgGateway(false), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+        (new SubscribeOrganizationAction(orgGateway(false), app(AuditLogger::class), app(SeatProvisioningPort::class)))
             ->execute($org->id, $plan, seats: 2, currency: 'SAR');
         $this->fail('Expected a SubscriptionException on a declined first charge.');
     } catch (SubscriptionException) {
@@ -173,7 +173,7 @@ it('reuses the shared renewal action and preserves seat assignments across a ren
     $plan = orgPlan(amount: 9900);
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 2, currency: 'SAR');
 
     $member = orgMember($org);
@@ -204,7 +204,7 @@ it('advances an organization renewal exactly once for a duplicated (idempotent) 
     $org = Organization::factory()->create();
     $plan = orgPlan(amount: 9900);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 2, currency: 'SAR');
 
     $oldEnd = Carbon::create(2020, 2, 1, 0, 0, 0);
@@ -232,7 +232,7 @@ it('assigns employees up to capacity and rejects over-allocation', function () {
     $plan = orgPlan();
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 1, currency: 'SAR');
 
     $a = orgMember($org, email: 'a@corp.com');
@@ -251,7 +251,7 @@ it('rejects a seat downgrade below the number of assigned employees', function (
     $plan = orgPlan();
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 3, currency: 'SAR');
 
     $service->assignEmployee($subscription, orgMember($org, email: 'a@corp.com')->id);
@@ -271,7 +271,7 @@ it('allows a seat downgrade at or above the assigned count', function () {
     $plan = orgPlan();
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 5, currency: 'SAR');
 
     $service->assignEmployee($subscription, orgMember($org, email: 'a@corp.com')->id);
@@ -287,20 +287,20 @@ it('reuses the shared cancel, grace, and reactivate actions for an organization 
     $plan = orgPlan();
 
     // Immediate cancel (shared action).
-    $sub = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $sub = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, $plan, seats: 2, currency: 'SAR');
     (new CancelSubscriptionAction(app(AuditLogger::class)))->execute($sub, atPeriodEnd: false);
     expect($sub->fresh()->statusEnum())->toBe(SubscriptionStatus::Canceled);
 
     // Grace escalation from past_due (shared action).
-    $sub2 = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $sub2 = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, orgPlan(), seats: 2, currency: 'SAR');
     $sub2->forceFill(['status' => SubscriptionStatus::PastDue->value])->save();
     (new EnterGraceAction(app(AuditLogger::class)))->execute($sub2);
     expect($sub2->fresh()->statusEnum())->toBe(SubscriptionStatus::Grace);
 
     // Reactivation of a scheduled cancel (shared action).
-    $sub3 = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $sub3 = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, orgPlan(), seats: 2, currency: 'SAR');
     $sub3->forceFill([
         'current_period_end' => Carbon::create(2999, 1, 1, 0, 0, 0),
@@ -315,7 +315,7 @@ it('releases every seat a deactivated employee holds', function () {
     $org = Organization::factory()->create();
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, orgPlan(), seats: 2, currency: 'SAR');
 
     $member = orgMember($org);
@@ -332,7 +332,7 @@ it('exposes a read-only summary of the organization subscription and seat usage'
     $org = Organization::factory()->create();
     $service = app(OrganizationSubscriptionService::class);
 
-    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(\App\Platform\Shared\Seats\Contracts\SeatProvisioningPort::class)))
+    $subscription = (new SubscribeOrganizationAction(orgGateway(true), app(AuditLogger::class), app(SeatProvisioningPort::class)))
         ->execute($org->id, orgPlan(), seats: 4, currency: 'SAR');
     $service->assignEmployee($subscription, orgMember($org)->id);
 

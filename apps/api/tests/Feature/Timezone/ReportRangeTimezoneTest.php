@@ -3,8 +3,8 @@
 use App\Contexts\Analytics\Models\ReportDefinition;
 use App\Contexts\Analytics\Services\ReportingEngine;
 use App\Contexts\Learning\Analytics\EnrollmentStatsAdapter;
-use App\Domains\Catalog\Models\Course;
 use App\Contexts\Learning\Models\Enrollment;
+use App\Domains\Catalog\Models\Course;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

@@ -3,6 +3,7 @@
 namespace App\Platform\Notifications\Services;
 
 use App\Platform\Notifications\Enums\NotificationCategory;
+use App\Platform\Notifications\Listeners\NotificationEventSubscriber;
 use App\Platform\Shared\Notifications\Contracts\LearningNotificationPort;
 
 /**
@@ -14,7 +15,7 @@ use App\Platform\Shared\Notifications\Contracts\LearningNotificationPort;
  *
  * Every learning flow is classified under {@see NotificationCategory::Learning} so a single
  * per-category preference opt-out governs the whole set, matching the existing enrollment/completion
- * wirings in {@see \App\Platform\Notifications\Listeners\NotificationEventSubscriber}.
+ * wirings in {@see NotificationEventSubscriber}.
  */
 class LearningNotificationService implements LearningNotificationPort
 {

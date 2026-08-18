@@ -17,7 +17,6 @@ class AutomationRule extends Model
     // AutomationRunner additionally applies an EXPLICIT tenant fence (mirroring the webhook emitter)
     // so a null-tenant system run sees only platform-level rules rather than every org's.
     use BelongsToTenant;
-
     use HasPublicId;
 
     protected $fillable = ['organization_id', 'name', 'trigger_type', 'trigger_key', 'conditions', 'is_active'];

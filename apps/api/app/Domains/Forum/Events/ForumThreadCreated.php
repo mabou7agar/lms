@@ -17,7 +17,7 @@ final class ForumThreadCreated
 
     /**
      * @param  list<string>  $mentions  Raw detected @handles (see MentionParser); resolution to user
-     *                                   ids is deferred to the future notification wiring.
+     *                                  ids is deferred to the future notification wiring.
      */
     public function __construct(
         public readonly int $threadId,

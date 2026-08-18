@@ -14,7 +14,7 @@ use App\Domains\Certification\Pdf\Data\PdfResult;
  */
 class FakePdfGenerator implements PdfGenerator
 {
-    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions()): PdfResult
+    public function render(string $html, PdfRenderOptions $options = new PdfRenderOptions): PdfResult
     {
         $text = trim(strip_tags($html));
         $bytes = "%PDF-1.4\n"

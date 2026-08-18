@@ -1,5 +1,6 @@
 <?php
 
+use App\Platform\Media\Exceptions\MediaValidationException;
 use App\Platform\Media\Models\MediaAsset;
 use App\Platform\Media\Models\MediaFolder;
 use App\Platform\Media\Models\MediaVariant;
@@ -227,7 +228,7 @@ it('refuses to move an asset into a folder that already holds another organizati
 
     // Moving an org2 asset into the same folder is a cross-tenant link — rejected.
     expect(fn () => $service->assignAsset($org2Asset, $folder, actorId: 1))
-        ->toThrow(\App\Platform\Media\Exceptions\MediaValidationException::class);
+        ->toThrow(MediaValidationException::class);
 
     // The org2 asset stays at root (folder_id NULL) — nothing was linked across tenants.
     expect($org2Asset->fresh()->folder_id)->toBeNull();
@@ -243,7 +244,7 @@ it('refuses to mix a GLOBAL asset into a folder that holds an org-private asset'
     $service->assignAsset($orgAsset, $folder, actorId: 1);
 
     expect(fn () => $service->assignAsset($globalAsset, $folder, actorId: 1))
-        ->toThrow(\App\Platform\Media\Exceptions\MediaValidationException::class);
+        ->toThrow(MediaValidationException::class);
 });
 
 it('allows moving same-tenant assets into one folder', function (): void {

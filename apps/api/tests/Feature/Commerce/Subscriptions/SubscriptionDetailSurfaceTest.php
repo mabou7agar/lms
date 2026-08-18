@@ -1,10 +1,13 @@
 <?php
 
+use App\Contexts\Commerce\Actions\Subscription\CancelSubscriptionAction;
 use App\Contexts\Commerce\Actions\Subscription\RenewSubscriptionAction;
 use App\Contexts\Commerce\Contracts\PaymentGateway;
+use App\Contexts\Commerce\Database\Seeders\CommerceSeeder;
 use App\Contexts\Commerce\Enums\SubscriptionStatus;
 use App\Contexts\Commerce\Filament\Resources\SubscriptionResource\Pages\ListSubscriptions;
 use App\Contexts\Commerce\Filament\Resources\SubscriptionResource\Pages\ViewSubscription;
+use App\Contexts\Commerce\Models\Product;
 use App\Contexts\Commerce\Models\Subscription;
 use App\Contexts\Commerce\Models\SubscriptionPlan;
 use App\Contexts\Commerce\Models\SubscriptionPlanPrice;
@@ -13,9 +16,7 @@ use App\Contexts\Commerce\Payments\Data\ChargeResult;
 use App\Contexts\Commerce\Payments\Data\RefundRequest;
 use App\Contexts\Commerce\Payments\Data\RefundResult;
 use App\Contexts\Commerce\Payments\Data\WebhookEvent;
-use App\Contexts\Commerce\Database\Seeders\CommerceSeeder;
 use App\Domains\Catalog\Models\Course;
-use App\Contexts\Commerce\Models\Product;
 use App\Platform\Identity\Database\Seeders\RolePermissionSeeder;
 use App\Platform\Identity\Models\User;
 use App\Platform\Shared\Audit\AuditLogger;
@@ -134,7 +135,7 @@ it('S4: renders the subscription audit history on the detail page', function () 
     $subscription = surfaceSubscription();
 
     // Produce a real audited transition through the domain action.
-    app(\App\Contexts\Commerce\Actions\Subscription\CancelSubscriptionAction::class)
+    app(CancelSubscriptionAction::class)
         ->execute($subscription, atPeriodEnd: false);
 
     Livewire::test(ViewSubscription::class, ['record' => $subscription->getAttribute('public_id')])

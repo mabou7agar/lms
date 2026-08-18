@@ -9,6 +9,7 @@ use App\Domains\Crm\Models\OrganizationMember;
 use App\Domains\Crm\Models\Team;
 use App\Platform\Identity\Contracts\Actor;
 use App\Platform\Shared\Tenancy\Contracts\CurrentTenantProvider;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -159,9 +160,9 @@ class ManagerScope
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<OrganizationMember>
+     * @return Builder<OrganizationMember>
      */
-    private function activeMembers(int $organizationId): \Illuminate\Database\Eloquent\Builder
+    private function activeMembers(int $organizationId): Builder
     {
         return OrganizationMember::query()
             ->where('organization_id', $organizationId)

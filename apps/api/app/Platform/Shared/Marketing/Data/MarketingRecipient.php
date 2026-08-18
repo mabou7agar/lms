@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Platform\Shared\Marketing\Data;
 
+use App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort;
+
 /**
  * Boundary-safe description of a marketing recipient, resolved by the owning context (CRM leads /
  * contacts, or Identity users) and consumed by the Notifications marketing engine WITHOUT importing
@@ -11,7 +13,7 @@ namespace App\Platform\Shared\Marketing\Data;
  *
  * `hasConsent` is the recipient's marketing-consent decision at resolution time (lead
  * marketing_consent / user_consents). It is a snapshot; the engine re-checks consent live at send
- * time via {@see \App\Platform\Shared\Marketing\Contracts\MarketingAudiencePort::hasMarketingConsent}
+ * time via {@see MarketingAudiencePort::hasMarketingConsent}
  * so a withdrawal between enrollment and send still suppresses the send.
  */
 final class MarketingRecipient

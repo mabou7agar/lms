@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Platform\Shared\Search\Data;
 
+use App\Platform\Shared\Search\Contracts\KnowledgeRetrievalPort;
+
 /**
- * A single grounding chunk returned by the {@see \App\Platform\Shared\Search\Contracts\KnowledgeRetrievalPort}.
+ * A single grounding chunk returned by the {@see KnowledgeRetrievalPort}.
  *
  * This is the boundary-safe projection of a search hit that AI features (tutor, copilot) consume as
  * RAG context and expose as CITATIONS. It carries only display/attribution fields — never a raw

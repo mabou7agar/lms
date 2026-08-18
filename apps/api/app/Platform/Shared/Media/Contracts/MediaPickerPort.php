@@ -24,7 +24,7 @@ interface MediaPickerPort
      * search term against filename or public_id.
      *
      * @param  list<string>  $acceptedTypes  MediaType ->value strings; empty = any type.
-     * @return array<string, string>  public_id => human label (filename, falling back to the id).
+     * @return array<string, string> public_id => human label (filename, falling back to the id).
      */
     public function searchAssets(int $actorId, array $acceptedTypes, ?string $search): array;
 

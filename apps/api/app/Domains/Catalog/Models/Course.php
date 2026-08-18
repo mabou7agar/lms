@@ -63,6 +63,7 @@ class Course extends Model
 
     /** @use HasFactory<CourseFactory> */
     use HasFactory;
+
     use HasPublicId;
     use HasSeo;
     use HasSlug;

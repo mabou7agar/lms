@@ -7,6 +7,7 @@ use App\Platform\Shared\Moderation\Enums\ReportStatus;
 use App\Platform\Shared\Traits\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * A single report raised against any reportable piece of user-generated content (a review, a Q&A
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $note
  * @property ReportStatus $status
  * @property int|null $resolved_by
- * @property \Illuminate\Support\Carbon|null $resolved_at
+ * @property Carbon|null $resolved_at
  */
 class ContentReport extends Model
 {

@@ -5,6 +5,7 @@ use App\Domains\Crm\Models\Lead;
 use App\Platform\Notifications\Models\AutomationRule;
 use App\Platform\Notifications\Models\AutomationRun;
 use App\Platform\Notifications\Models\MarketingCampaign;
+use App\Platform\Notifications\Models\MarketingSuppression;
 use App\Platform\Notifications\Services\MarketingDispatcher;
 use App\Platform\Shared\Tenancy\TenantContext;
 use App\Platform\Shared\Tenancy\TenantId;
@@ -55,7 +56,7 @@ it('scopes campaigns to their tenant', function (): void {
 
 it("does not treat org A's suppression as suppressing org B", function (): void {
     actAsOrg(1);
-    \App\Platform\Notifications\Models\MarketingSuppression::create([
+    MarketingSuppression::create([
         'organization_id' => 1, 'email' => 'shared@example.test', 'category' => 'marketing',
         'source' => 'unsubscribe_link', 'suppressed_at' => now(),
     ]);

@@ -12,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -78,18 +79,18 @@ class MediaPicker extends Field
 
     protected bool $allowLegacyUrl = true;
 
-    protected int | Closure | null $ownerScope = null;
+    protected int|Closure|null $ownerScope = null;
 
-    protected bool | Closure $isSearchable = true;
+    protected bool|Closure $isSearchable = true;
 
     /** Interactive crop/zoom/rotate editor in the upload modal (images only; no-op for other types). */
-    protected bool | Closure $hasImageEditor = true;
+    protected bool|Closure $hasImageEditor = true;
 
     /** Round the crop viewport (avatars). Also pins a 1:1 aspect unless imageAspectRatios overrides it. */
-    protected bool | Closure $isCircleCrop = false;
+    protected bool|Closure $isCircleCrop = false;
 
     /** @var array<int, string>|Closure|null Allowed editor aspect ratios, e.g. ['1:1'] or ['16:9']. */
-    protected array | Closure | null $imageAspectRatios = null;
+    protected array|Closure|null $imageAspectRatios = null;
 
     protected function setUp(): void
     {
@@ -129,14 +130,14 @@ class MediaPicker extends Field
     public function acceptedTypes(array $types): static
     {
         $this->acceptedTypes = array_values(array_map(
-            static fn (BackedEnum | string $type): string => $type instanceof BackedEnum ? (string) $type->value : $type,
+            static fn (BackedEnum|string $type): string => $type instanceof BackedEnum ? (string) $type->value : $type,
             $types,
         ));
 
         return $this;
     }
 
-    public function purpose(BackedEnum | string | null $purpose): static
+    public function purpose(BackedEnum|string|null $purpose): static
     {
         $this->pickerPurpose = $purpose instanceof BackedEnum ? (string) $purpose->value : $purpose;
 
@@ -164,14 +165,14 @@ class MediaPicker extends Field
         return $this;
     }
 
-    public function ownerScope(int | Closure | null $scope): static
+    public function ownerScope(int|Closure|null $scope): static
     {
         $this->ownerScope = $scope;
 
         return $this;
     }
 
-    public function searchable(bool | Closure $condition = true): static
+    public function searchable(bool|Closure $condition = true): static
     {
         $this->isSearchable = $condition;
 
@@ -179,7 +180,7 @@ class MediaPicker extends Field
     }
 
     /** Toggle the crop/zoom/rotate editor shown before an uploaded image is sent (default on). */
-    public function imageEditor(bool | Closure $condition = true): static
+    public function imageEditor(bool|Closure $condition = true): static
     {
         $this->hasImageEditor = $condition;
 
@@ -187,7 +188,7 @@ class MediaPicker extends Field
     }
 
     /** Circular crop viewport for avatar-style fields; implies a 1:1 aspect unless overridden. */
-    public function circleCrop(bool | Closure $condition = true): static
+    public function circleCrop(bool|Closure $condition = true): static
     {
         $this->isCircleCrop = $condition;
 
@@ -195,7 +196,7 @@ class MediaPicker extends Field
     }
 
     /** @param array<int, string>|Closure|null $ratios e.g. ['1:1'], ['16:9', '4:3'] */
-    public function imageAspectRatios(array | Closure | null $ratios): static
+    public function imageAspectRatios(array|Closure|null $ratios): static
     {
         $this->imageAspectRatios = $ratios;
 
@@ -500,7 +501,7 @@ class MediaPicker extends Field
             ->modalDescription('Link an external video (YouTube, Vimeo, Wistia, Loom, Dailymotion) or a direct file URL.')
             ->modalSubmitActionLabel('Use this URL')
             ->form([
-                \Filament\Forms\Components\TextInput::make('url')
+                TextInput::make('url')
                     ->label('URL')
                     ->url()
                     ->required()

@@ -6,12 +6,14 @@ namespace App\Platform\Search\Contracts;
 
 use App\Platform\Search\Data\VectorMatch;
 use App\Platform\Search\Data\VectorQuery;
+use App\Platform\Search\Stores\PgVectorStore;
+use App\Platform\Search\Stores\PortableVectorStore;
 
 /**
  * Similarity-retrieval backend for the semantic search arm. Two implementations exist:
- *   - {@see \App\Platform\Search\Stores\PortableVectorStore} (default) — pre-filters candidates in
+ *   - {@see PortableVectorStore} (default) — pre-filters candidates in
  *     SQL then scores cosine in PHP; needs no database extension (pgvector-OPTIONAL).
- *   - {@see \App\Platform\Search\Stores\PgVectorStore} — a guarded stub selected by
+ *   - {@see PgVectorStore} — a guarded stub selected by
  *     config('search.vector.driver') = 'pgvector'; throws until the extension + ANN index are
  *     provisioned (LOCAL/INFRA required).
  *
