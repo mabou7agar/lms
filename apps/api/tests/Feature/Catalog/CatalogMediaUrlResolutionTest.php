@@ -85,6 +85,11 @@ it('resolves an uploaded profile photo into avatar_path on /api/v1/trainers', fu
 
     expect($listed)->not->toBeNull()
         ->and($listed['avatar_path'])->toBeString()->toContain('/media/public/'.$reference);
+
+    // The avatar URL must actually serve the bytes, or the trainer card silently falls back to initials.
+    $avatar = $this->get('/media/public/'.$reference);
+    $avatar->assertOk();
+    expect($avatar->headers->get('content-type'))->toStartWith('image/');
 });
 
 it('leaves thumbnail_path null when no image was ever uploaded, so the card fallback still applies', function () {

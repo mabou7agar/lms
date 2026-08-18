@@ -43,8 +43,10 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $language_id
  * @property array<string, mixed>|null $learning_objectives_i18n
  * @property int|null $level_id
+ * @property string $public_id
  * @property array<string, mixed>|null $requirements_i18n
  * @property array<string, mixed>|null $seo
+ * @property string $slug
  * @property string|null $subtitle
  * @property array<string, mixed>|null $subtitle_i18n
  * @property array<string, mixed>|null $target_audience_i18n
