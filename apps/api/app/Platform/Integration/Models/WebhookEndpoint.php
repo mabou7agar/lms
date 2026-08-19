@@ -41,6 +41,7 @@ class WebhookEndpoint extends Model
 
     /** @use HasFactory<WebhookEndpointFactory> */
     use HasFactory;
+
     use HasPublicId;
 
     protected $table = 'webhook_endpoints';

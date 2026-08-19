@@ -35,6 +35,7 @@ class AiUsage extends Model
 
     /** @use HasFactory<AiUsageFactory> */
     use HasFactory;
+
     use HasPublicId;
 
     public $timestamps = false;

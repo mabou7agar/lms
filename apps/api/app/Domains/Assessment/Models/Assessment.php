@@ -57,6 +57,7 @@ class Assessment extends Model
 
     use HasPublicId;
     use HasTranslations;
+
     // T1 Option-N tenancy inherited from the owning Course (assessments.course_id) — NO tenant column
     // on assessments, questions or options. CourseTenantScope filters to assessments whose course is
     // global or owned by the active tenant; dormant when no tenant is resolved (public catalog +

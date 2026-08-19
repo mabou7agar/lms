@@ -72,6 +72,7 @@ class MediaAsset extends Model
 
     /** @use HasFactory<MediaAssetFactory> */
     use HasFactory;
+
     use HasPublicId;
     use SoftDeletes;
 
