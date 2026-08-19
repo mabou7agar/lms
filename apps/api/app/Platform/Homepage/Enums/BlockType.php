@@ -147,7 +147,7 @@ enum BlockType: string
                 'heading' => ['en' => 'Featured courses', 'ar' => 'دورات مختارة'],
                 'subheading' => ['en' => 'Hand-picked programs to start with.', 'ar' => 'برامج مختارة للبدء.'],
                 'course_slugs' => [],
-                'limit' => 6,
+                'limit' => 9,
                 'cta' => ['label' => ['en' => 'Browse all courses', 'ar' => 'تصفّح كل الدورات'], 'href' => '/courses'],
             ],
             self::FeaturedEvents => [

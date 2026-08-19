@@ -9,9 +9,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// FeaturedCourses now renders the REAL published featured courses via the useFeaturedCourses query
-// (the homepage rebuild replaced the old static demo grid). Mock the hook so the component gets data
-// without a QueryClient/network, and assert the covers render.
+// FeaturedCourses renders the nine most-recently featured published courses via useFeaturedCourses.
+// Mock the hook so the component gets data without a QueryClient/network, and assert the covers render.
 const featured: CourseListItem[] = [
   {
     id: "c1",
@@ -35,8 +34,6 @@ const featured: CourseListItem[] = [
 
 vi.mock("@/lib/catalog/hooks", () => ({
   useFeaturedCourses: () => ({ data: { data: featured } }),
-  // The editorial variant reads the general catalog query, not the featured one.
-  useCourses: () => ({ data: { data: featured } }),
 }));
 
 import { FeaturedCourses } from "@/components/marketing/featured-courses";

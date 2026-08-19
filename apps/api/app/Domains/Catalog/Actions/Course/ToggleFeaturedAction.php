@@ -11,7 +11,12 @@ class ToggleFeaturedAction extends BaseAction
     public function execute(Course $course): Course
     {
         $course = $this->transaction(function () use ($course): Course {
-            $course->forceFill(['is_featured' => ! $course->is_featured])->save();
+            $featured = ! $course->is_featured;
+
+            $course->forceFill([
+                'is_featured' => $featured,
+                'featured_at' => $featured ? now() : null,
+            ])->save();
 
             return $course;
         });

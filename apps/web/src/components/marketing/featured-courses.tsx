@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCourses } from "@/lib/catalog/hooks";
+import { useFeaturedCourses } from "@/lib/catalog/hooks";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { CourseCover, courseListItemToCover } from "@/components/marketing/course-cover";
 import { FeaturedShell } from "./featured-shell";
@@ -16,8 +16,8 @@ function readVariant(value: string | null): CardsVariant {
 }
 
 /**
- * Homepage course-selling surface. It renders nine REAL published paid courses, not just the few
- * admin-flagged as featured; the homepage must prove there is a catalogue to buy from. Visual
+ * Homepage course-selling surface. It renders the nine most-recently featured published courses.
+ * Admins decide what belongs here by toggling the Featured badge on the course. Visual
  * treatment is selectable via `?courseCards=` (editorial | cinematic | paths; default → editorial).
  * Renders nothing while loading or when there are no courses, so the homepage is never blank-with-error.
  */
@@ -34,7 +34,7 @@ export function FeaturedCourses() {
 /** Editorial + cinematic share the featured-courses query; the shell wraps whichever grid renders. */
 function FeaturedCoursesFeatured({ variant }: { variant: "editorial" | "cinematic" }) {
   const { locale } = useI18n();
-  const query = useCourses({ per_page: 9 });
+  const query = useFeaturedCourses();
   const courses = query.data?.data ?? [];
 
   if (courses.length === 0) return null;

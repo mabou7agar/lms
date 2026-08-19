@@ -136,6 +136,7 @@ it('resolves featured courses server-side for the FeaturedCourses block', functi
         'status' => 'published',
         'visibility' => 'public',
         'is_featured' => true,
+        'featured_at' => now()->subDay(),
         'published_at' => now()->subDay(),
     ]);
 
@@ -150,6 +151,49 @@ it('resolves featured courses server-side for the FeaturedCourses block', functi
     expect($section['resolved'])->toBeArray()
         ->and($section['resolved']['courses'])->toBeArray()
         ->and(collect($section['resolved']['courses'])->pluck('title.en'))->toContain('Leadership Essentials');
+});
+
+it('resolves only the latest nine featured courses for the FeaturedCourses block', function () {
+    $oldFeatured = Course::factory()->create([
+        'title' => 'Old Featured',
+        'status' => 'published',
+        'visibility' => 'public',
+        'is_featured' => true,
+        'featured_at' => now()->subDays(30),
+        'published_at' => now()->subDays(30),
+    ]);
+
+    Course::factory()->count(9)->sequence(fn ($sequence) => [
+        'title' => 'Featured '.$sequence->index,
+        'status' => 'published',
+        'visibility' => 'public',
+        'is_featured' => true,
+        'featured_at' => now()->subMinutes($sequence->index),
+        'published_at' => now()->subDays(10 - $sequence->index),
+    ])->create();
+
+    Course::factory()->create([
+        'title' => 'Recent But Not Featured',
+        'status' => 'published',
+        'visibility' => 'public',
+        'is_featured' => false,
+        'published_at' => now(),
+    ]);
+
+    HomepageSection::factory()->ofType(BlockType::FeaturedCourses)->published()->create([
+        'key' => 'fc_latest',
+        'position' => 15,
+    ]);
+
+    $courses = collect($this->getJson('/api/v1/homepage')->assertOk()->json('data.sections'))
+        ->firstWhere('type', 'featured_courses')['resolved']['courses'];
+
+    $titles = collect($courses)->pluck('title.en');
+
+    expect($courses)->toHaveCount(9)
+        ->and($titles)->not->toContain($oldFeatured->title)
+        ->and($titles)->not->toContain('Recent But Not Featured')
+        ->and($titles->first())->toBe('Featured 0');
 });
 
 it('leaves the existing seven-block behavior unchanged', function () {

@@ -37,6 +37,8 @@ class CourseSearchService extends BaseService
 
         return $query
             ->orderByDesc('is_featured')
+            ->orderByRaw('featured_at is null asc')
+            ->orderByDesc('featured_at')
             ->orderByDesc('published_at')
             ->paginate($perPage)
             ->withQueryString();

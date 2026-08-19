@@ -53,6 +53,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $thumbnail_path
  * @property array<string, mixed>|null $title_i18n
  * @property Visibility $visibility
+ * @property \Illuminate\Support\Carbon|null $featured_at
  */
 class Course extends Model
 {
@@ -76,7 +77,7 @@ class Course extends Model
     protected $fillable = [
         'title', 'title_i18n', 'slug', 'subtitle', 'subtitle_i18n', 'description', 'description_i18n',
         'learning_objectives_i18n', 'requirements_i18n', 'target_audience_i18n', 'duration_minutes',
-        'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'thumbnail_path', 'trailer_path',
+        'level_id', 'language_id', 'status', 'visibility', 'is_featured', 'featured_at', 'thumbnail_path', 'trailer_path',
         'position', 'published_at', 'scheduled_publish_at', 'last_published_at', 'seo',
     ];
 
@@ -106,6 +107,7 @@ class Course extends Model
             'status' => CourseStatus::class,
             'visibility' => Visibility::class,
             'is_featured' => 'boolean',
+            'featured_at' => 'datetime',
             'position' => 'integer',
             'published_at' => 'datetime',
             'scheduled_publish_at' => 'datetime',
@@ -207,6 +209,14 @@ class Course extends Model
         return $query->where('is_featured', true);
     }
 
+    public function scopeRecentlyFeatured(Builder $query): Builder
+    {
+        return $query->featured()
+            ->orderByRaw('featured_at is null asc')
+            ->orderByDesc('featured_at')
+            ->orderByDesc('published_at');
+    }
+
     /**
      * Scheduled courses whose publish time has arrived. The scheduler reads this each minute and
      * publishes each (still subject to the readiness guard) via the CourseLifecycle state machine.
@@ -251,5 +261,16 @@ class Course extends Model
     protected static function newFactory(): CourseFactory
     {
         return CourseFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Course $course): void {
+            if (! $course->isDirty('is_featured')) {
+                return;
+            }
+
+            $course->featured_at = $course->is_featured ? ($course->featured_at ?? now()) : null;
+        });
     }
 }

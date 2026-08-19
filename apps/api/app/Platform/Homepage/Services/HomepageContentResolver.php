@@ -43,14 +43,14 @@ class HomepageContentResolver
 
     /**
      * Featured/published public courses. Honors an explicit `course_slugs` allow-list when present,
-     * otherwise falls back to featured-then-recent published courses. Capped by `limit`.
+     * otherwise shows only the most-recently featured published courses. Capped by `limit`.
      *
      * @param  array<string, mixed>  $content
      * @return array<int, array<string, mixed>>
      */
     private function courses(array $content): array
     {
-        $limit = $this->limit($content, 6, 12);
+        $limit = $this->limit($content, 9, 12);
         $slugs = $this->stringList($content['course_slugs'] ?? null);
 
         $query = Course::query()->published()->visible()->with(['level', 'language']);
@@ -58,7 +58,7 @@ class HomepageContentResolver
         if ($slugs !== []) {
             $query->whereIn('slug', $slugs);
         } else {
-            $query->orderByDesc('is_featured')->orderByDesc('published_at');
+            $query->recentlyFeatured();
         }
 
         $out = [];
