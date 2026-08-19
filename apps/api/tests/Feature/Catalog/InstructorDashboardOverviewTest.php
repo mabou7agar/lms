@@ -44,7 +44,7 @@ function dashCourse(User $owner, CourseStatus $status = CourseStatus::Published)
     return $course;
 }
 
-function enrol(Course $course, EnrollmentStatus $status = EnrollmentStatus::Active, int $progress = 50, ?User $user = null): Enrollment
+function dashEnrol(Course $course, EnrollmentStatus $status = EnrollmentStatus::Active, int $progress = 50, ?User $user = null): Enrollment
 {
     return Enrollment::factory()->create([
         'course_id' => $course->id,
@@ -123,11 +123,11 @@ it('counts only the caller own courses', function () {
 it('excludes another instructor learners from the totals', function () {
     $me = dashUser('instructor');
     $mine = dashCourse($me);
-    enrol($mine);
+    dashEnrol($mine);
 
     $theirs = dashCourse(dashUser('instructor'));
-    enrol($theirs);
-    enrol($theirs);
+    dashEnrol($theirs);
+    dashEnrol($theirs);
 
     $this->actingAs($me, 'sanctum')->getJson(OVERVIEW)
         ->assertOk()
@@ -162,10 +162,10 @@ it('hides a course the caller does not train behind a 404', function () {
 it('narrows to a single owned course', function () {
     $me = dashUser('instructor');
     $a = dashCourse($me);
-    enrol($a);
+    dashEnrol($a);
     $b = dashCourse($me);
-    enrol($b);
-    enrol($b);
+    dashEnrol($b);
+    dashEnrol($b);
 
     $this->actingAs($me, 'sanctum')->getJson(OVERVIEW.'?course='.$a->public_id)
         ->assertOk()
@@ -178,8 +178,8 @@ it('narrows to a single owned course', function () {
 it('counts a learner enrolled in several of the same instructor courses once', function () {
     $me = dashUser('instructor');
     $learner = User::factory()->create();
-    enrol(dashCourse($me), user: $learner);
-    enrol(dashCourse($me), user: $learner);
+    dashEnrol(dashCourse($me), user: $learner);
+    dashEnrol(dashCourse($me), user: $learner);
 
     // total_learners is UNIQUE learners. Enrollment counts belong at course level, where the
     // distinction cannot mislead.
@@ -191,9 +191,9 @@ it('counts a learner enrolled in several of the same instructor courses once', f
 it('computes completion rate and average progress from enrollments', function () {
     $me = dashUser('instructor');
     $course = dashCourse($me);
-    enrol($course, EnrollmentStatus::Completed, 100);
-    enrol($course, EnrollmentStatus::Active, 50);
-    enrol($course, EnrollmentStatus::Active, 0);
+    dashEnrol($course, EnrollmentStatus::Completed, 100);
+    dashEnrol($course, EnrollmentStatus::Active, 50);
+    dashEnrol($course, EnrollmentStatus::Active, 0);
 
     $this->actingAs($me, 'sanctum')->getJson(OVERVIEW)
         ->assertOk()
@@ -204,10 +204,10 @@ it('computes completion rate and average progress from enrollments', function ()
 it('counts as active only started, unfinished enrollments', function () {
     $me = dashUser('instructor');
     $course = dashCourse($me);
-    enrol($course, EnrollmentStatus::Active, 40);   // counts
-    enrol($course, EnrollmentStatus::Active, 0);    // enrolled but never started
-    enrol($course, EnrollmentStatus::Completed, 100); // finished
-    enrol($course, EnrollmentStatus::Cancelled, 20);  // dropped
+    dashEnrol($course, EnrollmentStatus::Active, 40);   // counts
+    dashEnrol($course, EnrollmentStatus::Active, 0);    // enrolled but never started
+    dashEnrol($course, EnrollmentStatus::Completed, 100); // finished
+    dashEnrol($course, EnrollmentStatus::Cancelled, 20);  // dropped
 
     $this->actingAs($me, 'sanctum')->getJson(OVERVIEW)
         ->assertOk()
@@ -320,7 +320,7 @@ it('emits every metric through the same availability envelope', function () {
 
 it('never exposes a revenue figure in the payload', function () {
     $me = dashUser('instructor');
-    enrol(dashCourse($me));
+    dashEnrol(dashCourse($me));
 
     $body = $this->actingAs($me, 'sanctum')->getJson(OVERVIEW)->assertOk()->getContent();
 

@@ -16,7 +16,7 @@ beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
 });
 
-function makeTrainer(Course $course, bool $strong): User
+function versionTrainer(Course $course, bool $strong): User
 {
     $user = User::factory()->create();
     DB::table('course_trainer')->insert(['course_id' => $course->id, 'user_id' => $user->id]);
@@ -91,7 +91,7 @@ it('404s course-scoped access for a non-owner and 403s a version they do not own
 
 it('lets a course-owning trainer view and create and clone, but not restore or rollback', function () {
     $course = courseWithLessons(1);
-    $owner = makeTrainer($course, strong: false);
+    $owner = versionTrainer($course, strong: false);
     Sanctum::actingAs($owner);
 
     $created = $this->postJson("/api/v1/admin/courses/{$course->public_id}/versions")->assertCreated()->json('data');
@@ -104,7 +104,7 @@ it('lets a course-owning trainer view and create and clone, but not restore or r
 
 it('lets a trainer with the manage-curriculum permission restore and rollback', function () {
     $course = courseWithLessons(1);
-    $owner = makeTrainer($course, strong: true);
+    $owner = versionTrainer($course, strong: true);
     Sanctum::actingAs($owner);
 
     $created = $this->postJson("/api/v1/admin/courses/{$course->public_id}/versions")->assertCreated()->json('data');
