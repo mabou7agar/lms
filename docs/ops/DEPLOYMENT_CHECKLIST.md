@@ -219,8 +219,8 @@ Point the load balancer at `/api/v1/health/ready` for the API and `/api/health` 
 | `apps/api/storage/app/private/manual-import/` is gitignored | Operator-staged source images (course covers + trainer portraits of real people). It is the only copy that records *which* portrait belongs to whom once imported bytes are stored under UUID filenames. **Not covered by a DB dump.** | Back it up with the database. See `LOCAL_QA_RUNBOOK.md`. |
 | Two courses have no uploaded image: **Business Development Essentials**, **Essential Business Skills** | They render the generated CourseCover fallback — intentional, not broken. | Upload via Admin → Catalog → Courses → Edit → Thumbnail, or run `php artisan catalog:report-missing-public-media` for the live list. |
 | `.env.production.example` omits `MEDIA_INGESTION_PROVIDER`, `CORS_ALLOWED_ORIGINS`, `SANCTUM_STATEFUL_DOMAINS`, `FILESYSTEM_DISK`; carries an unused `MEDIA_PROVIDER` key | Silent misconfiguration — see §0. | Use §2 as the authoritative list. |
-| Static-analysis baseline is red | `deptrac` clean (0 violations). `pint --test` flags **7 files** — 6 shipped models on `class_attributes_separation` plus the gitignored `qa_role_map.php`. PHPStan reports **282 errors** on top of its 684-entry `phpstan-baseline.neon`. Pre-existing, spread across untouched files. Not a deploy blocker. | Burn down separately; keep new code clean (it is). |
-| API test suite cannot run in one process | `tests/Feature/Authoring/CourseResourceTest.php:46` and `tests/Feature/Catalog/InstructorDashboardOverviewTest.php:47` both declare a **global** `function enrol()` with different signatures. Whenever both land in the same PHP process the run dies with `Cannot redeclare enrol()` before any test executes. | Namespace or rename one helper. Until then run the suite chunked by directory — see below. |
+| PHPStan baseline drift | **282 errors** on top of the 684-entry `phpstan-baseline.neon`. Pre-existing, spread across untouched files. `deptrac` is clean (0 violations) and `pint --test` is clean on all shipped code. Not a deploy blocker. | Burn down separately; keep new code clean (it is). |
+| `pint --test` reports one file | `apps/api/qa_role_map.php` — gitignored, never shipped. Deliberately left unformatted. | None. |
 | `gd` required for image variants | Without it the variant job fails and retries. Originals still serve. | Ensure `php-gd` is installed on the app/worker image. |
 
 ### `demo:seed` / `metric_snapshots` — actual root cause
@@ -260,24 +260,40 @@ docker compose exec api php vendor/bin/deptrac analyse --no-progress
 ```
 
 A bare `pint --test` invoked from the Windows host **silently under-reports**: it walks only the
-top-level directory and never recurses into `app/`, so it finds 1 file where the container finds 7.
+top-level directory and never recurses into `app/`, so it found 1 file where the container found 7.
 Passing explicit paths on the host reproduces the container's result, but the bare form does not —
 do not use it as a gate. PHPStan gives an identical 282 in both environments; it does **not** depend
 on a live database.
 
-The test suite must be run **chunked by directory** until the duplicate `enrol()` helper is fixed
-(see the known-issues table). Each `php artisan test <dir>` is a separate process, and the two
-colliding files live in different directories, so per-directory invocation avoids the fatal:
+The full test suite runs in a single invocation:
 
 ```bash
-for d in tests/Feature/*/ tests/Unit; do docker compose exec -T api php artisan test --parallel --processes=4 "$d"; done
+docker compose exec -T api php artisan test --parallel --processes=6
 ```
 
-Verified green at `eb2562d`: all 47 chunks pass. `tests/Feature/Analytics` reported four
-`QueryException` failures on the first pass and then passed 84/84 on two independent re-runs
-(sequential and `--parallel`), so treat an isolated Analytics failure as test-database contention —
-most likely parallel test databases left behind by an earlier aborted run — and re-run that chunk
-before investigating. Add `--recreate-databases` to the first chunk if it recurs.
+Verified green at `a3e6ce9`: **1919 passed, 28 skipped (6351 assertions)**, 6 processes, 949s.
+
+Two things to know when it misbehaves:
+
+- **Duplicate global helpers are fatal.** Pest test files declare helpers at global scope, so two
+  files declaring the same name kill the whole run with `Cannot redeclare ...` before any test
+  executes. The convention here is `if (! function_exists('name')) { ... }`, which eight duplicated
+  names use — but that guard is only safe when both declarations are interchangeable. When the
+  signatures differ, rename instead, or the second file silently gets the first file's
+  implementation. To audit:
+
+  ```bash
+  grep -rnE "^[[:space:]]*function [a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(" tests/ \
+    | grep -vE "public |private |protected " \
+    | sed -E 's|^([^:]+):([0-9]+):[[:space:]]*function ([a-zA-Z_][a-zA-Z0-9_]*).*|\3\t\1:\2|' \
+    | sort | awk -F'\t' '{n[$1]++} END {for (f in n) if (n[f]>1) print f}'
+  ```
+
+- **Stale parallel test databases cause phantom failures.** An aborted run leaves
+  `helbaron_test_test_*` behind, and a later run reusing them can fail with unrelated
+  `QueryException`s (this produced four spurious Analytics failures once, which then passed 84/84 on
+  two clean re-runs). Add `--recreate-databases` when a run fails in a way that looks like
+  contention.
 
 ## Backups to take together
 
