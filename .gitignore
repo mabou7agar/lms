@@ -19,6 +19,9 @@ backups/
 apps/api/storage/app/private/certificates/
 apps/api/storage/framework/views/*.php
 apps/api/storage/framework/views/*.blade.php
+# Per-token compiled-view dirs created by `artisan test --parallel` (test_1, test_2, ...). The two
+# patterns above only match the top level, so without this a parallel run leaves untracked folders.
+apps/api/storage/framework/views/test_*/
 apps/api/storage/framework/cache/*.php
 apps/api/storage/framework/testing/disks/
 apps/api/bootstrap/cache/packages.php
