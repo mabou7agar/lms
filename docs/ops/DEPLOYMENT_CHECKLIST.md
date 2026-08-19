@@ -9,15 +9,20 @@ Two deployables: **`apps/api`** (Laravel 12 / PHP 8.3, served by FrankenPHP-Octa
 
 ## 0. Before you start — the four settings that will bite you
 
-These have defaults that are *safe for local dev and wrong for production*. Nothing fails loudly if
-you miss them; the symptoms are silent.
+These have defaults that are *safe for local dev and wrong for production*. Three of the four are
+silent — only the first is caught by a guard.
 
-| Variable | Default if unset | Symptom in production |
-|---|---|---|
-| `MEDIA_INGESTION_PROVIDER` | `fake` | **Uploads appear to succeed and store no bytes.** Course/trainer images silently never render. Set to `s3` (or `local`). |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Any browser call made directly to the API is refused. Set to your web origin. |
-| `SANCTUM_STATEFUL_DOMAINS` | localhost list | Cookie/session auth rejected for your real domain. |
-| `FILESYSTEM_DISK` | `local` | Files land on the app server's disk instead of object storage; lost on redeploy. |
+| Variable | Default if unset | Symptom in production | Caught at boot? |
+|---|---|---|---|
+| `MEDIA_INGESTION_PROVIDER` | `fake` | Uploads appear to succeed and store no bytes; course/trainer images never render. Set to `s3` (or `local`). | **Yes** — `ProductionConfigValidator::criticalErrors()` rejects it and `AppServiceProvider` refuses to serve traffic. |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Any browser call made directly to the API is refused. Set to your web origin. | No |
+| `SANCTUM_STATEFUL_DOMAINS` | localhost list | Cookie/session auth rejected for your real domain. | No |
+| `FILESYSTEM_DISK` | `local` | Files land on the app server's disk instead of object storage; lost on redeploy. | No |
+
+The boot guard only fires when `APP_ENV=production`. A staging environment running `APP_ENV=staging`
+gets **no** protection — there, `MEDIA_INGESTION_PROVIDER=fake` fails exactly as silently as the
+other three. Run `php artisan config:validate --strict` on every environment rather than relying on
+the environment name.
 
 `apps/api/.env.production.example` does **not** list these four (it carries a `MEDIA_PROVIDER` key
 that nothing reads). Add them by hand — see §2.
@@ -210,12 +215,43 @@ Point the load balancer at `/api/v1/health/ready` for the API and `/api/health` 
 
 | Issue | Impact | Action |
 |---|---|---|
-| `demo:seed` aborts at `seedMetrics` — the `metric_snapshots` upsert has no matching unique constraint | Demo dataset seeds ~90% then throws. Does not affect production (demo seeding is disabled unless `DEMO_MODE=true`). | Add a unique index on `(metric_key, granularity, period, dimension_key, dimension_value)` or drop the upsert's conflict target. |
+| `demo:seed` aborts at `seedMetrics` (`DemoSeeder.php:1772`) with SQLSTATE 42P10 | Demo dataset seeds ~90% then throws. Does not affect production (demo seeding is disabled unless `DEMO_MODE=true`). | See the note below — **do not** simply add a unique index. |
 | `apps/api/storage/app/private/manual-import/` is gitignored | Operator-staged source images (course covers + trainer portraits of real people). It is the only copy that records *which* portrait belongs to whom once imported bytes are stored under UUID filenames. **Not covered by a DB dump.** | Back it up with the database. See `LOCAL_QA_RUNBOOK.md`. |
 | Two courses have no uploaded image: **Business Development Essentials**, **Essential Business Skills** | They render the generated CourseCover fallback — intentional, not broken. | Upload via Admin → Catalog → Courses → Edit → Thumbnail, or run `php artisan catalog:report-missing-public-media` for the live list. |
 | `.env.production.example` omits `MEDIA_INGESTION_PROVIDER`, `CORS_ALLOWED_ORIGINS`, `SANCTUM_STATEFUL_DOMAINS`, `FILESYSTEM_DISK`; carries an unused `MEDIA_PROVIDER` key | Silent misconfiguration — see §0. | Use §2 as the authoritative list. |
-| Static-analysis baseline is red: 282 PHPStan errors, 6 Pint files | Pre-existing, spread across untouched files. Not a deploy blocker. | Burn down separately; keep new code clean (it is). |
+| Static-analysis baseline | `deptrac` clean (0 violations). `pint --test` flags exactly one file, `apps/api/qa_role_map.php` — gitignored, never shipped. PHPStan has a 684-entry `phpstan-baseline.neon`. Not a deploy blocker. | Burn down separately; keep new code clean (it is). |
 | `gd` required for image variants | Without it the variant job fails and retries. Originals still serve. | Ensure `php-gd` is installed on the app/worker image. |
+
+### `demo:seed` / `metric_snapshots` — actual root cause
+
+The unique index **does** exist. Migration `2026_08_08_000100_add_organization_id_to_metric_snapshots_table`
+(the T1 tenancy change) dropped the plain `metric_snapshots_unique` and replaced it with two
+*partial* indexes:
+
+```sql
+CREATE UNIQUE INDEX metric_snapshots_unique_global ON metric_snapshots
+  (metric_key, granularity, period, dimension_key, dimension_value) WHERE organization_id IS NULL;
+CREATE UNIQUE INDEX metric_snapshots_unique_org ON metric_snapshots
+  (organization_id, metric_key, granularity, period, dimension_key, dimension_value) WHERE organization_id IS NOT NULL;
+```
+
+Postgres will not infer a conflict target from a *partial* index unless the statement repeats the
+index predicate. Laravel's `upsert()` emits a bare `ON CONFLICT (cols)` with no `WHERE`, so Postgres
+raises `42P10: there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+
+**Do not add a non-partial unique index over the five columns.** It would be redundant with
+`metric_snapshots_unique_global` and would merge every tenant's metrics back into a single bucket,
+undoing the isolation T1 introduced. The fix belongs in the seeder — replace the `upsert()` with a
+raw statement carrying the predicate (`... ON CONFLICT (metric_key, granularity, period,
+dimension_key, dimension_value) WHERE organization_id IS NULL DO UPDATE ...`), since `DemoSeeder`
+only ever writes global rows.
+
+### Running the gates
+
+`deptrac` and `pint` run fine on host PHP. **PHPStan does not**: Larastan resolves Eloquent property
+types by introspecting the live database, so with Postgres down it emits a cascade of spurious
+`class.notFound` / `property.notFound` errors and fails to match its own baseline. Run PHPStan
+inside the API container with the database up, or its output is meaningless.
 
 ## Backups to take together
 
