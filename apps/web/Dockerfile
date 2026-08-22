@@ -11,8 +11,14 @@ RUN npm ci
 # ---- Stage 2: build ----
 FROM node:22-alpine AS build
 WORKDIR /app
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_SITE_URL
+ARG API_INTERNAL_URL
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
+    NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL} \
+    API_INTERNAL_URL=${API_INTERNAL_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

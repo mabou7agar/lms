@@ -8,10 +8,9 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     restart: always
-    env_file: [./apps/api/.env.production]
+    env_file: [./.env]
     depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD-SHELL", "SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 || exit 1"]
       interval: 15s
@@ -23,9 +22,13 @@ services:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?set in .env}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set in .env}
+        API_INTERNAL_URL: ${API_INTERNAL_URL:-http://nginx/api/v1}
     restart: always
     # NEXT_PUBLIC_* and server-side runtime env come from an out-of-band env file.
-    env_file: [./apps/web/.env.production]
+    env_file: [./.env]
     depends_on:
       api: { condition: service_healthy }
     healthcheck:
@@ -47,11 +50,10 @@ services:
   horizon:
     image: ${HELBARON_IMAGE:-helbaron-api:1.0.0-rc.1}
     restart: always
-    env_file: [./apps/api/.env.production]
+    env_file: [./.env]
     command: ["php", "artisan", "horizon"]
     depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD-SHELL", "php artisan horizon:status | grep -q running || exit 1"]
       interval: 30s
@@ -61,16 +63,15 @@ services:
   scheduler:
     image: ${HELBARON_IMAGE:-helbaron-api:1.0.0-rc.1}
     restart: always
-    env_file: [./apps/api/.env.production]
+    env_file: [./.env]
     command: ["php", "artisan", "schedule:work"]
     depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
 
   postgres:
     image: postgres:16-alpine
     restart: always
-    env_file: [./apps/api/.env.production]
+    env_file: [./.env]
     environment:
       POSTGRES_DB: ${DB_DATABASE:-helbaron}
       POSTGRES_USER: ${DB_USERNAME:-helbaron}
@@ -89,7 +90,7 @@ services:
   db-backup:
     image: postgres:16-alpine
     restart: always
-    env_file: [./apps/api/.env.production]
+    env_file: [./.env]
     environment:
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
@@ -126,6 +127,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Run schema migrations before starting any application worker. This is idempotent and makes
+  # first-time Dokploy deployments boot from an empty persistent PostgreSQL volume safely.
+  migrate:
+    image: ${HELBARON_IMAGE:-helbaron-api:1.0.0-rc.1}
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    env_file: [./.env]
+    command: ["php", "artisan", "migrate", "--force"]
+    restart: "no"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
 
 volumes:
   helbaron-pgdata:
