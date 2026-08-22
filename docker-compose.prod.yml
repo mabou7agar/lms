@@ -9,6 +9,9 @@ services:
       dockerfile: Dockerfile
     restart: always
     env_file: [./.env]
+    networks:
+      default:
+        aliases: [lms-h-sbvbdl-api-internal]
     depends_on:
       migrate: { condition: service_completed_successfully }
     healthcheck:
@@ -29,6 +32,9 @@ services:
     restart: always
     # NEXT_PUBLIC_* and server-side runtime env come from an out-of-band env file.
     env_file: [./.env]
+    networks:
+      default:
+        aliases: [lms-h-sbvbdl-web-internal]
     depends_on:
       api: { condition: service_healthy }
     healthcheck:
