@@ -7,6 +7,10 @@
  | All delivery is queued.
  */
 return [
+    // Explicit escape hatch for a deliberate non-delivery environment. Production validation reads
+    // this value before allowing the fake provider adapters used by demos and preview deployments.
+    'allow_fake_providers' => (bool) env('NOTIFICATIONS_ALLOW_FAKE', false),
+
     'locale' => [
         'default' => env('APP_LOCALE', 'en'),
         'fallback' => env('APP_FALLBACK_LOCALE', 'en'),

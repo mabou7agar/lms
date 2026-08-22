@@ -67,6 +67,10 @@ services:
     command: ["php", "artisan", "schedule:work"]
     depends_on:
       migrate: { condition: service_completed_successfully }
+    # The API image's inherited healthcheck probes PHP-FPM, which this worker intentionally does not
+    # run. Process exit is already handled by restart: always; disable the inapplicable probe.
+    healthcheck:
+      disable: true
 
   postgres:
     image: postgres:16-alpine
