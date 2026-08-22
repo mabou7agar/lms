@@ -25,6 +25,29 @@ const FORWARD_RESPONSE_HEADERS = [
 ] as const;
 
 /**
+ * Internal Docker requests would otherwise arrive at Laravel with `Host: nginx` and `http` as the
+ * scheme. Production host validation correctly rejects that host, and generated pagination links
+ * would use the wrong scheme. Derive both values only from the operator-controlled canonical URL.
+ */
+function canonicalUpstreamHeaders(): Record<string, string> {
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!site) return {};
+
+  try {
+    const url = new URL(site);
+    const protocol = url.protocol.replace(/:$/, "");
+    return {
+      Host: url.host,
+      "X-Forwarded-Host": url.host,
+      "X-Forwarded-Proto": protocol,
+      "X-Forwarded-Port": url.port || (protocol === "https" ? "443" : "80"),
+    };
+  } catch {
+    return {};
+  }
+}
+
+/**
  * CSRF origin check. Accepts an Origin only when it matches a host this deployment serves: the host
  * Next resolved for the request, or the configured canonical site host. `nextUrl.host` alone is not
  * enough — behind a proxy that rewrites Host, or on a dev server reached by a hostname other than
@@ -69,7 +92,10 @@ async function proxy(
   // Re-encode each decoded segment to prevent path injection into the upstream URL.
   const target = `${API_BASE}/${path.map(encodeURIComponent).join("/")}${req.nextUrl.search}`;
 
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...canonicalUpstreamHeaders(),
+  };
   for (const name of FORWARD_REQUEST_HEADERS) {
     const value = req.headers.get(name);
     if (value) headers[name] = value;
