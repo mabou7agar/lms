@@ -45,15 +45,12 @@ services:
       retries: 3
 
   nginx:
-    image: nginx:1.27-alpine
+    image: ${HELBARON_NGINX_IMAGE:-helbaron-nginx:1.0.0-rc.1}
+    build:
+      context: .
+      dockerfile: infra/nginx/Dockerfile
     restart: always
     depends_on: [api, web]
-    # Dokploy swaps the repository checkout during Git deployments. Changing this label per release
-    # forces Compose to recreate nginx so its bind-mounted config always comes from the new checkout.
-    labels:
-      com.helbaron.config-revision: ${APP_VERSION:-unknown}
-    volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8080:80"
 
