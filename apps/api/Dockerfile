@@ -20,7 +20,7 @@ RUN apk --no-cache upgrade
 # Pinned installer release (supply-chain: never track "latest").
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/download/2.7.14/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
-    && install-php-extensions pdo_pgsql pgsql mbstring bcmath intl zip pcntl opcache redis \
+    && install-php-extensions redis pdo_pgsql pgsql mbstring bcmath intl zip pcntl opcache \
     && apk add --no-cache fcgi
 
 WORKDIR /var/www/html
