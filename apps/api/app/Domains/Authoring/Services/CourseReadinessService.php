@@ -2,6 +2,7 @@
 
 namespace App\Domains\Authoring\Services;
 
+use App\Domains\Authoring\Models\Block;
 use App\Domains\Authoring\Models\Lesson;
 use App\Domains\Authoring\Models\Section;
 use App\Platform\Shared\Assessment\Contracts\LessonAssessmentPort;
@@ -65,7 +66,10 @@ class CourseReadinessService extends BaseService
 
         /** @var Collection<int, Lesson> $lessons */
         $lessons = Lesson::whereIn('section_id', $sectionIds)
-            ->with('media:id,lesson_id')
+            ->with([
+                'media:id,lesson_id',
+                'blocks:id,lesson_id,payload,content_i18n,publish_state,position',
+            ])
             ->get();
 
         $this->checkPublishedLessons($lessons, $course, $issues, $passed);
@@ -206,9 +210,9 @@ class CourseReadinessService extends BaseService
     /**
      * A published lesson carrying neither content nor media is a dead end for a learner.
      *
-     * WARNING, not blocker, and deliberately so: publishing has never required lesson content, so
-     * making this fatal would retroactively strand every existing course that has a thin lesson —
-     * breaking authors who did nothing wrong under the old rules. It is advice, loudly given.
+     * This is a blocker: a published course must not advertise a lesson that renders an empty player
+     * and can still be marked complete. Legacy lesson content, published first-class blocks, media,
+     * and quiz assessments are all recognized as valid substance.
      *
      * Draft lessons are skipped entirely; unfinished work parked in draft is the point of draft.
      *
@@ -229,9 +233,15 @@ class CourseReadinessService extends BaseService
                 return false;
             }
 
-            $content = $lesson->content;
+            if ($lesson->media !== null || $this->hasMeaningfulContent($lesson->content)) {
+                return false;
+            }
 
-            return ! (is_array($content) && $content !== []) && $lesson->media === null;
+            return ! $lesson->blocks->contains(
+                fn (Block $block): bool => $block->isPublished()
+                    && ($this->hasMeaningfulContent($block->payload)
+                        || $this->hasMeaningfulContent($block->content_i18n)),
+            );
         });
 
         if ($empty->isEmpty()) {
@@ -243,7 +253,7 @@ class CourseReadinessService extends BaseService
         foreach ($empty as $lesson) {
             $issues[] = new ReadinessIssue(
                 code: 'lesson.empty_content',
-                severity: ReadinessSeverity::Warning,
+                severity: ReadinessSeverity::Blocker,
                 title: sprintf('The lesson "%s" is published but empty.', $lesson->title),
                 explanation: 'It has neither content nor media, so a learner who opens it sees nothing.',
                 recommendedAction: 'Add content to the lesson, or return it to draft until it is ready.',
@@ -251,6 +261,25 @@ class CourseReadinessService extends BaseService
                 entityPublicId: $lesson->public_id,
             );
         }
+    }
+
+    private function hasMeaningfulContent(mixed $value): bool
+    {
+        if (is_string($value)) {
+            return trim(strip_tags($value)) !== '';
+        }
+
+        if (! is_array($value)) {
+            return false;
+        }
+
+        foreach ($value as $item) {
+            if ($this->hasMeaningfulContent($item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

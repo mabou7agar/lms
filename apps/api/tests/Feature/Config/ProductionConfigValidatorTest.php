@@ -31,6 +31,9 @@ function safeProductionConfig(): void
         'security.trusted_proxies' => '203.0.113.0/24',
         'security.trusted_hosts' => 'app.example.com',
         'commerce.payment.allow_fake_gateway' => false,
+        'ai.enabled' => false,
+        'ai.default_provider' => 'fake',
+        'ai.allow_fake' => false,
     ]);
 }
 
@@ -92,6 +95,14 @@ it('flags a fake notification transport unless explicitly allowed', function () 
 
     config(['notifications.allow_fake_providers' => true]);
     expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->not->toContain('NOTIFICATIONS');
+});
+
+it('rejects enabled fake AI unless explicitly allowed', function () {
+    config(['ai.enabled' => true, 'ai.default_provider' => 'fake']);
+    expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->toContain('AI_PROVIDER=fake');
+
+    config(['ai.allow_fake' => true]);
+    expect(implode(' ', (new ProductionConfigValidator)->criticalErrors()))->not->toContain('AI_PROVIDER=fake');
 });
 
 it('flags missing trusted proxies', function () {

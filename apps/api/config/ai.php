@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 return [
     // Master switch. When false, every AI call fails closed (AiDisabledException).
-    'enabled' => (bool) env('AI_ENABLED', true),
+    'enabled' => (bool) env('AI_ENABLED', false),
 
     // Default provider when a caller does not specify one. `fake` runs everywhere without creds.
     'default_provider' => env('AI_PROVIDER', 'fake'),

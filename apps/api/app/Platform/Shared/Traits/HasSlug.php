@@ -16,7 +16,22 @@ trait HasSlug
             $column = $model->slugColumn();
 
             if (empty($model->{$column})) {
-                $source = (string) ($model->{$model->slugSource()} ?? '');
+                $sourceAttribute = $model->slugSource();
+                $source = (string) ($model->{$sourceAttribute} ?? '');
+
+                // Translation-backed forms commonly submit `{source}_i18n` without the legacy
+                // scalar. Trait boot order is not a safe contract between HasSlug and
+                // HasTranslations, so resolve the configured/default locale directly when the
+                // scalar has not yet been synchronized.
+                if ($source === '') {
+                    $translations = $model->getAttribute($sourceAttribute.'_i18n');
+
+                    if (is_array($translations) && $translations !== []) {
+                        $default = (string) config('shared.default_locale', 'en');
+                        $translated = $translations[$default] ?? reset($translations);
+                        $source = is_string($translated) ? $translated : '';
+                    }
+                }
 
                 if ($source !== '') {
                     $model->{$column} = Slug::make($source);

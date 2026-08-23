@@ -5,6 +5,7 @@ namespace App\Contexts\Learning\Filament\Resources;
 use App\Contexts\Learning\Enums\EnrollmentStatus;
 use App\Contexts\Learning\Filament\Resources\EnrollmentResource\Pages;
 use App\Contexts\Learning\Models\Enrollment;
+use App\Platform\Identity\Contracts\UserLookupPort;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -46,8 +47,11 @@ class EnrollmentResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('user.email')->label('User')->searchable()->sortable(),
-                TextColumn::make('course.public_id')->label('Course')->toggleable(),
+                TextColumn::make('user_id')
+                    ->label('Learner')
+                    ->formatStateUsing(fn ($state): string => self::learnerName((int) $state)),
+                TextColumn::make('course.title')->label('Course')->searchable()->sortable(),
+                TextColumn::make('course.public_id')->label('Course ID')->copyable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('progress_percentage')->label('Progress %')->numeric()->sortable(),
                 TextColumn::make('source')->toggleable(),
@@ -68,5 +72,12 @@ class EnrollmentResource extends Resource
             'index' => Pages\ListEnrollments::route('/'),
             'edit' => Pages\EditEnrollment::route('/{record}/edit'),
         ];
+    }
+
+    private static function learnerName(int $userId): string
+    {
+        $learner = app(UserLookupPort::class)->refById($userId);
+
+        return $learner === null ? 'Unknown learner' : $learner->name;
     }
 }

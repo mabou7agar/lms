@@ -22,6 +22,11 @@ class AiProviderStatusWidget extends StatsOverviewWidget
         $enabled = (bool) config('ai.enabled', false);
         $default = (string) config('ai.default_provider', 'fake');
         $chatModel = (string) config('ai.providers.'.$default.'.chat_model', 'n/a');
+        $blockedFake = $enabled
+            && $default === 'fake'
+            && app()->environment('production')
+            && (bool) config('ai.allow_fake', false) !== true;
+        $operational = $enabled && ! $blockedFake;
 
         $overview = app(AiUsageSummary::class)->overview();
         $spend = '$'.number_format($overview['total_spend_micros'] / 1_000_000, 2);
@@ -33,12 +38,12 @@ class AiProviderStatusWidget extends StatsOverviewWidget
             : number_format($globalUsed).' (unlimited)';
 
         return [
-            Stat::make('AI', $enabled ? 'Enabled' : 'Disabled')
-                ->description('Global master switch')
-                ->descriptionIcon($enabled ? 'heroicon-o-check-circle' : 'heroicon-o-no-symbol')
-                ->color($enabled ? 'success' : 'gray'),
+            Stat::make('AI', $blockedFake ? 'Blocked' : ($enabled ? 'Enabled' : 'Disabled'))
+                ->description($blockedFake ? 'Fake provider is refused in production' : 'Global master switch')
+                ->descriptionIcon($operational ? 'heroicon-o-check-circle' : 'heroicon-o-no-symbol')
+                ->color($blockedFake ? 'danger' : ($enabled ? 'success' : 'gray')),
 
-            Stat::make('Default provider', ucfirst($default))
+            Stat::make('Default provider', ucfirst($default).($blockedFake ? ' (blocked)' : ''))
                 ->description('Model: '.$chatModel)
                 ->descriptionIcon('heroicon-o-cpu-chip')
                 ->color($default === 'fake' ? 'warning' : 'primary'),
@@ -63,8 +68,11 @@ class AiProviderStatusWidget extends StatsOverviewWidget
         $providers = (array) config('ai.providers', []);
         $count = 0;
 
-        foreach ($providers as $config) {
+        foreach ($providers as $key => $config) {
             if ((bool) ($config['enabled'] ?? false) === true) {
+                if ($key === 'fake' && app()->environment('production') && (bool) config('ai.allow_fake', false) !== true) {
+                    continue;
+                }
                 $count++;
             }
         }

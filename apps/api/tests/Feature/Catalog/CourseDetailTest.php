@@ -21,6 +21,18 @@ it('shows a published course by public_id with related courses', function () {
         ->and(collect($res->json('data.related'))->pluck('title'))->toContain('Related Course');
 });
 
+it('shows the same published course by slug', function () {
+    $course = Course::factory()->published()->create([
+        'title' => 'Enterprise Leadership',
+        'slug' => 'enterprise-leadership',
+    ]);
+
+    $this->getJson('/api/v1/courses/enterprise-leadership')
+        ->assertOk()
+        ->assertJsonPath('data.id', $course->public_id)
+        ->assertJsonPath('data.slug', 'enterprise-leadership');
+});
+
 it('returns 404 for a draft or unknown course', function () {
     $draft = Course::factory()->create();
 

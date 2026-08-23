@@ -28,12 +28,15 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 /**
  * The commercial control surface. A product is the only thing that can be bought: either a single
@@ -56,9 +59,18 @@ class ProductResource extends Resource
         return $schema->components([
             Section::make('Content')->columns(2)->schema([
                 TextInput::make('title_i18n.en')->label('Title (EN)')->required()->maxLength(255)
-                    ->helperText('English is the default and fallback locale.'),
+                    ->helperText('English is the default and fallback locale.')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                        if (blank($get('slug')) && filled($state)) {
+                            $set('slug', Str::slug((string) $state));
+                        }
+                    }),
                 TextInput::make('title_i18n.ar')->label('Title (AR)')->maxLength(255)
                     ->extraInputAttributes(['dir' => 'rtl']),
+                TextInput::make('slug')->label('Slug')->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->helperText('URL identifier. Auto-suggested from the English title; editable and must be unique.'),
                 Textarea::make('description_i18n.en')->label('Description (EN)')->rows(3)->columnSpanFull()
                     ->helperText('English is the default and fallback locale.'),
                 Textarea::make('description_i18n.ar')->label('Description (AR)')->rows(3)->columnSpanFull()

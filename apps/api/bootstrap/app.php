@@ -3,6 +3,7 @@
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnforceApiTokenScope;
 use App\Http\Middleware\ForceJsonForApi;
+use App\Http\Middleware\RequireVerifiedEmail;
 use App\Http\Middleware\SecurityHeaders;
 use App\Platform\Features\Http\Middleware\EnsureFeatureEnabled;
 use App\Platform\Media\Http\Controllers\PublicMediaController;
@@ -79,6 +80,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // bearer anywhere outside /api/v1/developer/* is rejected 403, so a read-scoped key can never
         // exercise the owner's session privileges on first-party routes. Session/`*` tokens unaffected.
         $middleware->appendToGroup('api', EnforceApiTokenScope::class);
+
+        // A newly registered account may authenticate only so it can read its profile, submit the
+        // email OTP, or log out. Every business endpoint remains closed until verification.
+        $middleware->appendToGroup('api', RequireVerifiedEmail::class);
 
         // Multi-tenancy (A2-S02): resolve the active tenant on the API surface. Applied to the
         // 'api' group only (NOT globally) — web/marketing and Filament panels activate the

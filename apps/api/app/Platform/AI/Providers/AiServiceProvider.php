@@ -54,9 +54,11 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(AiProviderManager::class);
         $this->app->singleton(AiClient::class);
 
-        // Default provider-neutral models, resolved through the manager (config-driven, fail-closed).
-        $this->app->bind(ChatModel::class, fn ($app) => $app->make(AiProviderManager::class)->chatModel());
-        $this->app->bind(EmbeddingModel::class, fn ($app) => $app->make(AiProviderManager::class)->embeddingModel());
+        // Resolve lightweight delegates here. Provider validation remains fail-closed, but occurs
+        // only when chat/embed is called — container inspection and `route:list` must work when AI
+        // is intentionally disabled or awaits production credentials.
+        $this->app->bind(ChatModel::class, DeferredChatModel::class);
+        $this->app->bind(EmbeddingModel::class, DeferredEmbeddingModel::class);
     }
 
     public function boot(): void

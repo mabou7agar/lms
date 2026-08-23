@@ -1,6 +1,8 @@
 <?php
 
 use App\Platform\AI\AiProviderManager;
+use App\Platform\AI\Contracts\ChatModel;
+use App\Platform\AI\Contracts\EmbeddingModel;
 use App\Platform\AI\Data\ChatMessage;
 use App\Platform\AI\Data\ModelOptions;
 use App\Platform\AI\Enums\AiProvider;
@@ -10,6 +12,8 @@ use App\Platform\AI\Exceptions\FakeProviderNotAllowedException;
 use App\Platform\AI\Exceptions\ProviderCredentialsRequiredException;
 use App\Platform\AI\Exceptions\UnknownAiProviderException;
 use App\Platform\AI\Providers\AiServiceProvider;
+use App\Platform\AI\Providers\DeferredChatModel;
+use App\Platform\AI\Providers\DeferredEmbeddingModel;
 use App\Platform\AI\Providers\Fake\FakeChatModel;
 use App\Platform\AI\Providers\Fake\FakeEmbeddingModel;
 use App\Platform\AI\Providers\OpenAi\OpenAiChatModel;
@@ -40,6 +44,21 @@ it('fails closed when AI is globally disabled', function () {
 
     app(AiProviderManager::class)->chatModel();
 })->throws(AiDisabledException::class);
+
+it('resolves deferred contracts while disabled and fails only when an AI operation is requested', function () {
+    config(['ai.enabled' => false]);
+
+    expect(app(ChatModel::class))->toBeInstanceOf(DeferredChatModel::class)
+        ->and(app(EmbeddingModel::class))->toBeInstanceOf(DeferredEmbeddingModel::class);
+
+    app(ChatModel::class)->provider();
+})->throws(AiDisabledException::class);
+
+it('can inspect API routes while AI is disabled', function () {
+    config(['ai.enabled' => false]);
+
+    expect(Artisan::call('route:list', ['--path' => 'api/v1']))->toBe(0);
+});
 
 it('fails closed for an unknown provider', function () {
     app(AiProviderManager::class)->chatModel('does-not-exist');

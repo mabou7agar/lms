@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Award, Clock, Layers, ShoppingCart } from "lucide-react";
+import { Award, BookOpenCheck, Clock, Layers, ShoppingCart } from "lucide-react";
 import type { CoursePurchase } from "@/lib/catalog/api";
 import { errorMessage } from "@/lib/api/errors";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useAddToCart } from "@/lib/commerce/hooks";
+import { useEnroll } from "@/lib/catalog/hooks";
 import { accessLabel, certificateLabel, coursePurchasePrice } from "@/lib/commerce/sales-format";
 import { useI18n } from "@/lib/i18n/i18n-context";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,8 @@ import { PriceTag } from "@/components/commerce/price-tag";
 import { toast } from "@/components/ui/toast";
 
 /**
- * The buy box on a public course page. Every public course is sold, so this replaces the old
- * enrol call entirely: the only way into a course is a purchase (or a company grant), and the
- * enrol endpoint refuses a paid course anyway.
+ * The course action panel mirrors the backend entitlement rule: an active product uses checkout;
+ * without one, the learner can enroll for free.
  *
  * A guest is sent to sign-in with a redirect back to this course, so the intent survives the round
  * trip and the buy button is still waiting on return.
@@ -32,23 +32,48 @@ export function CoursePurchasePanel({
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const add = useAddToCart();
+  const enroll = useEnroll();
   const authed = status === "authenticated";
 
   const sellable = purchase?.purchasable === true ? purchase : null;
   const price = coursePurchasePrice(purchase, locale);
 
-  // Nothing sells this course yet. Say so plainly rather than offering an action that would fail.
+  const requireAccount = () => {
+    if (!authed) {
+      router.push(`/login?redirect=/courses/${courseId}`);
+      return false;
+    }
+    if (user?.email_verified === false) {
+      router.push(`/verify-email?redirect=${encodeURIComponent(`/courses/${courseId}`)}`);
+      return false;
+    }
+    return true;
+  };
+
+  // No active product means this is the API-supported free-enrollment path.
   if (!sellable) {
+    const onEnroll = () => {
+      if (!requireAccount()) return;
+      enroll.mutate(courseId, {
+        onSuccess: () => {
+          toast.success(t("catalog.course.enrolled"));
+          router.push(`/learn/${courseId}`);
+        },
+        onError: (e) => toast.error(errorMessage(e, t("common.error"))),
+      });
+    };
+
     return (
       <div className={compact ? "" : "space-y-2"}>
-        <Button className="w-full" size={compact ? "default" : "lg"} disabled>
-          {t("catalog.course.unavailable")}
+        <Button className="w-full" size={compact ? "default" : "lg"} loading={enroll.isPending} onClick={onEnroll}>
+          <BookOpenCheck className="size-4" aria-hidden />
+          {authed ? t("catalog.course.enrollFree") : t("catalog.course.signInToEnroll")}
         </Button>
         {compact ? null : (
           <p className="px-1 text-center text-xs text-muted-foreground">
-            {t("catalog.course.unavailableHint")}
+            {t("catalog.course.freeHint")}
           </p>
         )}
       </div>
@@ -56,10 +81,7 @@ export function CoursePurchasePanel({
   }
 
   const onAdd = () => {
-    if (!authed) {
-      router.push(`/login?redirect=/courses/${courseId}`);
-      return;
-    }
+    if (!requireAccount()) return;
     add.mutate(
       { product: sellable.product_id },
       {

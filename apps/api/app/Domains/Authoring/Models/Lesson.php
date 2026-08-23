@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -80,6 +81,16 @@ class Lesson extends Model
     public function media(): HasOne
     {
         return $this->hasOne(LessonMedia::class);
+    }
+
+    /**
+     * First-class content blocks belonging to this lesson.
+     *
+     * @return HasMany<Block, $this>
+     */
+    public function blocks(): HasMany
+    {
+        return $this->hasMany(Block::class)->orderBy('position');
     }
 
     /** Lessons that must be completed before this one. */

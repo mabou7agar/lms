@@ -14,19 +14,18 @@ import { CourseMedia } from "./course-media";
  * level, language, featured, and the course's real price — never a fabricated rating or figure.
  * RTL-safe (logical properties); reduced-motion safe (transitions only).
  *
- * Every public course is sold. A course with no active product yet reads as not-yet-available
- * rather than free, so a card can never imply an enrolment that the API would refuse.
+ * A course with no active product is free-enrollable, matching the Learning API contract.
  */
 export function CourseCard({ course }: { course: CourseListItem }) {
   const { t, locale } = useI18n();
   const price = coursePurchasePrice(course.purchase, locale);
   // `purchase` is absent on payloads that never attached a summary; only an explicit
   // `purchasable: false` means the course is genuinely not for sale.
-  const notForSale = course.purchase?.purchasable === false;
+  const free = course.purchase?.purchasable === false;
 
   return (
     <Link
-      href={`/courses/${course.id}`}
+      href={`/courses/${course.slug || course.id}`}
       className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="relative overflow-hidden">
@@ -58,8 +57,8 @@ export function CourseCard({ course }: { course: CourseListItem }) {
         <div className="mt-4 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
           {price ? (
             <PriceTag price={price} size="sm" />
-          ) : notForSale ? (
-            <span className="text-sm text-muted-foreground">{t("catalog.course.unavailable")}</span>
+          ) : free ? (
+            <span className="text-sm font-semibold text-primary">{t("catalog.course.free")}</span>
           ) : (
             <span aria-hidden />
           )}

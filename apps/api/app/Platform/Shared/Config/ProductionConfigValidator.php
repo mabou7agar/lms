@@ -143,6 +143,14 @@ class ProductionConfigValidator
             $e[] = 'SSO fake provider is enabled in production (set SSO_ALLOW_FAKE_PROVIDER=true only for a deliberate non-auth environment).';
         }
 
+        // AI must be an explicit production opt-in. The deterministic fake provider is useful for
+        // tests and previews, but must never be presented to learners as a real model by accident.
+        if ((bool) config('ai.enabled', false) === true
+            && (string) config('ai.default_provider', 'fake') === 'fake'
+            && (bool) config('ai.allow_fake', false) !== true) {
+            $e[] = 'AI_PROVIDER=fake is not allowed in production (set AI_ALLOW_FAKE=true only for a deliberate preview environment).';
+        }
+
         // E-invoicing: the fake provider marks invoices "cleared" without contacting the tax authority.
         // Refuse it in production (when e-invoicing is on) unless explicitly permitted.
         if ((bool) config('commerce.einvoicing.enabled', false) === true

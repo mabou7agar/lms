@@ -53,3 +53,24 @@ it('rejects a wrong email OTP', function () {
         ->assertStatus(422)
         ->assertJsonPath('error.code', 'AUTH_OTP_INVALID');
 });
+
+it('restricts an unverified session to profile, email verification, and logout', function () {
+    $user = User::factory()->unverified()->create();
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/v1/profile')
+        ->assertOk()
+        ->assertJsonPath('data.email_verified', false);
+
+    $this->putJson('/api/v1/profile', ['name' => 'Not yet'])
+        ->assertForbidden()
+        ->assertJsonPath('error.code', 'EMAIL_VERIFICATION_REQUIRED');
+});
+
+it('allows a verified session to use protected API routes', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/v1/profile')->assertOk();
+    $this->putJson('/api/v1/profile', ['name' => 'Verified learner'])->assertOk();
+});

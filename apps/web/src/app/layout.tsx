@@ -52,14 +52,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description: siteConfig.description,
     applicationName: name,
     alternates: { canonical: "/" },
-    ...(favicon || appleIcon
-      ? {
-          icons: {
-            ...(favicon ? { icon: favicon } : {}),
-            ...(appleIcon ? { apple: appleIcon } : {}),
-          },
-        }
-      : {}),
+    icons: {
+      icon: favicon || "/favicon.ico",
+      ...(appleIcon ? { apple: appleIcon } : {}),
+    },
     openGraph: {
       type: "website",
       siteName: name,

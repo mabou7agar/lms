@@ -7,7 +7,7 @@ use App\Domains\Catalog\Http\Resources\CourseListResource;
 use App\Domains\Catalog\Http\Resources\CourseResource;
 use App\Domains\Catalog\Models\Course;
 use App\Domains\Catalog\Services\CourseSearchService;
-use App\Domains\Catalog\Services\RelatedCoursesService;
+use App\Domains\Catalog\Services\PublicCourseDetailsService;
 use App\Platform\Identity\Contracts\UserLookupPort;
 use App\Platform\Shared\Commerce\Contracts\PurchaseSummaryPort;
 use App\Platform\Shared\Support\ApiResponse;
@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CourseController extends Controller
@@ -92,25 +91,13 @@ class CourseController extends Controller
         }
     }
 
-    public function show(string $publicId, RelatedCoursesService $related, PurchaseSummaryPort $purchases): JsonResponse
+    public function show(string $publicId, PublicCourseDetailsService $details): JsonResponse
     {
-        if (! Str::isUuid($publicId)) {
-            throw new NotFoundHttpException('Course not found.');
-        }
-
-        $course = Course::query()
-            ->published()
-            ->visible()
-            ->with(['level', 'language', 'categories', 'tags', 'trainerLinks'])
-            ->where('public_id', $publicId)
-            ->first();
+        $course = $details->find($publicId);
 
         if ($course === null) {
             throw new NotFoundHttpException('Course not found.');
         }
-
-        $course->setRelation('related', $related->for($course));
-        $course->setAttribute('purchase_summary', $purchases->forCourse((int) $course->id));
 
         return ApiResponse::success(new CourseResource($course));
     }

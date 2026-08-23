@@ -3,9 +3,10 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithI18n } from "../render";
 
-const { useCourse, addMutate, push, authState } = vi.hoisted(() => ({
+const { useCourse, addMutate, enrollMutate, push, authState } = vi.hoisted(() => ({
   useCourse: vi.fn(),
   addMutate: vi.fn(),
+  enrollMutate: vi.fn(),
   push: vi.fn(),
   authState: { status: "authenticated" as "authenticated" | "guest" },
 }));
@@ -15,7 +16,10 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ public_id: "course-1" }),
 }));
 vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => authState }));
-vi.mock("@/lib/catalog/hooks", () => ({ useCourse }));
+vi.mock("@/lib/catalog/hooks", () => ({
+  useCourse,
+  useEnroll: () => ({ mutate: enrollMutate, isPending: false }),
+}));
 vi.mock("@/lib/commerce/hooks", () => ({
   useAddToCart: () => ({ mutate: addMutate, isPending: false, variables: undefined }),
 }));
@@ -113,7 +117,7 @@ describe("Course detail sales panel", () => {
     expect(push).toHaveBeenCalledWith("/login?redirect=/courses/course-1");
   });
 
-  it("disables buying a course no active product sells", () => {
+  it("offers free enrollment when no active product sells the course", async () => {
     useCourse.mockReturnValue(course({ purchasable: false }));
 
 // The course/lesson pages now embed the courseware panels (files + Q&A). Those are react-query
@@ -135,8 +139,10 @@ vi.mock("@/lib/courseware/hooks", () => ({
 
     renderWithI18n(<CourseDetailsClient />);
 
-    const cta = screen.getAllByRole("button", { name: /Not available yet/i })[0];
-    expect(cta).toBeDisabled();
+    const cta = screen.getAllByRole("button", { name: /Enroll for free/i })[0];
+    await userEvent.click(cta);
+
+    expect(enrollMutate).toHaveBeenCalledWith("course-1", expect.anything());
     expect(addMutate).not.toHaveBeenCalled();
   });
 });

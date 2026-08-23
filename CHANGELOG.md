@@ -3,6 +3,29 @@
 All notable changes to HELBARON LMS are documented here. This project follows
 semantic versioning; pre-release builds use `-rc.N` suffixes.
 
+## [Unreleased] — 2026-08-24
+
+### Fixed
+- Product creation now generates and validates a unique slug from the translated English title,
+  preventing the admin `products.slug` null-constraint failure.
+- Unverified accounts are restricted to reading their profile, verifying their email, or logging
+  out; protected web journeys redirect to verification before any business action.
+- AI is now production opt-in, fake AI is reported as blocked rather than enabled, and provider
+  resolution is deferred so Laravel route inspection and maintenance commands work while AI is off.
+- Enrollment administration displays the learner name and localized course title instead of a
+  blank identity and raw course UUID.
+- Course publishing is blocked when a published non-quiz lesson has no meaningful legacy content,
+  published content block, or media.
+- Public course details resolve by stable slug as well as UUID; catalog cards now link to slugs.
+- Courses without an active product expose the supported free-enrollment journey instead of an
+  unavailable purchase button.
+- Added a cacheable branded `/favicon.ico` response and corrected the production environment
+  template's media, notification, and AI safety settings.
+
+### API
+- Extended `GET /api/v1/courses/{identifier}` to accept either a course UUID or slug; added the
+  corresponding Bruno request under `bruno/Catalog`.
+
 ## [1.0.0-rc.2] — 2026-08-12
 
 Hardening and production-closure candidate. Carries the full Stage-4 enterprise / AI /

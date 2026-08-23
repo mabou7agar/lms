@@ -7,7 +7,10 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ public_id: "c1" }),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("@/lib/catalog/hooks", () => ({ useCourse }));
+vi.mock("@/lib/catalog/hooks", () => ({
+  useCourse,
+  useEnroll: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 vi.mock("@/lib/commerce/hooks", () => ({
   useAddToCart: () => ({ mutate: vi.fn(), isPending: false, variables: undefined }),
 }));

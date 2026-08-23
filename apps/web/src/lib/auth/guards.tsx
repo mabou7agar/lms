@@ -39,6 +39,7 @@ function RequireAuthInner({ children, redirectTo = "/login", roles }: { children
   // satisfied by the capability flag. All other roles are matched against the real role list.
   const authorized =
     status === "authenticated" &&
+    user?.email_verified !== false &&
     (!roles ||
       roles.some((r) => user?.roles?.includes(r)) ||
       (roles.includes("org_manager") && user?.is_org_manager === true));
@@ -51,8 +52,16 @@ function RequireAuthInner({ children, redirectTo = "/login", roles }: { children
     router.replace(`${redirectTo}?redirect=${encodeURIComponent(current)}`);
   }, [status, router, redirectTo, pathname, searchParams]);
 
+  useEffect(() => {
+    if (status !== "authenticated" || user?.email_verified !== false) return;
+    const search = searchParams.toString();
+    const current = `${pathname ?? "/"}${search ? `?${search}` : ""}`;
+    router.replace(`/verify-email?redirect=${encodeURIComponent(current)}`);
+  }, [status, user?.email_verified, router, pathname, searchParams]);
+
   if (status === "loading") return <PageLoading />;
   if (status === "guest") return null;
+  if (user?.email_verified === false) return <PageLoading />;
   if (!authorized) return <AccessDenied />;
 
   return <>{children}</>;

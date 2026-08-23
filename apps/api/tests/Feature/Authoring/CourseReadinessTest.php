@@ -99,7 +99,7 @@ it('blocks a course whose lessons are all drafts', function () {
         ->and(array_map(fn ($i) => $i->code, $report->blockers()))->toContain('course.no_published_lesson');
 });
 
-it('warns about a published lesson that has neither content nor media, without blocking', function () {
+it('blocks a published lesson that has neither content nor media', function () {
     [$course, , $section] = readyCourse();
     Lesson::factory()->create([
         'section_id' => $section->id,
@@ -110,15 +110,12 @@ it('warns about a published lesson that has neither content nor media, without b
     ]);
 
     $report = reportFor($course);
-    $warning = collect($report->warnings())->firstWhere('code', 'lesson.empty_content');
+    $blocker = collect($report->blockers())->firstWhere('code', 'lesson.empty_content');
 
-    // Deliberately NOT a blocker. Publishing has never required lesson content, so making this
-    // fatal would strand every existing course with a thin lesson — authors penalised for a rule
-    // that did not exist when they published.
-    expect($report->isPublishable())->toBeTrue()
-        ->and($warning)->not->toBeNull()
-        ->and($warning->title)->toContain('Hollow lesson')
-        ->and($warning->entityType)->toBe('lesson');
+    expect($report->isPublishable())->toBeFalse()
+        ->and($blocker)->not->toBeNull()
+        ->and($blocker->title)->toContain('Hollow lesson')
+        ->and($blocker->entityType)->toBe('lesson');
 });
 
 it('leaves an empty DRAFT lesson alone', function () {
