@@ -325,7 +325,69 @@ cohesion.
 - Optional watermarking or DRM for premium content.
 - Bulk media import and migration tools.
 
-### P1.9 Search needs production-scale indexing
+### P1.9 Pluggable video-provider coverage is incomplete
+
+**Classification:** Confirmed extensibility gap.
+
+The current media platform supports fake/local, Mux, and S3 ingestion, with
+fake, Mux, S3, and CloudFront playback. No Bunny Stream adapter is implemented.
+Provider abstractions already exist, so additional vendors must be added as
+adapters rather than by introducing vendor-specific rules into Learning,
+Authoring, or `MediaAsset`.
+
+**Recommended provider strategy**
+
+- Keep Mux as a supported managed-video provider.
+- Add Bunny Stream as the next managed-video adapter, subject to a cost,
+  regional-delivery, security, analytics, and support evaluation.
+- Retain S3 + CloudFront for private object delivery and customers that prefer
+  infrastructure ownership.
+- Evaluate Cloudflare Stream or another vendor only when a customer or regional
+  requirement justifies the maintenance and test burden.
+- Do not promise transparent live failover between video vendors; provide an
+  explicit migration/re-ingestion workflow because provider asset identifiers,
+  encodings, analytics, captions, and DRM licenses are not portable by default.
+
+**Required work**
+
+- Add a provider-capability DTO describing direct/resumable upload, HLS playback,
+  signed/token authentication, webhook lifecycle, captions, transcripts,
+  thumbnails, analytics, watermarking, DRM, deletion, and source retention.
+- Implement `BunnyStreamIngestionProvider`, a Bunny playback-token adapter, and
+  a Bunny webhook translator behind the existing media contracts.
+- Add configuration and secret validation without using provider credentials
+  outside configuration/adapters.
+- Normalize Bunny video state, duration, captions, and processing failures into
+  the existing provider-neutral media lifecycle.
+- Add contract tests that every provider must pass, plus sandbox integration
+  tests for upload, webhook idempotency, playback expiry, deletion, and failure.
+- Add per-organization provider selection only after tenant isolation and
+  provider-specific quota/cost accounting are complete.
+
+**Acceptance criteria**
+
+- The same learner and instructor APIs work without provider-specific payloads.
+- Provider references and credentials are never exposed to clients.
+- An operator can select a supported provider through configuration and pass the
+  complete upload -> processing -> signed playback -> deletion journey.
+- Provider capability differences are reported explicitly rather than silently
+  degrading security or functionality.
+
+**Bunny capabilities to evaluate**
+
+Bunny's current APIs expose video lifecycle/status and captions, library-level
+token authentication, IP verification, referrer controls, watermarking,
+transcription, heatmaps, multi-audio, premium codecs, and optional DRM. These
+capabilities make Bunny a reasonable second managed-video provider, but each one
+must still be mapped and tested against HElbaron's authorization and progress
+rules.
+
+- [Bunny Stream video API](https://docs.bunny.net/reference/video_getvideo)
+- [Bunny video-library security and delivery settings](https://docs.bunny.net/reference/videolibrarypublic_update)
+- [Bunny transcription API](https://docs.bunny.net/reference/video_transcribevideo)
+- [Bunny Stream format and caption support](https://docs.bunny.net/docs/stream-best-practices)
+
+### P1.10 Search needs production-scale indexing
 
 **Classification:** Confirmed scale risk.
 
@@ -338,7 +400,7 @@ trigram index is missing.
 - Benchmark with representative catalog and learner data.
 - Add slow-query monitoring and result-quality tests for Arabic and English.
 
-### P1.10 Known performance bottlenecks remain
+### P1.11 Known performance bottlenecks remain
 
 **Classification:** Confirmed scale risks.
 
@@ -355,7 +417,7 @@ trigram index is missing.
 - Establish API, database, queue, and Core Web Vitals budgets.
 - Load-test enrollment, assessment submission, notifications, and reporting.
 
-### P1.11 AI governance and metering need production hardening
+### P1.12 AI governance and metering need production hardening
 
 **Classification:** Implemented but unverified.
 
@@ -371,7 +433,7 @@ accounting also requires stronger atomicity under high concurrency.
 - Audit prompts, model/provider versions, tool usage, and generated outcomes.
 - Provide safe user-facing degradation when AI is unavailable.
 
-### P1.12 Outbound webhook network hardening is incomplete
+### P1.13 Outbound webhook network hardening is incomplete
 
 **Classification:** Confirmed security hardening gap.
 
@@ -385,7 +447,7 @@ present.
 - Block private, loopback, link-local, metadata, and prohibited networks.
 - Apply size, redirect, timeout, retry, and concurrency limits.
 
-### P1.13 White-label implementation is inconsistent
+### P1.14 White-label implementation is inconsistent
 
 **Classification:** Confirmed product gap.
 
@@ -401,7 +463,7 @@ present.
 - Apply it to web, admin, email, certificates, notifications, and metadata.
 - Keep translatable values locale-aware and provide safe defaults.
 
-### P1.14 SEO coverage is incomplete
+### P1.15 SEO coverage is incomplete
 
 **Classification:** Confirmed product gap.
 
@@ -411,7 +473,7 @@ present.
 - Cookie-only locale selection prevents useful locale-specific URLs/hreflang.
 - Dynamic catalog detail pages may be absent from the sitemap.
 
-### P1.15 Documentation contains conflicting status claims
+### P1.16 Documentation contains conflicting status claims
 
 **Classification:** Confirmed governance weakness.
 
@@ -448,7 +510,7 @@ These items should not outrank P0/P1 work without a confirmed commercial need.
 | Admin | Implemented and production styling fixed | Full role/resource/accessibility validation |
 | Catalog/authoring | Implemented | Complete launch content and instructor E2E |
 | Enrollment/progress | Implemented; free journey tested | Paid, expiry, refund, concurrency, and cross-device tests |
-| Video/media | Strong abstraction exists | Real production provider, token refresh, failure UX, captions workflow |
+| Video/media | Strong abstraction exists | Real provider, Bunny adapter, token refresh, failure UX, captions workflow |
 | Assessments | Core auto-grading implemented | Manual/richer types, accommodations, analytics, moderation |
 | Assignments/grading | Files, rubrics, manual grading, gradebook exist | Complete production journey and scale/concurrency evidence |
 | Commerce | Implementation exists | Real-provider checkout/refund/webhook/reconciliation evidence |
@@ -489,8 +551,8 @@ validation, completion, and enhancement rather than duplicating them:
    notification, and live-session E2E suite.
 5. Demonstrate backup restore, rollback, queue recovery, monitoring, and alerts.
 6. Prepare and validate bilingual launch content.
-7. Fix confirmed P1 defects: remember-me, reminders, automation visibility,
-   search indexes, performance bottlenecks, and documentation truth.
+7. Fix confirmed P1 defects: remember-me, automation visibility, real-provider
+   delivery, search indexes, performance bottlenecks, and documentation truth.
 8. Implement richer exams and enterprise tenancy/RBAC according to signed
    customer requirements.
 9. Schedule P2 features only after production reliability gates remain green.
